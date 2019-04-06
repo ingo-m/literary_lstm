@@ -12,13 +12,18 @@ import random
 import collections
 import time
 
+#from tensorflow.nn.rnn_cell import DropoutWrapper
+#from tf.contrib.rnn.DropoutWrapper
+
 from utilities import read_text
 
 # -----------------------------------------------------------------------------
 # *** Define parameters
 
+# /home/john/PhD/GitLab/literary_lstm
+
 # Path of input text files:
-strPthIn = '/Users/john/1_PhD/GitLab/lstm_fun/Thomas_Mann/'
+strPthIn = '/home/john/Dropbox/Thomas_Mann/'
 
 # List of input text files:
 #lstFle = ['Thomas_Mann_1909_Koenigliche_Hoheit.txt'
@@ -28,7 +33,7 @@ strPthIn = '/Users/john/1_PhD/GitLab/lstm_fun/Thomas_Mann/'
 #          'Thomas_Mann_1922_Tonio_Kroeger.txt'
 #          'Thomas_Mann_Tristan .txt']
 
-lstFle = ['Thomas_Mann_1922_Tonio_Kroeger.txt']
+lstFle = ['Thomas_Mann_1909_Buddenbrooks_excerpt_02.txt']
 
 # -----------------------------------------------------------------------------
 # *** Load text
@@ -47,7 +52,8 @@ for strFle in lstFle:
 
 # Following code from Rowel Atienza:
 # https://towardsdatascience.com/lstm-by-example-using-tensorflow-feb0c1968537
- 
+
+
 start_time = time.time()
 def elapsed(sec):
     if sec<60:
@@ -59,7 +65,7 @@ def elapsed(sec):
 
 
 # Target log path
-logs_path = '/Users/john/1_PhD/GitLab/lstm_fun'
+logs_path = '/home/john/PhD/GitLab/literary_lstm'
 writer = tf.summary.FileWriter(logs_path)
 
 # Text file containing words for training
@@ -91,9 +97,9 @@ vocab_size = len(dictionary)
 
 # Parameters
 learning_rate = 0.001
-training_iters = 50000
+training_iters = 10000000
 display_step = 1000
-n_input = 12
+n_input = 5
 
 # number of units in RNN cell
 n_hidden = 512
@@ -117,11 +123,21 @@ def RNN(x, weights, biases):
 
     # Generate a n_input-element sequence of inputs
     # (eg. [had] [a] [general] -> [20] [6] [33])
-    x = tf.split(x,n_input,1)
+    x = tf.split(x, n_input, 1)
 
-    rnn_cell = rnn.MultiRNNCell([rnn.BasicLSTMCell(2048),
-                                 rnn.BasicLSTMCell(1024),
-                                 rnn.BasicLSTMCell(n_hidden)])
+    rnn_cell = rnn.MultiRNNCell([rnn.DropoutWrapper(
+                                                    rnn.BasicLSTMCell(n_hidden),
+                                                    input_keep_prob=0.7,
+                                                    output_keep_prob=0.7,
+                                                    state_keep_prob=0.7,
+                                                    ),
+                                 rnn.DropoutWrapper(
+                                                    rnn.BasicLSTMCell(n_hidden),
+                                                    input_keep_prob=0.7,
+                                                    output_keep_prob=0.7,
+                                                    state_keep_prob=0.7,
+                                                    )
+                                 ])
 
     # 2-layer LSTM, each layer has n_hidden units.
     # Average Accuracy= 95.20% at 50k iter
@@ -197,6 +213,7 @@ with tf.Session() as session:
             print("%s - [%s] vs [%s]" % (symbols_in,symbols_out,symbols_out_pred))
         step += 1
         offset += (n_input+1)
+
     print("Optimization Finished!")
     print("Elapsed time: ", elapsed(time.time() - start_time))
     print("Run on command line.")
