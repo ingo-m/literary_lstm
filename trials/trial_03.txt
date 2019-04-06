@@ -1,0 +1,60 @@
+# -----------------------------------------------------------------------------
+lstFle = ['Thomas_Mann_1909_Buddenbrooks.txt']
+
+# Parameters
+learning_rate = 0.001
+training_iters = 100000
+display_step = 1000
+n_input = 12
+
+# number of units in RNN cell
+n_hidden = 512
+
+    rnn_cell = rnn.MultiRNNCell([rnn.BasicLSTMCell(4096),
+                                 rnn.BasicLSTMCell(2048),
+                                 rnn.BasicLSTMCell(1024),
+                                 rnn.BasicLSTMCell(n_hidden)])
+# -----------------------------------------------------------------------------
+
+Iter= 96000, Average Loss= 9.485388, Average Accuracy= 2.20%
+['doa', 'sitt', 'n', 'Brummer', 'an', 'de', 'Wand', 'punktpunktpunkt', 'so', 'konnte', 'er', 'plötzlich'] - [stillschweigen] vs [Leben]
+Iter= 97000, Average Loss= 9.497164, Average Accuracy= 2.50%
+['.', 'Sie', 'stand', 'völlig', 'verwirrt', 'und', 'erschöpft', 'inmitten', 'des', 'Zimmers', 'das', 'feuchte'] - [Taschentuch] vs [?]
+Iter= 98000, Average Loss= 9.180918, Average Accuracy= 1.40%
+['mein', 'werter', 'Herr', 'Kommandeur', 'ist', 'der', 'Umstand', 'daß', 'sich', 'dieser', 'Verbindung', 'ganz'] - [neuerdings] vs [und]
+Iter= 99000, Average Loss= 9.067681, Average Accuracy= 1.60%
+['Smolt', 'wat', 'wull', 'Ji', 'nu', 'eentlich', '!', 'Nu', 'seggen', 'Sei', 'dat', 'mal'] - [!] vs [punktpunktpunkt]
+Iter= 100000, Average Loss= 9.065738, Average Accuracy= 1.70%
+['Mamsell', 'Jungmann', 'die', 'nun', 'schon', 'Jahre', 'zählte', 'und', 'sich', 'rühmen', 'durfte', 'im'] - [Dienste] vs [in]
+Optimization Finished!
+Elapsed time:  39.9805167047845 hr
+Run on command line.
+        tensorboard --logdir=/home/john/PhD/GitLab/literary_lstm
+Point your web browser to: http://localhost:6006/
+
+12 words: Im Verhältnis zu der Größe des Zimmers waren die Möbel nicht zahlreich
+Im Verhältnis zu der Größe des Zimmers waren die Möbel nicht zahlreich und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und
+
+12 words: im ersten Stockwerk des weitläufigen alten Hauses in der Mengstraße das die
+im ersten Stockwerk des weitläufigen alten Hauses in der Mengstraße das die und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und
+
+12 words: Die Familie Buddenbrook stand gegenüber im Flötenbehälter am alten Tisch bedeckt mit
+Die Familie Buddenbrook stand gegenüber im Flötenbehälter am alten Tisch bedeckt mit und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und
+
+12 words: Der runde Deckel im Landschaftszimmer mit Tapeten und Ackersleuten lag nur am
+Der runde Deckel im Landschaftszimmer mit Tapeten und Ackersleuten lag nur am und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und
+
+12 words: Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten
+Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und
+
+12 words: Johann Nippes Johann Nippes Johann Nippes Johann Nippes Johann Nippes Johann Nippes
+Johann Nippes Johann Nippes Johann Nippes Johann Nippes Johann Nippes Johann Nippes und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und
+
+12 words: Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße
+Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und
+
+12 words: des der mit am im dem an und einen Der die das
+des der mit am im dem an und einen Der die das und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und
+
+12 words: Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook
+Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook Buddenbrook und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und und

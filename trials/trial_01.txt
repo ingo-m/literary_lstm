@@ -1,0 +1,70 @@
+# -----------------------------------------------------------------------------
+lstFle = ['Thomas_Mann_1909_Buddenbrooks_excerpt.txt']
+
+# Parameters
+learning_rate = 0.001
+training_iters = 100000
+display_step = 1000
+n_input = 3
+
+# number of units in RNN cell
+n_hidden = 512
+
+    rnn_cell = rnn.MultiRNNCell([rnn.BasicLSTMCell(n_hidden),
+                                 rnn.BasicLSTMCell(n_hidden)])
+# -----------------------------------------------------------------------------
+
+Iter= 96000, Average Loss= 0.984777, Average Accuracy= 79.10%
+['bedeckt', 'mit', 'Nippes'] - [.] vs [.]
+Iter= 97000, Average Loss= 0.820237, Average Accuracy= 80.20%
+['Gardinen', 'vor', 'den'] - [beiden] vs [beiden]
+Iter= 98000, Average Loss= 0.851317, Average Accuracy= 79.70%
+['lange', 'bewohnte', '.'] - [Die] vs [Die]
+Iter= 99000, Average Loss= 0.926220, Average Accuracy= 80.30%
+['verteilten', 'steifen', 'Armstühlen'] - [gab] vs [gab]
+Iter= 100000, Average Loss= 1.031415, Average Accuracy= 76.70%
+['der', 'Größe', 'des'] - [Zimmers] vs [Zimmers]
+Optimization Finished!
+Elapsed time:  19.17880264123281 min
+Run on command line.
+        tensorboard --logdir=/home/john/PhD/GitLab/literary_lstm
+Point your web browser to: http://localhost:6006/
+
+3 words: Man saß im
+Man saß im Landschaftszimmer im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im
+
+3 words: Im Verhältnis zu
+Im Verhältnis zu auf und die gelbseidenen Gardinen vor den beiden Fenstern übereinstimmten auf und die gelbseidenen Gardinen vor den beiden Fenstern übereinstimmten auf und die gelbseidenen Gardinen vor den beiden Fenstern übereinstimmten auf und
+
+3 words: Der runde Tisch
+Der runde Tisch es es es Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär
+
+3 words: Außer den regelmäßig
+Außer den regelmäßig an den die gelbseidenen und zärtlichen mit zärtlichen Schäfern küßten gelblicher gelblicher gelblicher auf diesen Bildern mit dem der gelbe Überzug der weiß des Zimmers waren die Möbel nicht zahlreich . Der
+
+3 words: Die starken und
+Die starken und elastischen Tapeten die von den Mauern durch einen leeren Raum getrennt zartfarbig wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie
+
+3 words: Ein gelblicher Sonnenuntergang
+Ein gelblicher Sonnenuntergang auf diesen Bildern mit dem der gelbe Überzug der weiß des Zimmers waren die Möbel nicht zahlreich . Der runde zu es es es Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär
+
+3 words: alten Hauses in
+alten Hauses in in in in in in in in in in in in in in in in in in in in in in in in in in in in in in in in in
+
+3 words: Firma Johann Buddenbrook
+Firma Johann Buddenbrook der Mengstraße das die Firma Johann Buddenbrook der Mengstraße das die Firma Johann Buddenbrook der Mengstraße das die Firma Johann Buddenbrook der Mengstraße das die Firma Johann Buddenbrook der Mengstraße das die
+
+3 words: Buddenbrook Buddenbrook Buddenbrook
+Buddenbrook Buddenbrook Buddenbrook erworben erworben und das die Familie noch nicht lange bewohnte . Die starken und elastischen Tapeten die von den Mauern durch einen leeren Raum getrennt zartfarbig wie wie wie wie wie wie
+
+3 words: Der Teppich herrschte
+Der Teppich herrschte Außer nett auf vor dem Sofa sondern gegenüber der entgegengesetzten Wand dem kleinen Harmonium gegenüber der entgegengesetzten Wand dem kleinen Harmonium gegenüber der entgegengesetzten Wand dem kleinen Harmonium gegenüber der entgegengesetzten Wand
+
+3 words: Die elastischen Möbel
+Die elastischen Möbel zeigten umfangreiche Landschaften wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie wie
+
+3 words: Die elastischen Flötenbehälter
+Die elastischen Flötenbehälter der den gelbseidenen bedeckte übereinstimmten Außer bebänderten auf vor dem Sofa sondern gegenüber der entgegengesetzten Wand dem kleinen Harmonium gegenüber der entgegengesetzten Wand dem kleinen Harmonium gegenüber der entgegengesetzten Wand dem kleinen
+
+3 words: Buddenbrook Flötenbehälter Schäfern
+Buddenbrook Flötenbehälter Schäfern mit den dünnen geraden übereinstimmten es es auf einen kleinen Nähtisch am Fenster und dem Sofa gegenüber einen zerbrechlichen Luxus - Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär Sekretär

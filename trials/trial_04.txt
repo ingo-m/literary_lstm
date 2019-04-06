@@ -1,0 +1,75 @@
+# -----------------------------------------------------------------------------
+lstFle = ['Thomas_Mann_1909_Buddenbrooks_excerpt.txt']
+
+# Parameters
+learning_rate = 0.001
+training_iters = 100000
+display_step = 1000
+n_input = 3
+
+# number of units in RNN cell
+n_hidden = 512
+
+    rnn_cell = rnn.MultiRNNCell([rnn.BasicLSTMCell(4096),
+                                 rnn.BasicLSTMCell(2048),
+                                 rnn.BasicLSTMCell(1024),
+                                 rnn.BasicLSTMCell(n_hidden)])
+# -----------------------------------------------------------------------------
+
+Iter= 96000, Average Loss= 1.307065, Average Accuracy= 75.70%
+['spiegelnden', 'Wassers', 'im'] - [Schoße] vs [Schoße]
+Iter= 97000, Average Loss= 1.268476, Average Accuracy= 75.20%
+['vor', 'einiger', 'Zeit'] - [käuflich] vs [käuflich]
+Iter= 98000, Average Loss= 1.255250, Average Accuracy= 74.60%
+['der', 'entgegengesetzten', 'Wand'] - [dem] vs [dem]
+Iter= 99000, Average Loss= 0.967752, Average Accuracy= 79.30%
+['meistens', 'auf', 'diesen'] - [Bildern] vs [Bildern]
+Iter= 100000, Average Loss= 1.292170, Average Accuracy= 74.70%
+['erworben', 'hatte', 'und'] - [das] vs [das]
+Optimization Finished!
+Elapsed time:  12.693222672541935 hr
+Run on command line.
+        tensorboard --logdir=/home/john/PhD/GitLab/literary_lstm
+Point your web browser to: http://localhost:6006/
+
+3 words: Man saß im
+Man saß im Landschaftszimmer im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im ersten im
+
+3 words: Im Verhältnis zu
+Im Verhältnis zu meistens . Im Verhältnis zu meistens . Im Verhältnis zu meistens . Im Verhältnis zu meistens . Im Verhältnis zu meistens . Im Verhältnis zu meistens . Im Verhältnis zu meistens .
+
+3 words: Der runde Tisch
+Der runde Tisch mit den dünnen geraden und leicht mit Gold ornamentierten Beinen mit den dünnen geraden und leicht mit Gold ornamentierten Beinen mit den dünnen geraden und leicht mit Gold ornamentierten Beinen mit den
+
+3 words: Außer den regelmäßig
+Außer den regelmäßig an den Wänden verteilten und leicht ornamentierten Beinen mit den dünnen geraden und leicht mit Gold ornamentierten Beinen mit den dünnen geraden und leicht mit Gold ornamentierten Beinen mit den dünnen gerade
+
+3 words: Die starken und
+Die starken und elastischen Tapeten die von den Mauern durch einen leeren Raum getrennt waren zeigten umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren
+
+3 words: Ein gelblicher Sonnenuntergang
+Ein gelblicher Sonnenuntergang mit zärtlichen Verhältnis küßten mit dem der gelbe Überzug der weiß lackierten der weiß lackierten der weiß lackierten der weiß lackierten der weiß lackierten der weiß lackierten der weiß lackierten der weiß
+
+3 words: alten Hauses in
+alten Hauses in in in in in in in in in in in in in in in in in in in in in in in in in in in in in in in in in
+
+3 words: Firma Johann Buddenbrook
+Firma Johann Buddenbrook vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses
+
+3 words: Buddenbrook Buddenbrook Buddenbrook
+Buddenbrook Buddenbrook Buddenbrook vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses vor einiger Zeit Hauses
+
+3 words: Der Teppich herrschte
+Der Teppich herrschte und Geschmack Schäfern emsigen Ackersleuten mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern
+
+3 words: Die elastischen Möbel
+Die elastischen Möbel zeigten umfangreiche hatte waren leeren umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren zeigten umfangreiche Landschaften waren
+
+3 words: Die elastischen Flötenbehälter
+Die elastischen Flötenbehälter waren zeigten an Hauses in in in in in in in in in in in in in in in in in in in in in in in in in in in in
+
+3 words: Buddenbrook Flötenbehälter Schäfern
+Buddenbrook Flötenbehälter Schäfern zartfarbig Flötenbehälter mit Geschmack runde und Schoße ornamentierten küßten mit den dünnen geraden und leicht mit Gold ornamentierten Beinen mit den dünnen geraden und leicht mit Gold ornamentierten Beinen mit den dünnen
+
+3 words: in Stockwerk Gold
+in Stockwerk Gold und Geschmack ornamentierten küßten Ackersleuten mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern emsigen mit zärtlichen Winzern

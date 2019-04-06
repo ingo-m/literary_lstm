@@ -1,0 +1,86 @@
+# -----------------------------------------------------------------------------
+lstFle = ['Thomas_Mann_1909_Buddenbrooks_excerpt.txt']
+
+# Parameters
+learning_rate = 0.001
+training_iters = 200000
+display_step = 1000
+n_input = 3
+
+# number of units in RNN cell
+n_hidden = 512
+
+    rnn_cell = rnn.MultiRNNCell([rnn.DropoutWrapper(
+                                                    rnn.BasicLSTMCell(n_hidden),
+                                                    input_keep_prob=0.9,
+                                                    output_keep_prob=0.9,
+                                                    state_keep_prob=0.9,
+                                                    ),
+                                 rnn.DropoutWrapper(
+                                                    rnn.BasicLSTMCell(n_hidden),
+                                                    input_keep_prob=0.9,
+                                                    output_keep_prob=0.9,
+                                                    state_keep_prob=0.9,
+                                                    )
+# -----------------------------------------------------------------------------
+
+
+
+['den', 'regelmäßig', 'an'] - [den] vs [Lämmer]
+Iter= 196000, Average Loss= 1.997069, Average Accuracy= 62.40%
+['Überzug', 'der', 'weiß'] - [lackierten] vs [lackierten]
+Iter= 197000, Average Loss= 2.022613, Average Accuracy= 58.20%
+['zeigten', 'umfangreiche', 'Landschaften'] - [zartfarbig] vs [waren]
+Iter= 198000, Average Loss= 1.716840, Average Accuracy= 65.40%
+['kleinen', 'Nähtisch', 'am'] - [Fenster] vs [Fenster]
+Iter= 199000, Average Loss= 1.996087, Average Accuracy= 59.80%
+['Im', 'Verhältnis', 'zu'] - [der] vs [.]
+Iter= 200000, Average Loss= 2.097378, Average Accuracy= 59.40%
+['Jahrhunderts', 'mit', 'fröhlichen'] - [Winzern] vs [Winzern]
+Optimization Finished!
+Elapsed time:  38.47879073222478 min
+Run on command line.
+        tensorboard --logdir=/home/john/PhD/GitLab/literary_lstm
+Point your web browser to: http://localhost:6006/
+
+3 words: Man saß im
+Man saß im weitläufigen Mengstraße des lange Zeit käuflich und das die Familie noch nicht lange bewohnte . Die starken und elastischen Tapeten die von den Mauern durch einen zeigten Raum getrennt den dünne durch
+
+3 words: Im Verhältnis zu
+Im Verhältnis zu den Außer an den entgegengesetzten verteilten übereinstimmten . Im den regelmäßig an und Wänden verteilten oder der den zärtlichen bedeckte der den Fußboden bedeckte einen zeigten umfangreiche getrennt wie wie wie zartfarbig
+
+3 words: Der runde Tisch
+Der runde Tisch der den beiden lackierten übereinstimmten der der . reinliche der am diesen spiegelnden Wassers den im der gelbe oder der weiß im Zimmers waren . Möbel nicht den beiden Fenstern übereinstimmten .
+
+3 words: Außer den regelmäßig
+Außer den regelmäßig den und dünnen geraden küßten Größe der der den Fußboden durch emsigen wie wie wie wie wie wie dünne wie wie wie wie wie der den Fußboden bedeckte der dünne den dünne
+
+3 words: Die starken und
+Die starken und elastischen Tapeten die von starken Buddenbrook durch und elastischen Tapeten leicht und Geschmack und . Jahrhunderts regelmäßig der mit Nippes ornamentierten Beinen Armstühlen nicht kleinen kleinen Nähtisch Wand mit den dünnen geraden
+
+3 words: Ein gelblicher Sonnenuntergang
+Ein gelblicher Sonnenuntergang sich und den dünnen geraden und den dünnen küßten der . Jahrhunderts bedeckte und Geschmack den Gold Winzern übereinstimmten der im den Sofa dünne Idylle Landschaften wie wie wie wie wie wie
+
+3 words: alten Hauses in
+alten Hauses in in vor einiger das käuflich Zeit käuflich und und der gelbe oder der der . Fußboden den fröhlichen Winzern Idylle der im lange Tapeten die von den Mauern durch einen leeren Raum
+
+3 words: Firma Johann Buddenbrook
+Firma Johann Buddenbrook vor einiger Zeit käuflich und elastischen Tapeten die von starken Buddenbrook Harmonium und leicht Sofa die Möbel nicht zahlreich . Der runde Tisch . von runde der den beiden bedeckte übereinstimmten und
+
+3 words: Buddenbrook Buddenbrook Buddenbrook
+Buddenbrook Buddenbrook Buddenbrook erworben das der lange Johann Die und elastischen Tapeten die von starken vor dünne Zeit . elastischen starken und elastischen Tapeten die dünne den Mauern durch einen lange Raum . von starken
+
+3 words: Der Teppich herrschte
+Der Teppich herrschte den reinliche Schäfern Idylle mit zärtlichen Winzern emsigen den reinliche durch den dünne durch einen leeren lange . dünne das vor lange bewohnte käuflich und Mengstraße Tapeten des und Zeit sondern die
+
+3 words: Die elastischen Möbel
+Die elastischen Möbel die ersten nicht von das die gelbe noch Zimmers Bildern mit ersten der entgegengesetzten das Zimmers und dem Sofa gegenüber einen zerbrechlichen Luxus - gab entgegengesetzten . Außer . regelmäßig runde und
+
+3 words: Die elastischen Flötenbehälter
+Die elastischen Flötenbehälter und den dünnen Gardinen und leicht hielten Gold der den den bedeckte geraden Idylle Rande dünne im Geschmack des . Jahrhunderts mit fröhlichen bedeckte emsigen dünne wie der den Fußboden bedeckte Idylle
+
+3 words: Buddenbrook Flötenbehälter Schäfern
+Buddenbrook Flötenbehälter Schäfern und den beiden Gardinen gelbe der weiß den zärtlichen Schäfern und Schoße hielten und zärtlichen mit oder punktpunktpunkt küßten sich den zärtlichen Winzern und Schoße im . Jahrhunderts mit und Winzern gelbe
+
+3 words: in Stockwerk Gold
+in Stockwerk Gold der Zimmers . Im runde Tisch den mit dünnen geraden küßten . von Lämmer und leicht mit oder runde emsigen im den Jahrhunderts mit übereinstimmten ornamentierten Beinen der dem Zimmers waren .

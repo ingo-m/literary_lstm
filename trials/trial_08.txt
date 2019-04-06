@@ -1,0 +1,72 @@
+# -----------------------------------------------------------------------------
+lstFle = ['Thomas_Mann_1909_Buddenbrooks_excerpt.txt']
+
+# Parameters
+learning_rate = 0.001
+training_iters = 200000
+display_step = 1000
+n_input = 3
+
+# number of units in RNN cell
+n_hidden = 512
+
+    rnn_cell = rnn.MultiRNNCell([rnn.DropoutWrapper(
+                                                    rnn.BasicLSTMCell(n_hidden),
+                                                    input_keep_prob=0.7,
+                                                    output_keep_prob=0.7,
+                                                    state_keep_prob=0.7,
+                                                    ),
+                                 rnn.DropoutWrapper(
+                                                    rnn.BasicLSTMCell(n_hidden),
+                                                    input_keep_prob=0.7,
+                                                    output_keep_prob=0.7,
+                                                    state_keep_prob=0.7,
+                                                    )
+                                 ])
+# -----------------------------------------------------------------------------
+
+
+
+Iter= 196000, Average Loss= 2.902966, Average Accuracy= 36.20%
+['ornamentierten', 'Beinen', 'stand'] - [nicht] vs [meistens]
+Iter= 197000, Average Loss= 2.889749, Average Accuracy= 33.40%
+['Ackersleuten', 'nett', 'bebänderten'] - [Schäferinnen] vs [mit]
+Iter= 198000, Average Loss= 3.047935, Average Accuracy= 34.70%
+['alten', 'Hauses', 'in'] - [der] vs [vor]
+Iter= 199000, Average Loss= 3.250726, Average Accuracy= 32.10%
+['Möbel', 'nicht', 'zahlreich'] - [.] vs [ornamentierten]
+Iter= 200000, Average Loss= 3.015735, Average Accuracy= 34.00%
+['der', 'den', 'Fußboden'] - [bedeckte] vs [durch]
+Optimization Finished!
+Elapsed time:  38.62847559849421 min
+Run on command line.
+	tensorboard --logdir=/home/john/PhD/GitLab/literary_lstm
+Point your web browser to: http://localhost:6006/
+3 words: Man saß im
+Man saß im vor Wand waren einen Im bewohnte auf die von starken Mauern vor einiger Tapeten käuflich der von dünne vor der lange des die Zeit mit Mauern Tapeten emsigen durch Firma den Die
+3 words: Im Verhältnis zu
+Im Verhältnis zu den den Im und den gelbseidenen gegenüber und vor Fenster Firma Stockwerk dessen vor weitläufigen Sofa Hauses umfangreiche in Fußboden mit Die durch einen einiger Raum mit dünne die der Wänden Mauern
+3 words: Der runde Tisch
+Der runde Tisch mit Fußboden bedeckte und Fußboden mit die gelbseidenen Gardinen vor Größe waren die Im Johann der die in starken Buddenbrook im lange die von hatte der Fußboden erworben Stockwerk Rande vor einiger
+3 words: Außer den regelmäßig
+Außer den regelmäßig und fröhlichen gelbseidenen emsigen der Größe des dem den beiden Überzug und den gelbseidenen geraden und den Sofa gegenüber die Wänden verteilten gelbseidenen nicht Wänden waren - noch die Möbel Johann durch
+3 words: Die starken und
+Die starken und elastischen Tapeten die von Verhältnis Mauern mit Landschaftszimmer durch die Mengstraße den Mauern der dünne Teppich der und Schoße . Familie gelbseidenen und Geschmack hielten gelbe Schoße lackierten an auf dessen Luxus
+3 words: Ein gelblicher Sonnenuntergang
+Ein gelblicher Sonnenuntergang mit Fußboden gelbseidenen einen den Größe den Tisch Wänden und Nippes . gelbe noch den meistens verteilten und der ornamentierten gelbe starken lackierten in durch Buddenbrook hatte durch der der den beiden
+3 words: alten Hauses in
+alten Hauses in in Zeit Wänden der lange starken erworben hatte und das leeren einen weitläufigen umfangreiche . von den regelmäßig Teppich gelbe einen den beiden Fenstern Armstühlen . Außer vor der den Überzug verteilten
+3 words: Firma Johann Buddenbrook
+Firma Johann Buddenbrook das die Firma noch nicht die Der den Buddenbrook bedeckte getrennt zartfarbig und elastischen die von starken und elastischen die von dünne am den starken Landschaften und Geschmack des gegenüber Rande gegenüber
+3 words: Buddenbrook Buddenbrook Buddenbrook
+Buddenbrook Buddenbrook Buddenbrook die von starken Buddenbrook das gelbe lange mit Wänden Zeit gelbe die von starken den von durch und elastischen Tapeten die von den Mauern durch und elastischen des die Jahrhunderts mit Mauern
+3 words: Der Teppich herrschte
+Der Teppich herrschte und Schoße ornamentierten gegenüber vor und auf die Familie verteilten Buddenbrook vor vor Jahrhunderts Sofa die lange starken Buddenbrook Teppich der der Mengstraße das der lange der getrennt lange Raum der Teppich
+3 words: Die elastischen Möbel
+Die elastischen Möbel den Fußboden Wand einen . Wänden am Tisch Armstühlen ein bedeckt nicht einen Sofa nicht dem Landschaftszimmer Stockwerk entgegengesetzten weitläufigen den Wänden Luxus und noch Harmonium Gardinen auf die Möbel nicht die
+3 words: Die elastischen Flötenbehälter
+Die elastischen Flötenbehälter Tapeten Schäferinnen des Schoße des der und Fußboden an . Wänden verteilten Tisch mit Nippes Fenstern gelbe Sonnenuntergang vor dem Schoße Sofa die Firma Gardinen Buddenbrook der die von Verhältnis am Rande
+3 words: Buddenbrook Flötenbehälter Schäfern
+Buddenbrook Flötenbehälter Schäfern der Wänden . gelbseidenen den Firma Stockwerk in die von dünne die von starken und Fußboden starken dünne starken in getrennt von hatte der die waren den Mauern Landschaften und dem die
+3 words: in Stockwerk Gold
+in Stockwerk Gold Mengstraße in des einiger Zeit und Wänden die und den gelbseidenen Gardinen und Sonnenuntergang im Schoße hielten dünne im der im gegenüber den gegenüber Stockwerk einen die Familie noch nicht von Raum

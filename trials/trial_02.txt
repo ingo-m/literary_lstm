@@ -1,0 +1,70 @@
+# -----------------------------------------------------------------------------
+lstFle = ['Thomas_Mann_1909_Buddenbrooks_excerpt.txt']
+
+# Parameters
+learning_rate = 0.001
+training_iters = 100000
+display_step = 1000
+n_input = 12
+
+# number of units in RNN cell
+n_hidden = 512
+
+    rnn_cell = rnn.MultiRNNCell([rnn.BasicLSTMCell(n_hidden),
+                                 rnn.BasicLSTMCell(n_hidden)])
+# -----------------------------------------------------------------------------
+
+Iter= 96000, Average Loss= 0.000000, Average Accuracy= 100.00%
+['gelbseidenen', 'Gardinen', 'vor', 'den', 'beiden', 'Fenstern', 'übereinstimmten', '.', 'Im', 'Verhältnis', 'zu', 'der'] - [Größe] vs [Größe]
+Iter= 97000, Average Loss= 0.000000, Average Accuracy= 100.00%
+['an', 'der', 'entgegengesetzten', 'Wand', 'dem', 'kleinen', 'Harmonium', 'gegenüber', 'auf', 'dessen', 'Deckel', 'ein'] - [Flötenbehälter] vs [Flötenbehälter]
+Iter= 98000, Average Loss= 0.000000, Average Accuracy= 100.00%
+['.', 'Jahrhunderts', 'mit', 'fröhlichen', 'Winzern', 'emsigen', 'Ackersleuten', 'nett', 'bebänderten', 'Schäferinnen', 'die', 'reinliche'] - [Lämmer] vs [Lämmer]
+Iter= 99000, Average Loss= 0.000000, Average Accuracy= 100.00%
+['Der', 'runde', 'Tisch', 'mit', 'den', 'dünnen', 'geraden', 'und', 'leicht', 'mit', 'Gold', 'ornamentierten'] - [Beinen] vs [Beinen]
+Iter= 100000, Average Loss= 0.000000, Average Accuracy= 100.00%
+['den', 'regelmäßig', 'an', 'den', 'Wänden', 'verteilten', 'steifen', 'Armstühlen', 'gab', 'es', 'nur', 'noch'] - [einen] vs [einen]
+Optimization Finished!
+Elapsed time:  52.91198323965072 min
+Run on command line.
+        tensorboard --logdir=/home/john/PhD/GitLab/literary_lstm
+Point your web browser to: http://localhost:6006/
+
+12 words: Im Verhältnis zu der Größe des Zimmers waren die Möbel nicht zahlreich
+Im Verhältnis zu der Größe des Zimmers waren die Möbel nicht zahlreich . Der runde Tisch mit den dünnen geraden und leicht mit Gold ornamentierten Beinen stand nicht vor dem Sofa sondern an der entgegengesetzten Wand dem kleinen Harmonium gegenüber auf dessen Deckel ein
+
+12 words: im ersten Stockwerk des weitläufigen
+   ...: alten Hauses in der Mengstraße, das die
+
+12 words: im ersten Stockwerk des weitläufigen alten Hauses in der Mengstraße das die
+im ersten Stockwerk des weitläufigen alten Hauses in der Mengstraße das die Firma Johann Buddenbrook vor einiger Zeit käuflich erworben hatte und das die Familie noch nicht lange bewohnte . Die starken und elastischen Tapeten die von den Mauern durch einen leeren Raum getrennt
+
+12 words: Die Familie Buddenbrook stand gegenüber im Flötenbehälter am alten Tisch bedeckt mit
+Die Familie Buddenbrook stand gegenüber im Flötenbehälter am alten Tisch bedeckt mit leicht Teppich der dem Fußboden bedeckte übereinstimmten mit Größe des Gold ornamentierten Beinen sich Sonnenuntergang Sonnenuntergang auf diesen gelblicher Sonnenuntergang sich Sonnenuntergang Sonnenuntergang Sonnenuntergang herrschte Sonnenuntergang auf diesen Bildern mit dem der
+
+12 words: Der runde Deckel im Landschaftszimmer mit Tapeten und Ackersleuten lag nur am
+Der runde Deckel im Landschaftszimmer mit Tapeten und Ackersleuten lag nur am und die gelbseidenen Gardinen vor leicht des Zimmers des Gold des auf dessen Deckel . Gold mit Gold ornamentierten Beinen der Größe den Wänden ornamentierten Beinen der Größe mit Gold ornamentierten Beinen
+
+12 words: Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten
+Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten der dem der gelbe Überzug der weiß lackierten Möbel und die gelbseidenen Gardinen vor den beiden Fenstern übereinstimmten . Im Verhältnis zu der Größe des Zimmers waren die Möbel nicht zahlreich .
+
+12 words: leeren Bildern Wassers regelmäßig bewohnte Johann verteilten mit Mauern ornamentierten Geschmack durch
+leeren Bildern Wassers regelmäßig bewohnte Johann verteilten mit Mauern ornamentierten Geschmack durch mit zärtlichen Teppich der den Fußboden Fenstern vor den beiden Fenstern Fenstern Flötenbehälter . Im Verhältnis küßten stand nicht vor Nähtisch am Fenster und Gold ornamentierten und dem kleinen gegenüber Buddenbrook vor
+
+12 words: Schäfern küßten Schäfern küßten Schäfern küßten Schäfern küßten Schäfern küßten Schäfern küßten
+Schäfern küßten Schäfern küßten Schäfern küßten Schäfern küßten Schäfern küßten Schäfern küßten Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang
+
+12 words: Johann Nippes Johann Nippes Johann Nippes Johann Nippes Johann Nippes Johann Nippes
+Johann Nippes Johann Nippes Johann Nippes Johann Nippes Johann Nippes Johann Nippes Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang Sonnenuntergang
+
+12 words: Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße
+Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße der Mengstraße Zeit der den Fußboden bedeckte Idylle im Mengstraße des die Firma Johann Buddenbrook vor einiger Zeit käuflich erworben hatte und das die Familie noch nicht lange bewohnte . Die starken
+
+12 words: elastischen Schäferinnen elastischen Schäferinnen elastischen Schäferinnen elastischen Schäferinnen elastischen Schäferinnen elastischen Schäferinnen
+elastischen Schäferinnen elastischen Schäferinnen elastischen Schäferinnen elastischen Schäferinnen elastischen Schäferinnen elastischen Schäferinnen der dem der Familie noch der lange bewohnte . Die starken und elastischen Tapeten die von Tapeten die von Raum die von Raum die von Raum die von Raum die von des
+
+12 words: elastischen Schäferinnen Idylle Firma zärtlichen Lämmer elastischen Schäferinnen Idylle Firma zärtlichen Lämmer
+elastischen Schäferinnen Idylle Firma zärtlichen Lämmer elastischen Schäferinnen Idylle Firma zärtlichen Lämmer der dem der gelbe Überzug der weiß lackierten Möbel und die gelbseidenen Gardinen vor den beiden Fenstern übereinstimmten . Im Verhältnis zu der Größe des Zimmers waren die Möbel nicht zahlreich .
+
+12 words: des der mit am im dem an und einen Der die das
+des der mit am im dem an und einen Der die das dessen . auf dessen gegenüber auf dessen Verhältnis übereinstimmten ein Sonnenuntergang lag . reinliche Lämmer am Rande Bildern Wassers im Schoße hielten oder sich mit zärtlichen Schäfern küßten punktpunktpunkt Ein gelblicher Sonnenuntergang

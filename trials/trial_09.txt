@@ -1,0 +1,88 @@
+# -----------------------------------------------------------------------------
+lstFle = ['Thomas_Mann_1909_Buddenbrooks.txt']
+
+# Parameters
+learning_rate = 0.001
+training_iters = 10000000
+display_step = 1000
+n_input = 5
+
+# number of units in RNN cell
+n_hidden = 512
+
+    rnn_cell = rnn.MultiRNNCell([rnn.DropoutWrapper(
+                                                    rnn.BasicLSTMCell(n_hidden),
+                                                    input_keep_prob=0.7,
+                                                    output_keep_prob=0.7,
+                                                    state_keep_prob=0.7,
+                                                    ),
+                                 rnn.DropoutWrapper(
+                                                    rnn.BasicLSTMCell(n_hidden),
+                                                    input_keep_prob=0.7,
+                                                    output_keep_prob=0.7,
+                                                    state_keep_prob=0.7,
+                                                    )
+                                 ])
+# -----------------------------------------------------------------------------
+
+Iter= 9996000, Average Loss= 181.147282, Average Accuracy= 0.60%
+['der', 'Barmitgift', 'erreicht', '.', '-'] - [-] vs [Leben]
+Iter= 9997000, Average Loss= 160.093683, Average Accuracy= 0.90%
+['willst', 'ausgehen', 'Jean', '?', 'fragte'] - [die] vs [neuerliche]
+Iter= 9998000, Average Loss= 139.698231, Average Accuracy= 0.50%
+['umklammert', 'in', 'der', 'ihr', 'Gesichtchen'] - [völlig] vs [und]
+Iter= 9999000, Average Loss= 118.698750, Average Accuracy= 0.50%
+['nichts', '!', 'Es', 'schien', 'daß'] - [ihre] vs [paar]
+Iter= 10000000, Average Loss= 108.892017, Average Accuracy= 0.90%
+['hatten', '.', 'Mit', 'seiner', 'über'] - [den] vs [nur]
+Optimization Finished!
+Elapsed time:  111.65704952836036 hr
+Run on command line.
+	tensorboard --logdir=/home/john/PhD/GitLab/literary_lstm
+Point your web browser to: http://localhost:6006/
+5 words: Man saß im Landschaftszimmer im
+Man saß im Landschaftszimmer im kann so liegen Leben . trug Geselligkeit weite Alle und seine unten neues Spitzen und und auf hatte fremd Spitzen klein sich seine weite Sie ihrem Alle seine üblen Spitze und und
+5 words: Im Verhältnis zu der Größe
+Im Verhältnis zu der Größe hätte . die und Bücher sollst . Bock und doch und üblen Firmendruck . üblen . auf weite und punktpunktpunkt und üblen weite paar kleiner weite und Fischergrube werden Kurant Fischergrube üblen
+5 words: im ersten Stockwerk des weitläufigen
+im ersten Stockwerk des weitläufigen behaglichen sie kann war ihn damals seinerseits ! auf Schwägerin kann weite Christian ich Leben neues damals ! Kindes werden seine doch sie üblen Alle und Fischergrube Alle sie trug . .
+5 words: Die Familie Buddenbrook stand gegenüber
+Die Familie Buddenbrook stand gegenüber punktpunktpunkt hob . seinerseits . und auf neues seine sich doch Aber weite neues Alle punktpunktpunkt die üblen . trug Lebrecht und über Schwägerin üblen Leben hob Leben Sie Firmendruck Fischergrube mich
+5 words: Der runde Deckel im Landschaftszimmer
+Der runde Deckel im Landschaftszimmer üblen . Kurant kann . seinerseits . üblen und Spitze . und Christian Firmendruck lange . . und Er und seinerseits über Schwägerin . weite Buddenbrook einen kein und unten nach Kurant
+5 words: Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten
+Ackersleuten Ackersleuten Ackersleuten Ackersleuten Ackersleuten Schwägerin seinerseits Spitze und Firmendruck ihn Firmendruck punktpunktpunkt . Firmendruck wird und Briefe kleiner aus Spitze seinerseits . sagte Geselligkeit üblen war paar Fischergrube und und kann und auf Firmendruck üblen Seele
+5 words: Die elastischen Flötenbehälter in Gold
+Die elastischen Flötenbehälter in Gold Fischergrube Alle seine und Firmendruck paar so weite und lange . kann und . Leben und weite die Schwägerin Buddenbrook und kleiner seinerseits seine liegen seinerseits den wie und . kann Firmendruck
+5 words: Der runde Tisch mit den
+Der runde Tisch mit den auf Grünlich Briefe Alle in weite und und seinerseits üblen doch und kleiner sagte und Buddenbrook und paar sie er auf neues üblen die neues letzter dorthin nur in können . Leben
+5 words: Außer den regelmäßig an den
+Außer den regelmäßig an den Leben das Seele Mantelsack weite paar zuteil paar ! auf Lebrecht Firmendruck gern das doch neues an Schwägerin mag und lange hatte Firmendruck . und Schwägerin vorjährigen klein trug das kein .
+5 words: leeren Bildern Wassers regelmäßig bewohnte
+leeren Bildern Wassers regelmäßig bewohnte Seele Firmendruck kinderlieb Ihna weite doch und . neues Sie trug Firmendruck üblen punktpunktpunkt und üblen einen Leben . Alle er hatte seinerseits Kurant um Bücher nicht Spitzen und Seine . und
+5 words: Johann Nippes Johann Nippes Johann
+Johann Nippes Johann Nippes Johann kann neues seine von trug weite . Sie üblen doch ! lange Seele nicht werden Firmendruck Schwägerin . Glas weite Mantelsack punktpunktpunkt die und . die kleiner paar Firmendruck behaglichen den punktpunktpunkt
+5 words: Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße
+Mengstraße Mengstraße Mengstraße Mengstraße Mengstraße . . damals paar damals mich waren sie über Briefe . fremd und kleiner zum neues um und seine auf Geselligkeit war Wolken nicht Lebrecht weite sich Lebrecht mit Lebrecht Leben zuteil
+5 words: elastischen Schäferinnen Idylle Firma zärtlichen
+elastischen Schäferinnen Idylle Firma zärtlichen in punktpunktpunkt auf hatte von seinerseits . sich trug fremd und neues paar ihn Firmendruck Fischergrube in des punktpunktpunkt kleiner üblen seinerseits Schwägerin Schwägerin Sie seine Leben Firmendruck mit gewandt Gabe rauhen
+5 words: des der mit am im
+des der mit am im und . Fall hob waren die das seine Lebrecht seinerseits Bock Alle punktpunktpunkt liegen seine Alle einen das lange weite Empörer damals seinerseits damals Alle und ! Briefe gewesen neues seinerseits und
+5 words: Firmendruck Firmendruck Firmendruck Firmendruck Firmendruck
+Firmendruck Firmendruck Firmendruck Firmendruck Firmendruck Gang ! und kleiner üblen und kleiner damals Gabe von neues klein doch und neues Sie Fischergrube Fischergrube und . neues Schwägerin ihn paar Alle seinerseits Sie sie Fischergrube . Firmendruck unten
+5 words: Johann Buddenbrook hatte regelmäßig Bock
+Johann Buddenbrook hatte regelmäßig Bock damals hob seinerseits Spitzen hatte weite gern weite damals üblen Spitzen Gang Firmendruck neues auf Lebrecht hatte damals üblen Kindes in Spitze Lebrecht neues waren und Christian und auf und weite Kurant
+5 words: Johann hatte regelmäßig Bock auf
+Johann hatte regelmäßig Bock auf nur hatte den damals . neues weite Schwägerin paar üblen hatte damals und Christian doch Buddenbrook Christian neues seinerseits waren Leben und sich gern - ihm Schwägerin . Gang wollte Lebrecht üblen
+5 words: Schwägerin in üblen Zustand mit
+Schwägerin in üblen Zustand mit Gang und auf doch und auf . Alle seine . kein und unten Spitzen paar . die nicht Lebrecht hob paar eingezogen Alle aus neues werden seinerseits kein Lebrecht Fischergrube in Mantelsack
+5 words: die Schwägerin hatte üblen Firmendruck
+die Schwägerin hatte üblen Firmendruck und weite . Gang lange seinerseits und er doch ! in Firmendruck seine kann neues seinerseits ! Lebrecht . . weite von und kleiner Seele und kann Schwägerin hatte Sie Firmendruck Spitze
+5 words: Die Konsulin Buddenbrook neben ihrer
+Die Konsulin Buddenbrook neben ihrer Firmendruck oder von Spitze Schwägerin und hob und neues Leben als hatte in weite Lebrecht neues weite seinerseits ihn Lebrecht punktpunktpunkt hatte gern Schwägerin und über Alle Firmendruck liegen . weite und
+5 words: Konsul Buddenbrook Grünlich Hamburg Fräulein
+Konsul Buddenbrook Grünlich Hamburg Fräulein ihn gern Grünlich über . Briefe üblen und . und neues habe Firmendruck Sie hastig Spitze aus Vergangenheit hatte Sie kleiner kein Schwägerin ; auf Firmendruck Fischergrube unten neues dennoch Seele mit
+5 words: Als Herr Grünlich sich an
+Als Herr Grünlich sich an unten der über . Lebrecht Mann punktpunktpunkt doch auf kein seine Alle . neues sie kleiner Leben . Fischergrube Alle Gang Fischergrube neues Firmendruck punktpunktpunkt und und Firmendruck und doch und und
+5 words: der Konsul der eine Zigarre
+der Konsul der eine Zigarre seinerseits punktpunktpunkt von Geburt . hatte klein neben im Kurant Firmendruck Spitze Schwägerin üblen üblen seinerseits er und trug Fischergrube in seinerseits Bücher ! damals seine weite Alle und . . Seele
