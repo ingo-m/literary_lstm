@@ -22,79 +22,111 @@
 
 from utilities import read_text
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# from __future__ import absolute_import
+# from __future__ import division
+# from __future__ import print_function
 
-import argparse
+#import argparse
 import collections
-import math
+#import math
 import os
-import random
-import sys
-from tempfile import gettempdir
+#import random
+#import sys
+#from tempfile import gettempdir
 
 import numpy as np
-from six.moves import urllib
-from six.moves import xrange  # pylint: disable=redefined-builtin
+#from six.moves import urllib
+#from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
-from tensorflow.contrib.tensorboard.plugins import projector
+# from tensorflow.contrib.tensorboard.plugins import projector
 
 data_index = 0
 
 # Path of input text files:
-strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
+strPthIn = '/Users/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
+
+# Tensorflow log directory:
+strTfLog = '/Users/john/1_PhD/GitLab/literary_lstm/tf_log'
 
 # Read text from file:
 lstTxt = read_text(strPthIn)
 
 
-def word2vec_basic(log_dir):
-  """Example of building, training and visualizing a word2vec model."""
-  # Create the directory for TensorBoard variables if there is not.
-  if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
+def word2vec_basic(strTfLog):
+    """Example of building, training and visualizing a word2vec model."""
+    # Create the directory for TensorBoard variables if there is not.
+    if not os.path.exists(strTfLog):
+        os.makedirs(strTfLog)
+
+    # Step 2: Build the dictionary and replace rare words with UNK token.
+
+
+    varVocSze = 50000
+
+    def build_dataset(lstTxt, varVocSze):
+        """Process raw inputs into a dataset."""
+        
+        # List of tuples with words and corresponding count of occurences in text
+        # (word, count):
+        lstWrdCnt = [('UNK', -1)]
+        # count = [['UNK', -1]]
+        
+        # Append (word, count) tuples to list:
+        lstWrdCnt.extend(collections.Counter(lstTxt).most_common(
+            varVocSze - 1))
+        
+        # Dictionary for words (as keys) and ordinal word count (values); i.e.
+        # words by order of number of occurences.
+        dicWdCnOdr = {}
+        # dictionary = {}
+
+        for strWrd, _ in lstWrdCnt:
+            # Current word gets assigned current length of dictionary. Since
+            # words in list are in order of number of occurences, this results
+            # in an ordinal word index.
+            dicWdCnOdr[strWrd] = len(dicWdCnOdr)
+        
+        # List of codes (words are coded as integers, and the code of a word
+        # is its ordinal occurence number).
+        lstC = []
+
+        # Counter for 'unknown' words (words not in the vocabulary of most
+        # common words):
+        varCntUnk = 0
+
+        for strWrd in lstTxt:
+            index = dicWdCnOdr.get(strWrd, 0)
+            if index == 0:  # dicWdCnOdr['UNK']
+                varCntUnk += 1
+                print(strWrd)
+            lstC.append(index)
 
 
 
-  # Step 2: Build the dictionary and replace rare words with UNK token.
-  vocabulary_size = 50000
-
-  def build_dataset(words, n_words):
-    """Process raw inputs into a dataset."""
-    count = [['UNK', -1]]
-    count.extend(collections.Counter(words).most_common(n_words - 1))
-    dictionary = {}
-    for word, _ in count:
-      dictionary[word] = len(dictionary)
-    data = []
-    unk_count = 0
-    for word in words:
-      index = dictionary.get(word, 0)
-      if index == 0:  # dictionary['UNK']
-        unk_count += 1
-      data.append(index)
-    count[0][1] = unk_count
-    reversed_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
-    return data, count, dictionary, reversed_dictionary
+        lstWrdCnt[0][1] = varCntUnk
+        reversed_dictionary = dict(zip(dicWdCnOdr.values(), dicWdCnOdr.keys()))
+        return lstC, lstWrdCnt, dicWdCnOdr, reversed_dictionary
 
 
-data, count, dictionary, reverse_dictionary = build_dataset(
-    lstTxt, vocabulary_size)
+aaa = count.extend(collections.Counter(lstTxt).most_common(varVocSze - 1))
+
+
+lstC, lstWrdCnt, dicWdCnOdr, reverse_dictionary = build_dataset(
+    lstTxt, varVocSze)
 
 
   # Filling 4 global variables:
-  # data - list of codes (integers from 0 to vocabulary_size-1).
+  # data - list of codes (integers from 0 to varVocSze-1).
   #   This is the original text but words are replaced by their codes
   # count - map of words(strings) to count of occurrences
   # dictionary - map of words(strings) to their codes(integers)
   # reverse_dictionary - maps codes(integers) to words(strings)
-  data, count, unused_dictionary, reverse_dictionary = build_dataset(
-      vocabulary, vocabulary_size)
+  lstC, count, unused_dictionary, reverse_dictionary = build_dataset(
+      vocabulary, varVocSze)
   del vocabulary  # Hint to reduce memory.
-  print('Most common words (+UNK)', count[:5])
-  print('Sample data', data[:10], [reverse_dictionary[i] for i in data[:10]])
+  print('Most common words (+UNK)', lstWrdCnt[:5])
+  print('Sample data', lstC[:10], [reverse_dictionary[i] for i in lstC[:10]])
 
   # Step 3: Function to generate a training batch for the skip-gram model.
   def generate_batch(batch_size, num_skips, skip_window):
@@ -105,9 +137,9 @@ data, count, dictionary, reverse_dictionary = build_dataset(
     labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
     span = 2 * skip_window + 1  # [ skip_window target skip_window ]
     buffer = collections.deque(maxlen=span)  # pylint: disable=redefined-builtin
-    if data_index + span > len(data):
+    if data_index + span > len(lstC):
       data_index = 0
-    buffer.extend(data[data_index:data_index + span])
+    buffer.extend(lstC[data_index:data_index + span])
     data_index += span
     for i in range(batch_size // num_skips):
       context_words = [w for w in range(span) if w != skip_window]
@@ -115,14 +147,14 @@ data, count, dictionary, reverse_dictionary = build_dataset(
       for j, context_word in enumerate(words_to_use):
         batch[i * num_skips + j] = buffer[skip_window]
         labels[i * num_skips + j, 0] = buffer[context_word]
-      if data_index == len(data):
-        buffer.extend(data[0:span])
+      if data_index == len(lstC):
+        buffer.extend(lstC[0:span])
         data_index = span
       else:
-        buffer.append(data[data_index])
+        buffer.append(lstC[data_index])
         data_index += 1
     # Backtrack a little bit to avoid skipping words in the end of a batch
-    data_index = (data_index + len(data) - span) % len(data)
+    data_index = (data_index + len(lstC) - span) % len(lstC)
     return batch, labels
 
   batch, labels = generate_batch(batch_size=8, num_skips=2, skip_window=1)
@@ -161,16 +193,16 @@ data, count, dictionary, reverse_dictionary = build_dataset(
       # Look up embeddings for inputs.
       with tf.name_scope('embeddings'):
         embeddings = tf.Variable(
-            tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
+            tf.random_uniform([varVocSze, embedding_size], -1.0, 1.0))
         embed = tf.nn.embedding_lookup(embeddings, train_inputs)
 
       # Construct the variables for the NCE loss
       with tf.name_scope('weights'):
         nce_weights = tf.Variable(
-            tf.truncated_normal([vocabulary_size, embedding_size],
+            tf.truncated_normal([varVocSze, embedding_size],
                                 stddev=1.0 / math.sqrt(embedding_size)))
       with tf.name_scope('biases'):
-        nce_biases = tf.Variable(tf.zeros([vocabulary_size]))
+        nce_biases = tf.Variable(tf.zeros([varVocSze]))
 
     # Compute the average NCE loss for the batch.
     # tf.nce_loss automatically draws a new sample of the negative labels each
@@ -185,7 +217,7 @@ data, count, dictionary, reverse_dictionary = build_dataset(
               labels=train_labels,
               inputs=embed,
               num_sampled=num_sampled,
-              num_classes=vocabulary_size))
+              num_classes=varVocSze))
 
     # Add the loss value as a scalar to summary.
     tf.summary.scalar('loss', loss)
@@ -217,7 +249,7 @@ data, count, dictionary, reverse_dictionary = build_dataset(
 
   with tf.Session(graph=graph) as session:
     # Open a writer to write summaries.
-    writer = tf.summary.FileWriter(log_dir, session.graph)
+    writer = tf.summary.FileWriter(strTfLog, session.graph)
 
     # We must initialize all variables before we use them.
     init.run()
@@ -271,19 +303,19 @@ data, count, dictionary, reverse_dictionary = build_dataset(
     final_embeddings = normalized_embeddings.eval()
 
     # Write corresponding labels for the embeddings.
-    with open(log_dir + '/metadata.tsv', 'w') as f:
-      for i in xrange(vocabulary_size):
+    with open(strTfLog + '/metadata.tsv', 'w') as f:
+      for i in xrange(varVocSze):
         f.write(reverse_dictionary[i] + '\n')
 
     # Save the model for checkpoints.
-    saver.save(session, os.path.join(log_dir, 'model.ckpt'))
+    saver.save(session, os.path.join(strTfLog, 'model.ckpt'))
 
     # Create a configuration for visualizing embeddings with the labels in
     # TensorBoard.
     config = projector.ProjectorConfig()
     embedding_conf = config.embeddings.add()
     embedding_conf.tensor_name = embeddings.name
-    embedding_conf.metadata_path = os.path.join(log_dir, 'metadata.tsv')
+    embedding_conf.metadata_path = os.path.join(strTfLog, 'metadata.tsv')
     projector.visualize_embeddings(writer, config)
 
   writer.close()
@@ -329,18 +361,18 @@ data, count, dictionary, reverse_dictionary = build_dataset(
 # All functionality is run after tf.app.run() (b/122547914). This could be split
 # up but the methods are laid sequentially with their usage for clarity.
 def main(unused_argv):
-  # Give a folder path as an argument with '--log_dir' to save
+  # Give a folder path as an argument with '--strTfLog' to save
   # TensorBoard summaries. Default is a log folder in current directory.
   current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
   parser = argparse.ArgumentParser()
   parser.add_argument(
-      '--log_dir',
+      '--strTfLog',
       type=str,
       default=os.path.join(current_path, 'log'),
       help='The log directory for TensorBoard summaries.')
   flags, unused_flags = parser.parse_known_args()
-  word2vec_basic(flags.log_dir)
+  word2vec_basic(flags.strTfLog)
 
 if __name__ == '__main__':
   tf.app.run()
