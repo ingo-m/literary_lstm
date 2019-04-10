@@ -20,6 +20,8 @@
 
 """Basic word2vec example."""
 
+# cd '/Users/john/1_PhD/GitLab/literary_lstm'
+
 from utilities import read_text
 
 # from __future__ import absolute_import
@@ -61,21 +63,37 @@ def word2vec_basic(strTfLog):
 
     # Step 2: Build the dictionary and replace rare words with UNK token.
 
+    # Vocabulary size (number of words; rare words are replaced with 'unknown'
+    # code if the vocabulary size is exceeded by the number of words in the
+    # text).
+    varVocSze = 20000  # 50000
 
-    varVocSze = 50000
+    def build_dataset(lstTxt, varVocSze=50000):
+        """
+        Build dataset from text.
 
-    def build_dataset(lstTxt, varVocSze):
-        """Process raw inputs into a dataset."""
-        
+        Parameters
+        ----------
+        lstTxt : list
+            Input text (corpus).
+        varVocSze : int
+            Vocabulary size (number of words; rare words are replaced with
+            'unknown' code if the vocabulary size is exceeded by the number of
+            words in the text).
+
+        Returns
+        -------
+
+        """
         # List of tuples with words and corresponding count of occurences in text
         # (word, count):
         lstWrdCnt = [('UNK', -1)]
         # count = [['UNK', -1]]
-        
+
         # Append (word, count) tuples to list:
         lstWrdCnt.extend(collections.Counter(lstTxt).most_common(
             varVocSze - 1))
-        
+
         # Dictionary for words (as keys) and ordinal word count (values); i.e.
         # words by order of number of occurences.
         dicWdCnOdr = {}
@@ -86,8 +104,8 @@ def word2vec_basic(strTfLog):
             # words in list are in order of number of occurences, this results
             # in an ordinal word index.
             dicWdCnOdr[strWrd] = len(dicWdCnOdr)
-        
-        # List of codes (words are coded as integers, and the code of a word
+
+        # Coded text (words are coded as integers, and the code of a word
         # is its ordinal occurence number).
         lstC = []
 
@@ -95,21 +113,32 @@ def word2vec_basic(strTfLog):
         # common words):
         varCntUnk = 0
 
+        # Translate original text (lstTxt) into code (lstC), i.e. replace words
+        # with their integer codes.
         for strWrd in lstTxt:
-            index = dicWdCnOdr.get(strWrd, 0)
-            if index == 0:  # dicWdCnOdr['UNK']
+
+            # Code of current word:
+            varTmpC = dicWdCnOdr.get(strWrd, 0)
+
+            # Count words that are not in vocabulary (dicWdCnOdr['UNK']):
+            if varTmpC == 0:
                 varCntUnk += 1
                 print(strWrd)
-            lstC.append(index)
 
+            # Append code to code-version of text:
+            lstC.append(varTmpC)
 
-
+        # Update word count of 'unknown' code:
         lstWrdCnt[0][1] = varCntUnk
+
         reversed_dictionary = dict(zip(dicWdCnOdr.values(), dicWdCnOdr.keys()))
+
         return lstC, lstWrdCnt, dicWdCnOdr, reversed_dictionary
 
 
-aaa = count.extend(collections.Counter(lstTxt).most_common(varVocSze - 1))
+lstC[]
+
+lstWrdCnt[0]
 
 
 lstC, lstWrdCnt, dicWdCnOdr, reverse_dictionary = build_dataset(
