@@ -39,7 +39,6 @@ from utilities import build_dataset
 #from six.moves import xrange  # pylint: disable=redefined-builtin
 # from tensorflow.contrib.tensorboard.plugins import projector
 
-data_index = 0
 
 # Path of input text files:
 strPthIn = '/Users/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
@@ -53,6 +52,7 @@ lstTxt = read_text(strPthIn)
 
 def word2vec_basic(strTfLog):
     """Example of building, training and visualizing a word2vec model."""
+
     # Create the directory for TensorBoard variables if there is not.
     if not os.path.exists(strTfLog):
         os.makedirs(strTfLog)
@@ -67,55 +67,82 @@ def word2vec_basic(strTfLog):
     # Build coded dataset from text:
     lstC, lstWrdCnt, _, dictRvrs = build_dataset(lstTxt, varVocSze)
 
+    # Delete non-coded text (reduce memory usage):
+    del lstTxt
 
-    lstC, lstWrdCnt, unused_dictionary, dictRvrs = build_dataset(
-      vocabulary, varVocSze)
+    # print('Most common words (+UNK)', lstWrdCnt[:5])
+    # print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
 
-  del lstTxt 
+# Batch size:
+varBchSze = 128
 
-  print('Most common words (+UNK)', lstWrdCnt[:5])
-  print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
+# How many times to reuse an input to generate a label.
+varNumSkp = 2
 
-  # Step 3: Function to generate a training batch for the skip-gram model.
-  def generate_batch(batch_size, num_skips, skip_window):
-    global data_index
-    assert batch_size % num_skips == 0
-    assert num_skips <= 2 * skip_window
-    batch = np.ndarray(shape=(batch_size), dtype=np.int32)
-    labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-    span = 2 * skip_window + 1  # [ skip_window target skip_window ]
+# How many words to consider left and right.
+varSkpWin = 1
+
+# ?
+varIdx = 0
+
+def generate_batch(varBchSze, varNumSkp, varSkpWin):
+    """
+    Generate training batch for skip-gram model.
+
+    Inputs
+    ------
+    varBchSze : int
+        ?
+    varNumSkp : int
+        ?
+    varSkpWin : int
+        ?
+
+    Returns
+    -------
+
+    """
+
+    global varIdx
+    assert varBchSze % varNumSkp == 0
+    assert varNumSkp <= 2 * varSkpWin
+
+    batch = np.ndarray(shape=(varBchSze), dtype=np.int32)
+
+    labels = np.ndarray(shape=(varBchSze, 1), dtype=np.int32)
+    span = 2 * varSkpWin + 1  # [ varSkpWin target varSkpWin ]
     buffer = collections.deque(maxlen=span)  # pylint: disable=redefined-builtin
-    if data_index + span > len(lstC):
-      data_index = 0
-    buffer.extend(lstC[data_index:data_index + span])
-    data_index += span
-    for i in range(batch_size // num_skips):
-      context_words = [w for w in range(span) if w != skip_window]
-      words_to_use = random.sample(context_words, num_skips)
+    if varIdx + span > len(lstC):
+      varIdx = 0
+    buffer.extend(lstC[varIdx:varIdx + span])
+    varIdx += span
+    for i in range(varBchSze // varNumSkp):
+      context_words = [w for w in range(span) if w != varSkpWin]
+      words_to_use = random.sample(context_words, varNumSkp)
       for j, context_word in enumerate(words_to_use):
-        batch[i * num_skips + j] = buffer[skip_window]
-        labels[i * num_skips + j, 0] = buffer[context_word]
-      if data_index == len(lstC):
+        batch[i * varNumSkp + j] = buffer[varSkpWin]
+        labels[i * varNumSkp + j, 0] = buffer[context_word]
+      if varIdx == len(lstC):
         buffer.extend(lstC[0:span])
-        data_index = span
+        varIdx = span
       else:
-        buffer.append(lstC[data_index])
-        data_index += 1
+        buffer.append(lstC[varIdx])
+        varIdx += 1
     # Backtrack a little bit to avoid skipping words in the end of a batch
-    data_index = (data_index + len(lstC) - span) % len(lstC)
+    varIdx = (varIdx + len(lstC) - span) % len(lstC)
     return batch, labels
 
-  batch, labels = generate_batch(batch_size=8, num_skips=2, skip_window=1)
+
+  batch, labels = generate_batch(varBchSze=8, varNumSkp=2, varSkpWin=1)
   for i in range(8):
     print(batch[i], dictRvrs[batch[i]], '->', labels[i, 0],
           dictRvrs[labels[i, 0]])
 
   # Step 4: Build and train a skip-gram model.
 
-  batch_size = 128
+
   embedding_size = 128  # Dimension of the embedding vector.
-  skip_window = 1  # How many words to consider left and right.
-  num_skips = 2  # How many times to reuse an input to generate a label.
+
   num_sampled = 64  # Number of negative examples to sample.
 
   # We pick a random validation set to sample nearest neighbors. Here we limit
@@ -132,8 +159,8 @@ def word2vec_basic(strTfLog):
 
     # Input data.
     with tf.name_scope('inputs'):
-      train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
-      train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1])
+      train_inputs = tf.placeholder(tf.int32, shape=[varBchSze])
+      train_labels = tf.placeholder(tf.int32, shape=[varBchSze, 1])
       valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
 
     # Ops and variables pinned to the CPU because of missing GPU implementation
@@ -205,8 +232,8 @@ def word2vec_basic(strTfLog):
 
     average_loss = 0
     for step in xrange(num_steps):
-      batch_inputs, batch_labels = generate_batch(batch_size, num_skips,
-                                                  skip_window)
+      batch_inputs, batch_labels = generate_batch(varBchSze, varNumSkp,
+                                                  varSkpWin)
       feed_dict = {train_inputs: batch_inputs, train_labels: batch_labels}
 
       # Define metadata variable.
