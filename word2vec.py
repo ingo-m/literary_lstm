@@ -83,10 +83,21 @@ def word2vec_basic(strTfLog):
 
         Returns
         -------
-
+        lstC : list
+            Coded text (corpus), where words are coded as integers. The integer
+            code of a word is its ordinal occurence number (i.e. the 50th most
+            common word has the code 50).
+        lstWrdCnt : list
+            List of tuples with words and corresponding count of occurences in
+            text (word, count).
+        dicWdCnOdr : dict
+            Dictionary for words (as keys) and ordinal word count (values);
+            i.e. words in order of number of occurences.
+        dictRvrs : dict
+            Reverse dictionary (where keys are word order).
         """
-        # List of tuples with words and corresponding count of occurences in text
-        # (word, count):
+        # List of tuples with words and corresponding count of occurences in
+        # text (word, count):
         lstWrdCnt = [('UNK', -1)]
         # count = [['UNK', -1]]
 
@@ -95,7 +106,7 @@ def word2vec_basic(strTfLog):
             varVocSze - 1))
 
         # Dictionary for words (as keys) and ordinal word count (values); i.e.
-        # words by order of number of occurences.
+        # words in order of number of occurences.
         dicWdCnOdr = {}
         # dictionary = {}
 
@@ -129,19 +140,18 @@ def word2vec_basic(strTfLog):
             lstC.append(varTmpC)
 
         # Update word count of 'unknown' code:
-        lstWrdCnt[0][1] = varCntUnk
+        lstWrdCnt[0] = (lstWrdCnt[0][0], varCntUnk)
 
-        reversed_dictionary = dict(zip(dicWdCnOdr.values(), dicWdCnOdr.keys()))
+        # Create reverse dictionary (where keys are word order):
+        dictRvrs = dict(zip(dicWdCnOdr.values(), dicWdCnOdr.keys()))
 
-        return lstC, lstWrdCnt, dicWdCnOdr, reversed_dictionary
-
+        return lstC, lstWrdCnt, dicWdCnOdr, dictRvrs
 
 lstC[]
 
 lstWrdCnt[0]
 
-
-lstC, lstWrdCnt, dicWdCnOdr, reverse_dictionary = build_dataset(
+lstC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(
     lstTxt, varVocSze)
 
 
@@ -150,12 +160,12 @@ lstC, lstWrdCnt, dicWdCnOdr, reverse_dictionary = build_dataset(
   #   This is the original text but words are replaced by their codes
   # count - map of words(strings) to count of occurrences
   # dictionary - map of words(strings) to their codes(integers)
-  # reverse_dictionary - maps codes(integers) to words(strings)
-  lstC, count, unused_dictionary, reverse_dictionary = build_dataset(
+  # dictRvrs - maps codes(integers) to words(strings)
+  lstC, count, unused_dictionary, dictRvrs = build_dataset(
       vocabulary, varVocSze)
   del vocabulary  # Hint to reduce memory.
   print('Most common words (+UNK)', lstWrdCnt[:5])
-  print('Sample data', lstC[:10], [reverse_dictionary[i] for i in lstC[:10]])
+  print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
 
   # Step 3: Function to generate a training batch for the skip-gram model.
   def generate_batch(batch_size, num_skips, skip_window):
@@ -188,8 +198,8 @@ lstC, lstWrdCnt, dicWdCnOdr, reverse_dictionary = build_dataset(
 
   batch, labels = generate_batch(batch_size=8, num_skips=2, skip_window=1)
   for i in range(8):
-    print(batch[i], reverse_dictionary[batch[i]], '->', labels[i, 0],
-          reverse_dictionary[labels[i, 0]])
+    print(batch[i], dictRvrs[batch[i]], '->', labels[i, 0],
+          dictRvrs[labels[i, 0]])
 
   # Step 4: Build and train a skip-gram model.
 
@@ -321,12 +331,12 @@ lstC, lstWrdCnt, dicWdCnOdr, reverse_dictionary = build_dataset(
       if step % 10000 == 0:
         sim = similarity.eval()
         for i in xrange(valid_size):
-          valid_word = reverse_dictionary[valid_examples[i]]
+          valid_word = dictRvrs[valid_examples[i]]
           top_k = 8  # number of nearest neighbors
           nearest = (-sim[i, :]).argsort()[1:top_k + 1]
           log_str = 'Nearest to %s:' % valid_word
           for k in xrange(top_k):
-            close_word = reverse_dictionary[nearest[k]]
+            close_word = dictRvrs[nearest[k]]
             log_str = '%s %s,' % (log_str, close_word)
           print(log_str)
     final_embeddings = normalized_embeddings.eval()
@@ -334,7 +344,7 @@ lstC, lstWrdCnt, dicWdCnOdr, reverse_dictionary = build_dataset(
     # Write corresponding labels for the embeddings.
     with open(strTfLog + '/metadata.tsv', 'w') as f:
       for i in xrange(varVocSze):
-        f.write(reverse_dictionary[i] + '\n')
+        f.write(dictRvrs[i] + '\n')
 
     # Save the model for checkpoints.
     saver.save(session, os.path.join(strTfLog, 'model.ckpt'))
@@ -378,7 +388,7 @@ lstC, lstWrdCnt, dicWdCnOdr, reverse_dictionary = build_dataset(
         perplexity=30, n_components=2, init='pca', n_iter=5000, method='exact')
     plot_only = 500
     low_dim_embs = tsne.fit_transform(final_embeddings[:plot_only, :])
-    labels = [reverse_dictionary[i] for i in xrange(plot_only)]
+    labels = [dictRvrs[i] for i in xrange(plot_only)]
     plot_with_labels(low_dim_embs, labels, os.path.join(gettempdir(),
                                                         'tsne.png'))
 
