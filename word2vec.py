@@ -1,3 +1,4 @@
+# =============================================================================
 # Copyright 2015 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,36 +12,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
-
+# =============================================================================
 
 # See
 # https://www.tensorflow.org/tutorials/representation/word2vec
-
 
 """Basic word2vec example."""
 
 # cd '/Users/john/1_PhD/GitLab/literary_lstm'
 
+import os
+import numpy as np
+import tensorflow as tf
 from utilities import read_text
+from utilities import build_dataset
 
 # from __future__ import absolute_import
 # from __future__ import division
 # from __future__ import print_function
-
 #import argparse
-import collections
 #import math
-import os
 #import random
 #import sys
 #from tempfile import gettempdir
-
-import numpy as np
 #from six.moves import urllib
 #from six.moves import xrange  # pylint: disable=redefined-builtin
-import tensorflow as tf
-
 # from tensorflow.contrib.tensorboard.plugins import projector
 
 data_index = 0
@@ -68,102 +64,15 @@ def word2vec_basic(strTfLog):
     # text).
     varVocSze = 20000  # 50000
 
-    def build_dataset(lstTxt, varVocSze=50000):
-        """
-        Build dataset from text.
-
-        Parameters
-        ----------
-        lstTxt : list
-            Input text (corpus).
-        varVocSze : int
-            Vocabulary size (number of words; rare words are replaced with
-            'unknown' code if the vocabulary size is exceeded by the number of
-            words in the text).
-
-        Returns
-        -------
-        lstC : list
-            Coded text (corpus), where words are coded as integers. The integer
-            code of a word is its ordinal occurence number (i.e. the 50th most
-            common word has the code 50).
-        lstWrdCnt : list
-            List of tuples with words and corresponding count of occurences in
-            text (word, count).
-        dicWdCnOdr : dict
-            Dictionary for words (as keys) and ordinal word count (values);
-            i.e. words in order of number of occurences.
-        dictRvrs : dict
-            Reverse dictionary (where keys are word order).
-        """
-        # List of tuples with words and corresponding count of occurences in
-        # text (word, count):
-        lstWrdCnt = [('UNK', -1)]
-        # count = [['UNK', -1]]
-
-        # Append (word, count) tuples to list:
-        lstWrdCnt.extend(collections.Counter(lstTxt).most_common(
-            varVocSze - 1))
-
-        # Dictionary for words (as keys) and ordinal word count (values); i.e.
-        # words in order of number of occurences.
-        dicWdCnOdr = {}
-        # dictionary = {}
-
-        for strWrd, _ in lstWrdCnt:
-            # Current word gets assigned current length of dictionary. Since
-            # words in list are in order of number of occurences, this results
-            # in an ordinal word index.
-            dicWdCnOdr[strWrd] = len(dicWdCnOdr)
-
-        # Coded text (words are coded as integers, and the code of a word
-        # is its ordinal occurence number).
-        lstC = []
-
-        # Counter for 'unknown' words (words not in the vocabulary of most
-        # common words):
-        varCntUnk = 0
-
-        # Translate original text (lstTxt) into code (lstC), i.e. replace words
-        # with their integer codes.
-        for strWrd in lstTxt:
-
-            # Code of current word:
-            varTmpC = dicWdCnOdr.get(strWrd, 0)
-
-            # Count words that are not in vocabulary (dicWdCnOdr['UNK']):
-            if varTmpC == 0:
-                varCntUnk += 1
-                print(strWrd)
-
-            # Append code to code-version of text:
-            lstC.append(varTmpC)
-
-        # Update word count of 'unknown' code:
-        lstWrdCnt[0] = (lstWrdCnt[0][0], varCntUnk)
-
-        # Create reverse dictionary (where keys are word order):
-        dictRvrs = dict(zip(dicWdCnOdr.values(), dicWdCnOdr.keys()))
-
-        return lstC, lstWrdCnt, dicWdCnOdr, dictRvrs
-
-lstC[]
-
-lstWrdCnt[0]
-
-lstC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(
-    lstTxt, varVocSze)
+    # Build coded dataset from text:
+    lstC, lstWrdCnt, _, dictRvrs = build_dataset(lstTxt, varVocSze)
 
 
-  # Filling 4 global variables:
-  # data - list of codes (integers from 0 to varVocSze-1).
-  #   This is the original text but words are replaced by their codes
-  # count - map of words(strings) to count of occurrences
-  # dictionary - map of words(strings) to their codes(integers)
-  # dictRvrs - maps codes(integers) to words(strings)
-  lstC, count, unused_dictionary, dictRvrs = build_dataset(
+    lstC, lstWrdCnt, unused_dictionary, dictRvrs = build_dataset(
       vocabulary, varVocSze)
-  del vocabulary  # Hint to reduce memory.
+
+  del lstTxt 
+
   print('Most common words (+UNK)', lstWrdCnt[:5])
   print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
 
