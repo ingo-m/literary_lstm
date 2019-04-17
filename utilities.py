@@ -148,20 +148,23 @@ def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
         integers. The integer code of a word is its ordinal occurence
         number (i.e. the 50th most common word has the code 50).
     glbVarIdx : int
-        ?
+        ???
     vecBatSze : int
-        ?
+        Batch size (number of words).
     varNumSkp : int
-        ?
+        ???
     varConWin : int
-        ?
+        Size of the context window (i.e. number of words to consider to the
+        left and to the right of the target word. TODO: If `varConWin = 1`,
+        words at a distance of two are still considered. (Why?)
 
     Returns
     -------
-    vecBat : np.array
-        ?
-    aryLbl : np.array
-        ?
+    vecWrds : np.array
+        Batch of (integer) codes of input words (whose context to predict).
+    aryCntxt : np.array
+        Vector (n*1) of context words (corresponding to the input words) to
+        predict.
     glbVarIdx : int
         ?
 
@@ -175,12 +178,13 @@ def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
     assert varNumSkp <= 2 * varConWin
 
     # batch = np.ndarray(shape=(vecBatSze), dtype=np.int32)
-    vecBat = np.zeros(vecBatSze, dtype=np.int32)
+    vecWrds = np.zeros(vecBatSze, dtype=np.int32)
 
     # labels = np.ndarray(shape=(vecBatSze, 1), dtype=np.int32)
-    aryLbl = np.zeros((vecBatSze, 1), dtype=np.int32)
+    aryCntxt = np.zeros((vecBatSze, 1), dtype=np.int32)
 
     # span = 2 * varConWin + 1  # [ varConWin target varConWin ]
+    # Span - twice the context window plus one (because of target word)?
     varSpan = 2 * varConWin + 1
 
     # Buffer. ?
@@ -205,19 +209,20 @@ def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
 
         words_to_use = random.sample(context_words, varNumSkp)
 
-        #print("context_words: " + str([dictRvrs[x] for x in context_words]))
-        #print("words_to_use: " + str([dictRvrs[x] for x in words_to_use]))
+        # print("context_words: " + str([dictRvrs[x] for x in context_words]))
+        # print("words_to_use: " + str([dictRvrs[x] for x in words_to_use]))
 
         for idx02, context_word in enumerate(words_to_use):
-            #print("idx02 = " + str(idx02))
-            #print("context_word: " + dictRvrs[context_word])
 
-            vecBat[idx01 * varNumSkp + idx02] = objBuf[varConWin]
+            # print("idx02 = " + str(idx02))
+            # print("context_word: " + dictRvrs[context_word])
 
-            aryLbl[idx01 * varNumSkp + idx02, 0] = objBuf[context_word]
+            vecWrds[idx01 * varNumSkp + idx02] = objBuf[varConWin]
 
-            # print("vecBat: " + dictRvrs[vecBat[idx01 * varNumSkp + idx02]])
-            # print("aryLbl: " + dictRvrs[[idx01 * varNumSkp + idx02, 0][0]])
+            aryCntxt[idx01 * varNumSkp + idx02, 0] = objBuf[context_word]
+
+            # print("vecWrds: " + dictRvrs[vecWrds[idx01 * varNumSkp + idx02]])
+            # print("aryCntxt: " + dictRvrs[[idx01 * varNumSkp + idx02, 0][0]])
 
             if glbVarIdx == len(lstC):
                 objBuf.extend(lstC[0:varSpan])
@@ -233,4 +238,4 @@ def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
             # batch
             glbVarIdx = (glbVarIdx + len(lstC) - varSpan) % len(lstC)
 
-    return vecBat, aryLbl, glbVarIdx
+    return vecWrds, aryCntxt, glbVarIdx

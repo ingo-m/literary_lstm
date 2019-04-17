@@ -44,7 +44,8 @@ from utilities import generate_batch
 
 
 # Path of input text files:
-strPthIn = '/Users/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
+# strPthIn = '/Users/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
+strPthIn = '/Users/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks_excerpt.txt'
 
 # Tensorflow log directory:
 strTfLog = '/Users/john/1_PhD/GitLab/literary_lstm/tf_log'
@@ -65,7 +66,7 @@ if not os.path.exists(strTfLog):
 # Vocabulary size (number of words; rare words are replaced with 'unknown'
 # code if the vocabulary size is exceeded by the number of words in the
 # text).
-varVocSze = 20000  # 50000
+varVocSze = 140 # 20000  # 50000
 
 # Build coded dataset from text:
 lstC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(lstTxt, varVocSze)
@@ -77,33 +78,34 @@ del lstTxt
 # print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
 
 # Batch size: (?)
-vecBatSze = 8
+vecBatSze = 4
 
-# How many times to reuse an input to generate a label. (???)
-varNumSkp = 2
+# How many times to reuse an input to generate a label.
+# ???
+varNumSkp = 1
 
 # Size of context window, i.e. how many words to consider to the left and to
 # the right of each target word.
-varConWin = 1
+varConWin = 3
 
 # Global index. ?
 glbVarIdx = 0
 
 
-vecBat, aryLbl, glbVarIdx = generate_batch(lstC,
+vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
                                            glbVarIdx,
                                            vecBatSze=vecBatSze,
                                            varNumSkp=varNumSkp,
                                            varConWin=varConWin)
 
 # ???
-print("vecBat: " + str([dictRvrs[x] for x in list(vecBat)]))
-print("aryLbl: " + str([dictRvrs[x] for x in list(aryLbl[:, 0])]))
+print("vecWrds: " + str([dictRvrs[x] for x in list(vecWrds)]))
+print("aryCntxt: " + str([dictRvrs[x] for x in list(aryCntxt[:, 0])]))
 
 
 for i in range(8):
-    print(vecBat[i], dictRvrs[vecBat[i]], '->', aryLbl[i, 0],
-          dictRvrs[aryLbl[i, 0]])
+    print(vecWrds[i], dictRvrs[vecWrds[i]], '->', aryCntxt[i, 0],
+          dictRvrs[aryCntxt[i, 0]])
 
 # Step 4: Build and train a skip-gram model.
 
@@ -270,10 +272,10 @@ with tf.Session(graph=graph) as session:
 
   # pylint: disable=missing-docstring
   # Function to draw visualization of distance between embeddings.
-  def plot_with_labels(low_dim_embs, aryLbl, filename):
-    assert low_dim_embs.shape[0] >= len(aryLbl), 'More labels than embeddings'
+  def plot_with_labels(low_dim_embs, aryCntxt, filename):
+    assert low_dim_embs.shape[0] >= len(aryCntxt), 'More labels than embeddings'
     plt.figure(figsize=(18, 18))  # in inches
-    for i, label in enumerate(aryLbl):
+    for i, label in enumerate(aryCntxt):
       x, y = low_dim_embs[i, :]
       plt.scatter(x, y)
       plt.annotate(
@@ -295,8 +297,8 @@ with tf.Session(graph=graph) as session:
         perplexity=30, n_components=2, init='pca', n_iter=5000, method='exact')
     plot_only = 500
     low_dim_embs = tsne.fit_transform(final_embeddings[:plot_only, :])
-    aryLbl = [dictRvrs[i] for i in xrange(plot_only)]
-    plot_with_aryLbl(low_dim_embs, aryLbl, os.path.join(gettempdir(),
+    aryCntxt = [dictRvrs[i] for i in xrange(plot_only)]
+    plot_with_aryLbl(low_dim_embs, aryCntxt, os.path.join(gettempdir(),
                                                         'tsne.png'))
 
   except ImportError as ex:
