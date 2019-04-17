@@ -35,12 +35,12 @@ from utilities import generate_batch
 # from __future__ import division
 # from __future__ import print_function
 #import argparse
-#import math
+import math
 #import sys
 #from tempfile import gettempdir
 #from six.moves import urllib
-#from six.moves import xrange  # pylint: disable=redefined-builtin
-# from tensorflow.contrib.tensorboard.plugins import projector
+from six.moves import xrange  # pylint: disable=redefined-builtin
+from tensorflow.contrib.tensorboard.plugins import projector
 
 
 # Path of input text files:
@@ -99,20 +99,19 @@ vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
                                            varConWin=varConWin)
 
 # ???
-print("vecWrds: " + str([dictRvrs[x] for x in list(vecWrds)]))
-print("aryCntxt: " + str([dictRvrs[x] for x in list(aryCntxt[:, 0])]))
+# print("vecWrds: " + str([dictRvrs[x] for x in list(vecWrds)]))
+# print("aryCntxt: " + str([dictRvrs[x] for x in list(aryCntxt[:, 0])]))
 
 
-for i in range(8):
-    print(vecWrds[i], dictRvrs[vecWrds[i]], '->', aryCntxt[i, 0],
-          dictRvrs[aryCntxt[i, 0]])
+# for i in range(4):
+#     print(vecWrds[i], dictRvrs[vecWrds[i]], '->', aryCntxt[i, 0],
+#           dictRvrs[aryCntxt[i, 0]])
 
 # Step 4: Build and train a skip-gram model.
 
+embedding_size = 24 # 128  # Dimension of the embedding vector.
 
-embedding_size = 128  # Dimension of the embedding vector.
-
-num_sampled = 64  # Number of negative examples to sample.
+num_sampled = 12 # 64  # Number of negative examples to sample.
 
 # We pick a random validation set to sample nearest neighbors. Here we limit
 # the validation samples to the words that have a low numeric ID, which by
@@ -157,21 +156,21 @@ with graph.as_default():
     # Explanation of the meaning of NCE loss:
     #   http://mccormickml.com/2016/04/19/word2vec-tutorial-the-skip-gram-model/
     with tf.name_scope('loss'):
-      loss = tf.reduce_mean(
-          tf.nn.nce_loss(
-              weights=nce_weights,
-              biases=nce_biases,
-              labels=train_labels,
-              inputs=embed,
-              num_sampled=num_sampled,
-              num_classes=varVocSze))
+        loss = tf.reduce_mean(
+            tf.nn.nce_loss(
+                weights=nce_weights,
+                biases=nce_biases,
+                labels=train_labels,
+                inputs=embed,
+                num_sampled=num_sampled,
+                num_classes=varVocSze))
 
     # Add the loss value as a scalar to summary.
     tf.summary.scalar('loss', loss)
 
     # Construct the SGD optimizer using a learning rate of 1.0.
     with tf.name_scope('optimizer'):
-      optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+        optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
 
     # Compute the cosine similarity between minibatch examples and all
     # embeddings.
@@ -205,8 +204,11 @@ with tf.Session(graph=graph) as session:
 
     average_loss = 0
     for step in xrange(num_steps):
-        batch_inputs, batch_labels = generate_batch(vecBatSze, varNumSkp,
-                                                    varConWin)
+        batch_inputs, batch_labels, glbVarIdx = generate_batch(lstC,
+                                                               glbVarIdx,
+                                                               vecBatSze=vecBatSze,
+                                                               varNumSkp=varNumSkp,
+                                                               varConWin=varConWin)
         feed_dict = {train_inputs: batch_inputs, train_labels: batch_labels}
 
         # Define metadata variable.
@@ -237,23 +239,23 @@ with tf.Session(graph=graph) as session:
         average_loss = 0
 
       # Note that this is expensive (~20% slowdown if computed every 500 steps)
-      if step % 10000 == 0:
-        sim = similarity.eval()
-        for i in xrange(valid_size):
-          valid_word = dictRvrs[valid_examples[i]]
-          top_k = 8  # number of nearest neighbors
-          nearest = (-sim[i, :]).argsort()[1:top_k + 1]
-          log_str = 'Nearest to %s:' % valid_word
-          for k in xrange(top_k):
-            close_word = dictRvrs[nearest[k]]
-            log_str = '%s %s,' % (log_str, close_word)
-          print(log_str)
+        if step % 10000 == 0:
+            sim = similarity.eval()
+            for i in xrange(valid_size):
+                valid_word = dictRvrs[valid_examples[i]]
+                top_k = 8  # number of nearest neighbors
+                nearest = (-sim[i, :]).argsort()[1:top_k + 1]
+                log_str = 'Nearest to %s:' % valid_word
+                for k in xrange(top_k):
+                    close_word = dictRvrs[nearest[k]]
+                    log_str = '%s %s,' % (log_str, close_word)
+                print(log_str)
     final_embeddings = normalized_embeddings.eval()
 
     # Write corresponding labels for the embeddings.
     with open(strTfLog + '/metadata.tsv', 'w') as f:
-      for i in xrange(varVocSze):
-        f.write(dictRvrs[i] + '\n')
+        for i in xrange(varVocSze):
+            f.write(dictRvrs[i] + '\n')
 
     # Save the model for checkpoints.
     saver.save(session, os.path.join(strTfLog, 'model.ckpt'))
@@ -266,61 +268,61 @@ with tf.Session(graph=graph) as session:
     embedding_conf.metadata_path = os.path.join(strTfLog, 'metadata.tsv')
     projector.visualize_embeddings(writer, config)
 
-  writer.close()
+    writer.close()
 
-  # Step 6: Visualize the embeddings.
+    # Step 6: Visualize the embeddings.
 
-  # pylint: disable=missing-docstring
-  # Function to draw visualization of distance between embeddings.
-  def plot_with_labels(low_dim_embs, aryCntxt, filename):
-    assert low_dim_embs.shape[0] >= len(aryCntxt), 'More labels than embeddings'
-    plt.figure(figsize=(18, 18))  # in inches
-    for i, label in enumerate(aryCntxt):
-      x, y = low_dim_embs[i, :]
-      plt.scatter(x, y)
-      plt.annotate(
-          label,
-          xy=(x, y),
-          xytext=(5, 2),
-          textcoords='offset points',
-          ha='right',
-          va='bottom')
+    # pylint: disable=missing-docstring
+    # Function to draw visualization of distance between embeddings.
+    def plot_with_labels(low_dim_embs, aryCntxt, filename):
+        assert low_dim_embs.shape[0] >= len(aryCntxt), 'More labels than embeddings'
+        plt.figure(figsize=(18, 18))  # in inches
+        for i, label in enumerate(aryCntxt):
+            x, y = low_dim_embs[i, :]
+            plt.scatter(x, y)
+            plt.annotate(
+                label,
+                xy=(x, y),
+                xytext=(5, 2),
+                textcoords='offset points',
+                ha='right',
+                va='bottom')
 
-    plt.savefig(filename)
+        plt.savefig(filename)
 
-  try:
-    # pylint: disable=g-import-not-at-top
-    from sklearn.manifold import TSNE
-    import matplotlib.pyplot as plt
+    try:
+        # pylint: disable=g-import-not-at-top
+        from sklearn.manifold import TSNE
+        import matplotlib.pyplot as plt
 
-    tsne = TSNE(
-        perplexity=30, n_components=2, init='pca', n_iter=5000, method='exact')
-    plot_only = 500
-    low_dim_embs = tsne.fit_transform(final_embeddings[:plot_only, :])
-    aryCntxt = [dictRvrs[i] for i in xrange(plot_only)]
-    plot_with_aryLbl(low_dim_embs, aryCntxt, os.path.join(gettempdir(),
-                                                        'tsne.png'))
+        tsne = TSNE(
+            perplexity=30, n_components=2, init='pca', n_iter=5000, method='exact')
+        plot_only = 500
+        low_dim_embs = tsne.fit_transform(final_embeddings[:plot_only, :])
+        aryCntxt = [dictRvrs[i] for i in xrange(plot_only)]
+        plot_with_aryLbl(low_dim_embs, aryCntxt, os.path.join(gettempdir(),
+                                                            'tsne.png'))
 
-  except ImportError as ex:
-    print('Please install sklearn, matplotlib, and scipy to show embeddings.')
-    print(ex)
+    except ImportError as ex:
+        print('Please install sklearn, matplotlib, and scipy to show embeddings.')
+        print(ex)
 
 
 # All functionality is run after tf.app.run() (b/122547914). This could be split
 # up but the methods are laid sequentially with their usage for clarity.
 def main(unused_argv):
-  # Give a folder path as an argument with '--strTfLog' to save
-  # TensorBoard summaries. Default is a log folder in current directory.
-  current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+    # Give a folder path as an argument with '--strTfLog' to save
+    # TensorBoard summaries. Default is a log folder in current directory.
+    current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-  parser = argparse.ArgumentParser()
-  parser.add_argument(
-      '--strTfLog',
-      type=str,
-      default=os.path.join(current_path, 'log'),
-      help='The log directory for TensorBoard summaries.')
-  flags, unused_flags = parser.parse_known_args()
-  word2vec_basic(flags.strTfLog)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--strTfLog',
+        type=str,
+        default=os.path.join(current_path, 'log'),
+        help='The log directory for TensorBoard summaries.')
+    flags, unused_flags = parser.parse_known_args()
+    word2vec_basic(flags.strTfLog)
 
 if __name__ == '__main__':
-  tf.app.run()
+    tf.app.run()
