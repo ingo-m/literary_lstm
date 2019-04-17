@@ -22,7 +22,7 @@
 # cd '/Users/john/1_PhD/GitLab/literary_lstm'
 
 import os
-import collections
+# import collections
 # import random
 import numpy as np
 import tensorflow as tf
@@ -91,17 +91,17 @@ varConWin = 3
 # Global index. ?
 glbVarIdx = 0
 
-
+# Generate batch
+# ???
 vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
-                                           glbVarIdx,
-                                           vecBatSze=vecBatSze,
-                                           varNumSkp=varNumSkp,
-                                           varConWin=varConWin)
+                                              glbVarIdx,
+                                              vecBatSze=vecBatSze,
+                                              varNumSkp=varNumSkp,
+                                              varConWin=varConWin)
 
 # ???
 # print("vecWrds: " + str([dictRvrs[x] for x in list(vecWrds)]))
 # print("aryCntxt: " + str([dictRvrs[x] for x in list(aryCntxt[:, 0])]))
-
 
 # for i in range(4):
 #     print(vecWrds[i], dictRvrs[vecWrds[i]], '->', aryCntxt[i, 0],
@@ -109,17 +109,23 @@ vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
 
 # Step 4: Build and train a skip-gram model.
 
-embedding_size = 24 # 128  # Dimension of the embedding vector.
+# Dimension of the embedding vector. (Number of neurons in hidden layer?)
+varSzeEmb = 24 # 128
 
-num_sampled = 12 # 64  # Number of negative examples to sample.
+# Number of negative examples to sample.
+varNumNgtv = 12 # 64
 
 # We pick a random validation set to sample nearest neighbors. Here we limit
 # the validation samples to the words that have a low numeric ID, which by
 # construction are also the most frequent. These 3 variables are used only for
 # displaying model accuracy, they don't affect calculation.
-valid_size = 16  # Random set of words to evaluate similarity on.
-valid_window = 100  # Only pick dev samples in the head of the distribution.
-valid_examples = np.random.choice(valid_window, valid_size, replace=False)
+
+# Random set of words to evaluate similarity on:
+varSzeEval = 16
+
+# Only pick dev samples in the head of the distribution:
+varSzeEvalWin = 100
+vecEvalSmple = np.random.choice(varSzeEvalWin, varSzeEval, replace=False)
 
 graph = tf.Graph()
 
@@ -127,43 +133,71 @@ with graph.as_default():
 
     # Input data.
     with tf.name_scope('inputs'):
-        train_inputs = tf.placeholder(tf.int32, shape=[vecBatSze])
-        train_labels = tf.placeholder(tf.int32, shape=[vecBatSze, 1])
-        valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
+
+        # Placeholder for batch of words (coded as integers) for which to
+        # predict the context.
+        vecTfWrds = tf.placeholder(tf.int32, shape=[vecBatSze])
+
+        # Placeholder for context words to predict (coded as integers):
+        aryTfCntxt = tf.placeholder(tf.int32, shape=[vecBatSze, 1])
+
+        # Evaluation dataset (vector of words coded as integer). Used for
+        # displaying model accuracy.
+        vecTfEvalSmple = tf.constant(vecEvalSmple, dtype=tf.int32)
 
     # Ops and variables pinned to the CPU because of missing GPU implementation
     with tf.device('/cpu:0'):
+
         # Look up embeddings for inputs.
         with tf.name_scope('embeddings'):
 
-            embeddings = tf.Variable(
-                tf.random_uniform([varVocSze, embedding_size], -1.0, 1.0))
+            # Embedding matrix, size: vocabulary * number of neurons in hidden
+            # layer (?).
+            aryTfEmbd = tf.Variable(tf.random_uniform([varVocSze, varSzeEmb],
+                                                      -1.0,
+                                                      1.0))
 
-            embed = tf.nn.embedding_lookup(embeddings, train_inputs)
+            # Embedding lookup, size: batch size (number of words) * number of
+            # neurons in hidden layer (?)
+            aryTfEbd = tf.nn.embedding_lookup(aryTfEmbd, vecTfWrds)
 
     # Construct the variables for the NCE loss
     with tf.name_scope('weights'):
-        nce_weights = tf.Variable(
-            tf.truncated_normal([varVocSze, embedding_size],
-            stddev=1.0 / math.sqrt(embedding_size)))
+
+        # Weights of neurons in hidden layer (number of words times number of
+        # neurons).
+        aryWghts = tf.Variable(
+            tf.truncated_normal([varVocSze, varSzeEmb],
+            stddev=(1.0 / math.sqrt(varSzeEmb)))
+            )
 
     with tf.name_scope('biases'):
-        nce_biases = tf.Variable(tf.zeros([varVocSze]))
+
+        # Biases of neurons in hidden layer (size: number of words ???)
+        aryBiases = tf.Variable(tf.zeros([varVocSze]))
 
     # Compute the average NCE loss for the batch.
     # tf.nce_loss automatically draws a new sample of the negative labels each
     # time we evaluate the loss.
     # Explanation of the meaning of NCE loss:
     #   http://mccormickml.com/2016/04/19/word2vec-tutorial-the-skip-gram-model/
+
     with tf.name_scope('loss'):
+
+        # Objective function to reduce (?)
         loss = tf.reduce_mean(
             tf.nn.nce_loss(
-                weights=nce_weights,
-                biases=nce_biases,
-                labels=train_labels,
-                inputs=embed,
-                num_sampled=num_sampled,
-                num_classes=varVocSze))
+                weights=aryWghts,
+                biases=aryBiases,
+                labels=aryTfCntxt,
+                inputs=aryTfEbd,
+                num_sampled=varNumNgtv,
+                num_classes=varVocSze
+                )
+            )
+
+type(loss)
+loss.shape
 
     # Add the loss value as a scalar to summary.
     tf.summary.scalar('loss', loss)
@@ -174,10 +208,10 @@ with graph.as_default():
 
     # Compute the cosine similarity between minibatch examples and all
     # embeddings.
-    norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keepdims=True))
-    normalized_embeddings = embeddings / norm
+    norm = tf.sqrt(tf.reduce_sum(tf.square(aryTfEmbd), 1, keepdims=True))
+    normalized_embeddings = aryTfEmbd / norm
     valid_embeddings = tf.nn.embedding_lookup(normalized_embeddings,
-                                              valid_dataset)
+                                              vecTfEvalSmple)
     similarity = tf.matmul(
         valid_embeddings, normalized_embeddings, transpose_b=True)
 
@@ -209,7 +243,7 @@ with tf.Session(graph=graph) as session:
                                                                vecBatSze=vecBatSze,
                                                                varNumSkp=varNumSkp,
                                                                varConWin=varConWin)
-        feed_dict = {train_inputs: batch_inputs, train_labels: batch_labels}
+        feed_dict = {vecTfWrds: batch_inputs, aryTfCntxt: batch_labels}
 
         # Define metadata variable.
         run_metadata = tf.RunMetadata()
@@ -241,8 +275,8 @@ with tf.Session(graph=graph) as session:
       # Note that this is expensive (~20% slowdown if computed every 500 steps)
         if step % 10000 == 0:
             sim = similarity.eval()
-            for i in xrange(valid_size):
-                valid_word = dictRvrs[valid_examples[i]]
+            for i in xrange(varSzeEval):
+                valid_word = dictRvrs[vecEvalSmple[i]]
                 top_k = 8  # number of nearest neighbors
                 nearest = (-sim[i, :]).argsort()[1:top_k + 1]
                 log_str = 'Nearest to %s:' % valid_word
