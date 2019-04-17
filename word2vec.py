@@ -22,17 +22,20 @@
 # cd '/Users/john/1_PhD/GitLab/literary_lstm'
 
 import os
+import collections
+# import random
 import numpy as np
 import tensorflow as tf
 from utilities import read_text
 from utilities import build_dataset
+from utilities import generate_batch
+
 
 # from __future__ import absolute_import
 # from __future__ import division
 # from __future__ import print_function
 #import argparse
 #import math
-#import random
 #import sys
 #from tempfile import gettempdir
 #from six.moves import urllib
@@ -50,133 +53,100 @@ strTfLog = '/Users/john/1_PhD/GitLab/literary_lstm/tf_log'
 lstTxt = read_text(strPthIn)
 
 
-def word2vec_basic(strTfLog):
-    """Example of building, training and visualizing a word2vec model."""
+#def word2vec_basic(strTfLog):
+#    """Example of building, training and visualizing a word2vec model."""
 
-    # Create the directory for TensorBoard variables if there is not.
-    if not os.path.exists(strTfLog):
-        os.makedirs(strTfLog)
+# Create the directory for TensorBoard variables if there is not.
+if not os.path.exists(strTfLog):
+    os.makedirs(strTfLog)
 
-    # Step 2: Build the dictionary and replace rare words with UNK token.
+# Step 2: Build the dictionary and replace rare words with UNK token.
 
-    # Vocabulary size (number of words; rare words are replaced with 'unknown'
-    # code if the vocabulary size is exceeded by the number of words in the
-    # text).
-    varVocSze = 20000  # 50000
+# Vocabulary size (number of words; rare words are replaced with 'unknown'
+# code if the vocabulary size is exceeded by the number of words in the
+# text).
+varVocSze = 20000  # 50000
 
-    # Build coded dataset from text:
-    lstC, lstWrdCnt, _, dictRvrs = build_dataset(lstTxt, varVocSze)
+# Build coded dataset from text:
+lstC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(lstTxt, varVocSze)
 
-    # Delete non-coded text (reduce memory usage):
-    del lstTxt
+# Delete non-coded text (reduce memory usage):
+del lstTxt
 
-    # print('Most common words (+UNK)', lstWrdCnt[:5])
-    # print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
+# print('Most common words (+UNK)', lstWrdCnt[:5])
+# print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
 
-# Batch size:
-varBchSze = 128
+# Batch size: (?)
+vecBatSze = 8
 
-# How many times to reuse an input to generate a label.
+# How many times to reuse an input to generate a label. (???)
 varNumSkp = 2
 
-# How many words to consider left and right.
-varSkpWin = 1
+# Size of context window, i.e. how many words to consider to the left and to
+# the right of each target word.
+varConWin = 1
 
-# ?
-varIdx = 0
-
-def generate_batch(varBchSze, varNumSkp, varSkpWin):
-    """
-    Generate training batch for skip-gram model.
-
-    Inputs
-    ------
-    varBchSze : int
-        ?
-    varNumSkp : int
-        ?
-    varSkpWin : int
-        ?
-
-    Returns
-    -------
-
-    """
-
-    global varIdx
-    assert varBchSze % varNumSkp == 0
-    assert varNumSkp <= 2 * varSkpWin
-
-    batch = np.ndarray(shape=(varBchSze), dtype=np.int32)
-
-    labels = np.ndarray(shape=(varBchSze, 1), dtype=np.int32)
-    span = 2 * varSkpWin + 1  # [ varSkpWin target varSkpWin ]
-    buffer = collections.deque(maxlen=span)  # pylint: disable=redefined-builtin
-    if varIdx + span > len(lstC):
-      varIdx = 0
-    buffer.extend(lstC[varIdx:varIdx + span])
-    varIdx += span
-    for i in range(varBchSze // varNumSkp):
-      context_words = [w for w in range(span) if w != varSkpWin]
-      words_to_use = random.sample(context_words, varNumSkp)
-      for j, context_word in enumerate(words_to_use):
-        batch[i * varNumSkp + j] = buffer[varSkpWin]
-        labels[i * varNumSkp + j, 0] = buffer[context_word]
-      if varIdx == len(lstC):
-        buffer.extend(lstC[0:span])
-        varIdx = span
-      else:
-        buffer.append(lstC[varIdx])
-        varIdx += 1
-    # Backtrack a little bit to avoid skipping words in the end of a batch
-    varIdx = (varIdx + len(lstC) - span) % len(lstC)
-    return batch, labels
+# Global index. ?
+glbVarIdx = 0
 
 
-  batch, labels = generate_batch(varBchSze=8, varNumSkp=2, varSkpWin=1)
-  for i in range(8):
-    print(batch[i], dictRvrs[batch[i]], '->', labels[i, 0],
-          dictRvrs[labels[i, 0]])
+vecBat, aryLbl, glbVarIdx = generate_batch(lstC,
+                                           glbVarIdx,
+                                           vecBatSze=vecBatSze,
+                                           varNumSkp=varNumSkp,
+                                           varConWin=varConWin)
 
-  # Step 4: Build and train a skip-gram model.
+# ???
+print("vecBat: " + str([dictRvrs[x] for x in list(vecBat)]))
+print("aryLbl: " + str([dictRvrs[x] for x in list(aryLbl[:, 0])]))
 
 
-  embedding_size = 128  # Dimension of the embedding vector.
+for i in range(8):
+    print(vecBat[i], dictRvrs[vecBat[i]], '->', aryLbl[i, 0],
+          dictRvrs[aryLbl[i, 0]])
 
-  num_sampled = 64  # Number of negative examples to sample.
+# Step 4: Build and train a skip-gram model.
 
-  # We pick a random validation set to sample nearest neighbors. Here we limit
-  # the validation samples to the words that have a low numeric ID, which by
-  # construction are also the most frequent. These 3 variables are used only for
-  # displaying model accuracy, they don't affect calculation.
-  valid_size = 16  # Random set of words to evaluate similarity on.
-  valid_window = 100  # Only pick dev samples in the head of the distribution.
-  valid_examples = np.random.choice(valid_window, valid_size, replace=False)
 
-  graph = tf.Graph()
+embedding_size = 128  # Dimension of the embedding vector.
 
-  with graph.as_default():
+num_sampled = 64  # Number of negative examples to sample.
+
+# We pick a random validation set to sample nearest neighbors. Here we limit
+# the validation samples to the words that have a low numeric ID, which by
+# construction are also the most frequent. These 3 variables are used only for
+# displaying model accuracy, they don't affect calculation.
+valid_size = 16  # Random set of words to evaluate similarity on.
+valid_window = 100  # Only pick dev samples in the head of the distribution.
+valid_examples = np.random.choice(valid_window, valid_size, replace=False)
+
+graph = tf.Graph()
+
+with graph.as_default():
 
     # Input data.
     with tf.name_scope('inputs'):
-      train_inputs = tf.placeholder(tf.int32, shape=[varBchSze])
-      train_labels = tf.placeholder(tf.int32, shape=[varBchSze, 1])
-      valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
+        train_inputs = tf.placeholder(tf.int32, shape=[vecBatSze])
+        train_labels = tf.placeholder(tf.int32, shape=[vecBatSze, 1])
+        valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
 
     # Ops and variables pinned to the CPU because of missing GPU implementation
     with tf.device('/cpu:0'):
-      # Look up embeddings for inputs.
-      with tf.name_scope('embeddings'):
-        embeddings = tf.Variable(
-            tf.random_uniform([varVocSze, embedding_size], -1.0, 1.0))
-        embed = tf.nn.embedding_lookup(embeddings, train_inputs)
+        # Look up embeddings for inputs.
+        with tf.name_scope('embeddings'):
 
-      # Construct the variables for the NCE loss
-      with tf.name_scope('weights'):
+            embeddings = tf.Variable(
+                tf.random_uniform([varVocSze, embedding_size], -1.0, 1.0))
+
+            embed = tf.nn.embedding_lookup(embeddings, train_inputs)
+
+    # Construct the variables for the NCE loss
+    with tf.name_scope('weights'):
         nce_weights = tf.Variable(
             tf.truncated_normal([varVocSze, embedding_size],
-                                stddev=1.0 / math.sqrt(embedding_size)))
-      with tf.name_scope('biases'):
+            stddev=1.0 / math.sqrt(embedding_size)))
+
+    with tf.name_scope('biases'):
         nce_biases = tf.Variable(tf.zeros([varVocSze]))
 
     # Compute the average NCE loss for the batch.
@@ -219,10 +189,11 @@ def generate_batch(varBchSze, varNumSkp, varSkpWin):
     # Create a saver.
     saver = tf.train.Saver()
 
-  # Step 5: Begin training.
-  num_steps = 100001
+    # Step 5: Begin training.
+    num_steps = 100001
 
-  with tf.Session(graph=graph) as session:
+with tf.Session(graph=graph) as session:
+
     # Open a writer to write summaries.
     writer = tf.summary.FileWriter(strTfLog, session.graph)
 
@@ -232,32 +203,32 @@ def generate_batch(varBchSze, varNumSkp, varSkpWin):
 
     average_loss = 0
     for step in xrange(num_steps):
-      batch_inputs, batch_labels = generate_batch(varBchSze, varNumSkp,
-                                                  varSkpWin)
-      feed_dict = {train_inputs: batch_inputs, train_labels: batch_labels}
+        batch_inputs, batch_labels = generate_batch(vecBatSze, varNumSkp,
+                                                    varConWin)
+        feed_dict = {train_inputs: batch_inputs, train_labels: batch_labels}
 
-      # Define metadata variable.
-      run_metadata = tf.RunMetadata()
+        # Define metadata variable.
+        run_metadata = tf.RunMetadata()
 
-      # We perform one update step by evaluating the optimizer op (including it
-      # in the list of returned values for session.run()
-      # Also, evaluate the merged op to get all summaries from the returned
-      # "summary" variable. Feed metadata variable to session for visualizing
-      # the graph in TensorBoard.
-      _, summary, loss_val = session.run([optimizer, merged, loss],
-                                         feed_dict=feed_dict,
-                                         run_metadata=run_metadata)
-      average_loss += loss_val
+        # We perform one update step by evaluating the optimizer op (including it
+        # in the list of returned values for session.run()
+        # Also, evaluate the merged op to get all summaries from the returned
+        # "summary" variable. Feed metadata variable to session for visualizing
+        # the graph in TensorBoard.
+        _, summary, loss_val = session.run([optimizer, merged, loss],
+                                           feed_dict=feed_dict,
+                                           run_metadata=run_metadata)
+        average_loss += loss_val
 
-      # Add returned summaries to writer in each step.
-      writer.add_summary(summary, step)
-      # Add metadata to visualize the graph for the last run.
-      if step == (num_steps - 1):
-        writer.add_run_metadata(run_metadata, 'step%d' % step)
+        # Add returned summaries to writer in each step.
+        writer.add_summary(summary, step)
+        # Add metadata to visualize the graph for the last run.
+        if step == (num_steps - 1):
+            writer.add_run_metadata(run_metadata, 'step%d' % step)
 
-      if step % 2000 == 0:
-        if step > 0:
-          average_loss /= 2000
+        if step % 2000 == 0:
+            if step > 0:
+                average_loss /= 2000
         # The average loss is an estimate of the loss over the last 2000
         # batches.
         print('Average loss at step ', step, ': ', average_loss)
@@ -299,10 +270,10 @@ def generate_batch(varBchSze, varNumSkp, varSkpWin):
 
   # pylint: disable=missing-docstring
   # Function to draw visualization of distance between embeddings.
-  def plot_with_labels(low_dim_embs, labels, filename):
-    assert low_dim_embs.shape[0] >= len(labels), 'More labels than embeddings'
+  def plot_with_labels(low_dim_embs, aryLbl, filename):
+    assert low_dim_embs.shape[0] >= len(aryLbl), 'More labels than embeddings'
     plt.figure(figsize=(18, 18))  # in inches
-    for i, label in enumerate(labels):
+    for i, label in enumerate(aryLbl):
       x, y = low_dim_embs[i, :]
       plt.scatter(x, y)
       plt.annotate(
@@ -324,8 +295,8 @@ def generate_batch(varBchSze, varNumSkp, varSkpWin):
         perplexity=30, n_components=2, init='pca', n_iter=5000, method='exact')
     plot_only = 500
     low_dim_embs = tsne.fit_transform(final_embeddings[:plot_only, :])
-    labels = [dictRvrs[i] for i in xrange(plot_only)]
-    plot_with_labels(low_dim_embs, labels, os.path.join(gettempdir(),
+    aryLbl = [dictRvrs[i] for i in xrange(plot_only)]
+    plot_with_aryLbl(low_dim_embs, aryLbl, os.path.join(gettempdir(),
                                                         'tsne.png'))
 
   except ImportError as ex:

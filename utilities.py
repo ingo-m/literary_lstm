@@ -4,8 +4,12 @@
 LSTM fun helper functions.
 """
 
+
 import re
 import collections
+import random
+import numpy as np
+
 
 def read_text(strPth):
     """
@@ -131,3 +135,102 @@ def build_dataset(lstTxt, varVocSze=50000):
     dictRvrs = dict(zip(dicWdCnOdr.values(), dicWdCnOdr.keys()))
 
     return lstC, lstWrdCnt, dicWdCnOdr, dictRvrs
+
+
+def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
+    """
+    Generate training batch for skip-gram model.
+
+    Inputs
+    ------
+    lstC : list
+        Coded version of original text (corpus), where words are coded as
+        integers. The integer code of a word is its ordinal occurence
+        number (i.e. the 50th most common word has the code 50).
+    glbVarIdx : int
+        ?
+    vecBatSze : int
+        ?
+    varNumSkp : int
+        ?
+    varConWin : int
+        ?
+
+    Returns
+    -------
+    vecBat : np.array
+        ?
+    aryLbl : np.array
+        ?
+    glbVarIdx : int
+        ?
+
+    Notes
+    -----
+    ???
+    """
+
+    # global glbVarIdx
+    assert vecBatSze % varNumSkp == 0
+    assert varNumSkp <= 2 * varConWin
+
+    # batch = np.ndarray(shape=(vecBatSze), dtype=np.int32)
+    vecBat = np.zeros(vecBatSze, dtype=np.int32)
+
+    # labels = np.ndarray(shape=(vecBatSze, 1), dtype=np.int32)
+    aryLbl = np.zeros((vecBatSze, 1), dtype=np.int32)
+
+    # span = 2 * varConWin + 1  # [ varConWin target varConWin ]
+    varSpan = 2 * varConWin + 1
+
+    # Buffer. ?
+    objBuf = collections.deque(maxlen=varSpan)  # pylint: disable=redefined-builtin
+
+    if glbVarIdx + varSpan > len(lstC):
+        glbVarIdx = 0
+
+    # Get coded words (integers) from corpus and put them on buffer. (?)
+    objBuf.extend(lstC[glbVarIdx:glbVarIdx + varSpan])
+
+    # Increment index:
+    glbVarIdx += varSpan
+
+    # Loop through ?
+    for idx01 in range(vecBatSze // varNumSkp):
+
+        # print("---")
+        # print("idx01 = " + str(idx01))
+
+        context_words = [w for w in range(varSpan) if w != varConWin]
+
+        words_to_use = random.sample(context_words, varNumSkp)
+
+        #print("context_words: " + str([dictRvrs[x] for x in context_words]))
+        #print("words_to_use: " + str([dictRvrs[x] for x in words_to_use]))
+
+        for idx02, context_word in enumerate(words_to_use):
+            #print("idx02 = " + str(idx02))
+            #print("context_word: " + dictRvrs[context_word])
+
+            vecBat[idx01 * varNumSkp + idx02] = objBuf[varConWin]
+
+            aryLbl[idx01 * varNumSkp + idx02, 0] = objBuf[context_word]
+
+            # print("vecBat: " + dictRvrs[vecBat[idx01 * varNumSkp + idx02]])
+            # print("aryLbl: " + dictRvrs[[idx01 * varNumSkp + idx02, 0][0]])
+
+            if glbVarIdx == len(lstC):
+                objBuf.extend(lstC[0:varSpan])
+                glbVarIdx = varSpan
+                print("!!!")
+
+            else:
+                # print("glbVarIdx = " + dictRvrs[lstC[glbVarIdx]])
+                objBuf.append(lstC[glbVarIdx])
+                glbVarIdx += 1
+
+            # Backtrack a little bit to avoid skipping words in the end of a
+            # batch
+            glbVarIdx = (glbVarIdx + len(lstC) - varSpan) % len(lstC)
+
+    return vecBat, aryLbl, glbVarIdx
