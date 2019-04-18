@@ -19,7 +19,7 @@
 
 """Basic word2vec example."""
 
-# cd '/Users/john/1_PhD/GitLab/literary_lstm'
+# cd '/home/john/PhD/GitLab/literary_lstm'
 
 import os
 # import collections
@@ -43,12 +43,17 @@ from six.moves import xrange  # pylint: disable=redefined-builtin
 from tensorflow.contrib.tensorboard.plugins import projector
 
 
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+
+
+
 # Path of input text files:
-# strPthIn = '/Users/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
-strPthIn = '/Users/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks_excerpt.txt'
+# strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
+strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks_excerpt.txt'
 
 # Tensorflow log directory:
-strTfLog = '/Users/john/1_PhD/GitLab/literary_lstm/tf_log'
+strTfLog = '/home/john/1_PhD/GitLab/literary_lstm/tf_log'
 
 # Read text from file:
 lstTxt = read_text(strPthIn)
@@ -185,7 +190,7 @@ with graph.as_default():
     with tf.name_scope('loss'):
 
         # Objective function to reduce (?)
-        loss = tf.reduce_mean(
+        varLoss = tf.reduce_mean(
             tf.nn.nce_loss(
                 weights=aryWghts,
                 biases=aryBiases,
@@ -196,95 +201,119 @@ with graph.as_default():
                 )
             )
 
-type(loss)
-loss.shape
-
     # Add the loss value as a scalar to summary.
-    tf.summary.scalar('loss', loss)
+    tf.summary.scalar('loss', varLoss)
 
     # Construct the SGD optimizer using a learning rate of 1.0.
     with tf.name_scope('optimizer'):
-        optimizer = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+        objOpt = tf.train.GradientDescentOptimizer(1.0).minimize(varLoss)
 
     # Compute the cosine similarity between minibatch examples and all
     # embeddings.
-    norm = tf.sqrt(tf.reduce_sum(tf.square(aryTfEmbd), 1, keepdims=True))
-    normalized_embeddings = aryTfEmbd / norm
-    valid_embeddings = tf.nn.embedding_lookup(normalized_embeddings,
-                                              vecTfEvalSmple)
-    similarity = tf.matmul(
-        valid_embeddings, normalized_embeddings, transpose_b=True)
+    aryNorm = tf.sqrt(tf.reduce_sum(tf.square(aryTfEmbd), 1, keepdims=True))
+    # "normalized_embeddings", size: number of words * number of neurons in
+    # hidden layer (?)
+    aryNormEmb = aryTfEmbd / aryNorm
+
+    # Get embeddings of validation dataset (?), size: number of words in
+    # validation dataset * number of neurons in hidden layer.
+    aryEvalEmbd = tf.nn.embedding_lookup(aryNormEmb,
+                                         vecTfEvalSmple)
+
+
+    # "similarity", size: number of words in validation set * number of words
+    # in vocabulary.
+    arySim = tf.matmul(aryEvalEmbd, aryNormEmb, transpose_b=True)
 
     # Merge all summaries.
-    merged = tf.summary.merge_all()
+    objMrgSmry = tf.summary.merge_all()
+
+
 
     # Add variable initializer.
-    init = tf.global_variables_initializer()
+    objInit = tf.global_variables_initializer()
 
     # Create a saver.
-    saver = tf.train.Saver()
+    objSaver = tf.train.Saver()
 
     # Step 5: Begin training.
-    num_steps = 100001
+    varNumStp = 100001
 
-with tf.Session(graph=graph) as session:
+with tf.Session(graph=graph) as objSess:
 
     # Open a writer to write summaries.
-    writer = tf.summary.FileWriter(strTfLog, session.graph)
+    objWrtr = tf.summary.FileWriter(strTfLog, objSess.graph)
 
     # We must initialize all variables before we use them.
-    init.run()
+    objInit.run()
     print('Initialized')
 
-    average_loss = 0
-    for step in xrange(num_steps):
-        batch_inputs, batch_labels, glbVarIdx = generate_batch(lstC,
-                                                               glbVarIdx,
-                                                               vecBatSze=vecBatSze,
-                                                               varNumSkp=varNumSkp,
-                                                               varConWin=varConWin)
-        feed_dict = {vecTfWrds: batch_inputs, aryTfCntxt: batch_labels}
+    # Average loss, will be updated after certain number of steps.
+    varAvrgLoss = 0
+
+    for idxStp in xrange(varNumStp):
+
+        vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
+                                                      glbVarIdx,
+                                                      vecBatSze=vecBatSze,
+                                                      varNumSkp=varNumSkp,
+                                                      varConWin=varConWin)
+
+        dicFeed = {vecTfWrds: vecWrds, aryTfCntxt: aryCntxt}
 
         # Define metadata variable.
-        run_metadata = tf.RunMetadata()
+        objMetadata = tf.RunMetadata()
 
         # We perform one update step by evaluating the optimizer op (including it
         # in the list of returned values for session.run()
         # Also, evaluate the merged op to get all summaries from the returned
         # "summary" variable. Feed metadata variable to session for visualizing
         # the graph in TensorBoard.
-        _, summary, loss_val = session.run([optimizer, merged, loss],
-                                           feed_dict=feed_dict,
-                                           run_metadata=run_metadata)
-        average_loss += loss_val
+        _, objSmry, varLoss = objSess.run([objOpt, objMrgSmry, varLoss],
+                                           feed_dict=dicFeed,
+                                           run_metadata=objMetadata)
+        varAvrgLoss += varLoss
 
         # Add returned summaries to writer in each step.
-        writer.add_summary(summary, step)
-        # Add metadata to visualize the graph for the last run.
-        if step == (num_steps - 1):
-            writer.add_run_metadata(run_metadata, 'step%d' % step)
+        objWrtr.add_summary(objSmry, idxStp)
 
-        if step % 2000 == 0:
-            if step > 0:
-                average_loss /= 2000
+        # Add metadata to visualize the graph for the last run.
+        if idxStp == (varNumStp - 1):
+            objWrtr.add_run_metadata(objMetadata, 'step%d' % idxStp)
+
+        if idxStp % 2000 == 0:
+            if idxStp > 0:
+                varAvrgLoss /= 2000
+
         # The average loss is an estimate of the loss over the last 2000
         # batches.
-        print('Average loss at step ', step, ': ', average_loss)
-        average_loss = 0
+        print('Average loss at step ', idxStp, ': ', varAvrgLoss)
+        varAvrgLoss = 0
 
-      # Note that this is expensive (~20% slowdown if computed every 500 steps)
-        if step % 10000 == 0:
-            sim = similarity.eval()
-            for i in xrange(varSzeEval):
-                valid_word = dictRvrs[vecEvalSmple[i]]
-                top_k = 8  # number of nearest neighbors
-                nearest = (-sim[i, :]).argsort()[1:top_k + 1]
-                log_str = 'Nearest to %s:' % valid_word
-                for k in xrange(top_k):
-                    close_word = dictRvrs[nearest[k]]
-                    log_str = '%s %s,' % (log_str, close_word)
-                print(log_str)
-    final_embeddings = normalized_embeddings.eval()
+        # Note that this is expensive (~20% slowdown if computed every 500 steps)
+        if idxStp % 10000 == 0:
+
+            arySimTmp = arySim.eval()
+
+            # Loop through words in validation set:
+            for idxEval in xrange(varSzeEval):
+
+                strEvalWrd = dictRvrs[vecEvalSmple[idxEval]]
+                varNnn = 8  # number of nearest neighbors
+                vecNearest = (-arySimTmp[idxEval, :]).argsort()[1:varNnn + 1]
+                strLogMsg = 'Nearest to %s:' % strEvalWrd
+
+                # Loop through nearest neighbouring words:
+                for idxNghb in xrange(varNnn):
+
+                    # Close word:
+                    strWrdCls = dictRvrs[vecNearest[idxNghb]]
+                    strLogMsg = '%s %s,' % (strLogMsg, strWrdCls)
+
+                print(strLogMsg)
+
+    # "Final embeddings":
+    aryEmbFnl = aryNormEmb.eval()
 
     # Write corresponding labels for the embeddings.
     with open(strTfLog + '/metadata.tsv', 'w') as f:
@@ -292,71 +321,64 @@ with tf.Session(graph=graph) as session:
             f.write(dictRvrs[i] + '\n')
 
     # Save the model for checkpoints.
-    saver.save(session, os.path.join(strTfLog, 'model.ckpt'))
+    objSaver.save(objSess, os.path.join(strTfLog, 'model.ckpt'))
 
     # Create a configuration for visualizing embeddings with the labels in
     # TensorBoard.
     config = projector.ProjectorConfig()
     embedding_conf = config.embeddings.add()
-    embedding_conf.tensor_name = embeddings.name
+    embedding_conf.tensor_name = aryTfEmbd.name
     embedding_conf.metadata_path = os.path.join(strTfLog, 'metadata.tsv')
-    projector.visualize_embeddings(writer, config)
+    projector.visualize_embeddings(objWrtr, config)
 
-    writer.close()
+objWrtr.close()
 
-    # Step 6: Visualize the embeddings.
+# Step 6: Visualize the embeddings.
 
-    # pylint: disable=missing-docstring
-    # Function to draw visualization of distance between embeddings.
-    def plot_with_labels(low_dim_embs, aryCntxt, filename):
-        assert low_dim_embs.shape[0] >= len(aryCntxt), 'More labels than embeddings'
-        plt.figure(figsize=(18, 18))  # in inches
-        for i, label in enumerate(aryCntxt):
-            x, y = low_dim_embs[i, :]
-            plt.scatter(x, y)
-            plt.annotate(
-                label,
-                xy=(x, y),
-                xytext=(5, 2),
-                textcoords='offset points',
-                ha='right',
-                va='bottom')
+# pylint: disable=missing-docstring
+# Function to draw visualization of distance between embeddings.
+def plot_with_labels(low_dim_embs, aryCntxt, filename):
+    assert low_dim_embs.shape[0] >= len(aryCntxt), 'More labels than embeddings'
+    plt.figure(figsize=(18, 18))  # in inches
+    for i, label in enumerate(aryCntxt):
+        x, y = low_dim_embs[i, :]
+        plt.scatter(x, y)
+        plt.annotate(
+            label,
+            xy=(x, y),
+            xytext=(5, 2),
+            textcoords='offset points',
+            ha='right',
+            va='bottom')
 
-        plt.savefig(filename)
+    plt.savefig(filename)
 
-    try:
-        # pylint: disable=g-import-not-at-top
-        from sklearn.manifold import TSNE
-        import matplotlib.pyplot as plt
+tsne = TSNE(perplexity=30,
+            n_components=2,
+            init='pca',
+            n_iter=5000,
+            method='exact')
+plot_only = 500
+low_dim_embs = tsne.fit_transform(aryEmbFnl[:plot_only, :])
+aryCntxt = [dictRvrs[i] for i in xrange(plot_only)]
+plot_with_labels(low_dim_embs, aryCntxt, os.path.join(strTfLog,
+                                                      'tsne.png'))
 
-        tsne = TSNE(
-            perplexity=30, n_components=2, init='pca', n_iter=5000, method='exact')
-        plot_only = 500
-        low_dim_embs = tsne.fit_transform(final_embeddings[:plot_only, :])
-        aryCntxt = [dictRvrs[i] for i in xrange(plot_only)]
-        plot_with_aryLbl(low_dim_embs, aryCntxt, os.path.join(gettempdir(),
-                                                            'tsne.png'))
-
-    except ImportError as ex:
-        print('Please install sklearn, matplotlib, and scipy to show embeddings.')
-        print(ex)
-
-
-# All functionality is run after tf.app.run() (b/122547914). This could be split
-# up but the methods are laid sequentially with their usage for clarity.
-def main(unused_argv):
-    # Give a folder path as an argument with '--strTfLog' to save
-    # TensorBoard summaries. Default is a log folder in current directory.
-    current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--strTfLog',
-        type=str,
-        default=os.path.join(current_path, 'log'),
-        help='The log directory for TensorBoard summaries.')
-    flags, unused_flags = parser.parse_known_args()
-    word2vec_basic(flags.strTfLog)
-
-if __name__ == '__main__':
-    tf.app.run()
+## All functionality is run after tf.app.run() (b/122547914). This could be split
+## up but the methods are laid sequentially with their usage for clarity.
+#def main(unused_argv):
+#    # Give a folder path as an argument with '--log_dir' to save
+#    # TensorBoard summaries. Default is a log folder in current directory.
+#    # current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+#
+#    parser = argparse.ArgumentParser()
+#    parser.add_argument(
+#        '--strTfLog',
+#        type=str,
+#        default=os.path.join(strTfLog, 'log'),
+#        help='The log directory for TensorBoard summaries.')
+#    flags, unused_flags = parser.parse_known_args()
+#    word2vec_basic(flags.strTfLog)
+#
+#if __name__ == '__main__':
+#    tf.app.run()
