@@ -227,7 +227,6 @@ def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
             if glbVarIdx == len(lstC):
                 objBuf.extend(lstC[0:varSpan])
                 glbVarIdx = varSpan
-                print("!!!")
 
             else:
                 # print("glbVarIdx = " + dictRvrs[lstC[glbVarIdx]])
