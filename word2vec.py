@@ -53,7 +53,7 @@ import matplotlib.pyplot as plt
 strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks_excerpt.txt'
 
 # Tensorflow log directory:
-strTfLog = '/home/john/1_PhD/GitLab/literary_lstm/tf_log'
+strTfLog = '/home/john/PhD/GitLab/literary_lstm/tf_log'
 
 # Read text from file:
 lstTxt = read_text(strPthIn)
@@ -358,7 +358,7 @@ tsne = TSNE(perplexity=30,
             init='pca',
             n_iter=5000,
             method='exact')
-plot_only = 500
+plot_only = 100
 low_dim_embs = tsne.fit_transform(aryEmbFnl[:plot_only, :])
 aryCntxt = [dictRvrs[i] for i in xrange(plot_only)]
 plot_with_labels(low_dim_embs, aryCntxt, os.path.join(strTfLog,
