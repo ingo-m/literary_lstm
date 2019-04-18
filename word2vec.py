@@ -49,8 +49,9 @@ import matplotlib.pyplot as plt
 
 
 # Path of input text files:
-strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
+# strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
 # strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks_excerpt.txt'
+strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/compilation.txt'
 
 # Tensorflow log directory:
 strTfLog = '/home/john/PhD/GitLab/literary_lstm/tf_log'
@@ -58,6 +59,8 @@ strTfLog = '/home/john/PhD/GitLab/literary_lstm/tf_log'
 # Read text from file:
 lstTxt = read_text(strPthIn)
 
+# Make all words lower case:
+lstTxt = [x.lower() for x in lstTxt]
 
 #def word2vec_basic(strTfLog):
 #    """Example of building, training and visualizing a word2vec model."""
@@ -71,7 +74,7 @@ if not os.path.exists(strTfLog):
 # Vocabulary size (number of words; rare words are replaced with 'unknown'
 # code if the vocabulary size is exceeded by the number of words in the
 # text).
-varVocSze = 25000  # 50000
+varVocSze = 18000 # 50000
 
 # Build coded dataset from text:
 lstC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(lstTxt, varVocSze)
@@ -83,7 +86,7 @@ del lstTxt
 # print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
 
 # Batch size: (?)
-varBatSze = 128
+varBatSze = 5000
 
 # How many times to reuse an input to generate a label.
 # ???
@@ -115,10 +118,10 @@ vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
 # Step 4: Build and train a skip-gram model.
 
 # Dimension of the embedding vector. (Number of neurons in hidden layer?)
-varSzeEmb = 128
+varSzeEmb = 100
 
 # Number of negative examples to sample.
-varNumNgtv = 64
+varNumNgtv = 300
 
 # We pick a random validation set to sample nearest neighbors. Here we limit
 # the validation samples to the words that have a low numeric ID, which by
@@ -126,7 +129,7 @@ varNumNgtv = 64
 # displaying model accuracy, they don't affect calculation.
 
 # Random set of words to evaluate similarity on:
-varSzeEval = 16
+varSzeEval = 10
 
 # Only pick dev samples in the head of the distribution:
 varSzeEvalWin = int(np.around((varVocSze * 0.1)))
@@ -237,7 +240,7 @@ with graph.as_default():
     objSaver = tf.train.Saver()
 
 # Step 5: Begin training.
-varNumStp = 1000001
+varNumStp = 100001
 
 with tf.Session(graph=graph) as objSess:
 
@@ -332,6 +335,19 @@ with tf.Session(graph=graph) as objSess:
     projector.visualize_embeddings(objWrtr, config)
 
 objWrtr.close()
+
+# Save text, dictionary, and embeddings to disk:
+np.savez(os.path.join(strTfLog, 'word2vec_data.npz'),
+         lstC=lstC,  # Coded text
+         dicWdCnOdr=dicWdCnOdr,  # Dictionary, keys=words
+         dictRvrs=dictRvrs,  # Reservse dictionary, keys=ordinal-word-count
+         aryEmbFnl=aryEmbFnl  # Embedding matrix
+         )
+
+
+# idxWrd = 1000
+# dictRvrs[idxWrd]
+
 
 # Step 6: Visualize the embeddings.
 
