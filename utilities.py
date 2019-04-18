@@ -137,7 +137,7 @@ def build_dataset(lstTxt, varVocSze=50000):
     return lstC, lstWrdCnt, dicWdCnOdr, dictRvrs
 
 
-def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
+def generate_batch(lstC, glbVarIdx, varBatSze=8, varNumSkp=2, varConWin=1):
     """
     Generate training batch for skip-gram model.
 
@@ -149,7 +149,7 @@ def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
         number (i.e. the 50th most common word has the code 50).
     glbVarIdx : int
         ???
-    vecBatSze : int
+    varBatSze : int
         Batch size (number of words).
     varNumSkp : int
         ???
@@ -174,14 +174,14 @@ def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
     """
 
     # global glbVarIdx
-    assert vecBatSze % varNumSkp == 0
+    assert varBatSze % varNumSkp == 0
     assert varNumSkp <= 2 * varConWin
 
-    # batch = np.ndarray(shape=(vecBatSze), dtype=np.int32)
-    vecWrds = np.zeros(vecBatSze, dtype=np.int32)
+    # batch = np.ndarray(shape=(varBatSze), dtype=np.int32)
+    vecWrds = np.zeros(varBatSze, dtype=np.int32)
 
-    # labels = np.ndarray(shape=(vecBatSze, 1), dtype=np.int32)
-    aryCntxt = np.zeros((vecBatSze, 1), dtype=np.int32)
+    # labels = np.ndarray(shape=(varBatSze, 1), dtype=np.int32)
+    aryCntxt = np.zeros((varBatSze, 1), dtype=np.int32)
 
     # span = 2 * varConWin + 1  # [ varConWin target varConWin ]
     # Span - twice the context window plus one (because of target word)?
@@ -200,7 +200,7 @@ def generate_batch(lstC, glbVarIdx, vecBatSze=8, varNumSkp=2, varConWin=1):
     glbVarIdx += varSpan
 
     # Loop through ?
-    for idx01 in range(vecBatSze // varNumSkp):
+    for idx01 in range(varBatSze // varNumSkp):
 
         # print("---")
         # print("idx01 = " + str(idx01))

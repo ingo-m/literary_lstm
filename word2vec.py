@@ -49,8 +49,8 @@ import matplotlib.pyplot as plt
 
 
 # Path of input text files:
-# strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
-strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks_excerpt.txt'
+strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
+# strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks_excerpt.txt'
 
 # Tensorflow log directory:
 strTfLog = '/home/john/PhD/GitLab/literary_lstm/tf_log'
@@ -71,7 +71,7 @@ if not os.path.exists(strTfLog):
 # Vocabulary size (number of words; rare words are replaced with 'unknown'
 # code if the vocabulary size is exceeded by the number of words in the
 # text).
-varVocSze = 140 # 20000  # 50000
+varVocSze = 25000  # 50000
 
 # Build coded dataset from text:
 lstC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(lstTxt, varVocSze)
@@ -83,15 +83,15 @@ del lstTxt
 # print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
 
 # Batch size: (?)
-vecBatSze = 4
+varBatSze = 128
 
 # How many times to reuse an input to generate a label.
 # ???
-varNumSkp = 1
+varNumSkp = 2
 
 # Size of context window, i.e. how many words to consider to the left and to
 # the right of each target word.
-varConWin = 3
+varConWin = 5
 
 # Global index. ?
 glbVarIdx = 0
@@ -100,7 +100,7 @@ glbVarIdx = 0
 # ???
 vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
                                               glbVarIdx,
-                                              vecBatSze=vecBatSze,
+                                              varBatSze=varBatSze,
                                               varNumSkp=varNumSkp,
                                               varConWin=varConWin)
 
@@ -115,10 +115,10 @@ vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
 # Step 4: Build and train a skip-gram model.
 
 # Dimension of the embedding vector. (Number of neurons in hidden layer?)
-varSzeEmb = 24 # 128
+varSzeEmb = 128
 
 # Number of negative examples to sample.
-varNumNgtv = 12 # 64
+varNumNgtv = 64
 
 # We pick a random validation set to sample nearest neighbors. Here we limit
 # the validation samples to the words that have a low numeric ID, which by
@@ -129,7 +129,7 @@ varNumNgtv = 12 # 64
 varSzeEval = 16
 
 # Only pick dev samples in the head of the distribution:
-varSzeEvalWin = 100
+varSzeEvalWin = int(np.around((varVocSze * 0.1)))
 vecEvalSmple = np.random.choice(varSzeEvalWin, varSzeEval, replace=False)
 
 graph = tf.Graph()
@@ -141,10 +141,10 @@ with graph.as_default():
 
         # Placeholder for batch of words (coded as integers) for which to
         # predict the context.
-        vecTfWrds = tf.placeholder(tf.int32, shape=[vecBatSze])
+        vecTfWrds = tf.placeholder(tf.int32, shape=[varBatSze])
 
         # Placeholder for context words to predict (coded as integers):
-        aryTfCntxt = tf.placeholder(tf.int32, shape=[vecBatSze, 1])
+        aryTfCntxt = tf.placeholder(tf.int32, shape=[varBatSze, 1])
 
         # Evaluation dataset (vector of words coded as integer). Used for
         # displaying model accuracy.
@@ -236,8 +236,8 @@ with graph.as_default():
     # Create a saver.
     objSaver = tf.train.Saver()
 
-    # Step 5: Begin training.
-    varNumStp = 100001
+# Step 5: Begin training.
+varNumStp = 1000001
 
 with tf.Session(graph=graph) as objSess:
 
@@ -255,7 +255,7 @@ with tf.Session(graph=graph) as objSess:
 
         vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
                                                       glbVarIdx,
-                                                      vecBatSze=vecBatSze,
+                                                      varBatSze=varBatSze,
                                                       varNumSkp=varNumSkp,
                                                       varConWin=varConWin)
 
@@ -281,9 +281,9 @@ with tf.Session(graph=graph) as objSess:
         if idxStp == (varNumStp - 1):
             objWrtr.add_run_metadata(objMetadata, 'step%d' % idxStp)
 
-        if idxStp % 2000 == 0:
+        if idxStp % 10000 == 0:
             if idxStp > 0:
-                varAvrgLoss /= 2000
+                varAvrgLoss /= 10000
 
             # The average loss is an estimate of the loss over the last 2000
             # batches.
@@ -291,7 +291,7 @@ with tf.Session(graph=graph) as objSess:
             varAvrgLoss = 0
 
         # Note that this is expensive (~20% slowdown if computed every 500 steps)
-        if idxStp % 10000 == 0:
+        if idxStp % 50000 == 0:
 
             arySimTmp = arySim.eval()
 
@@ -358,7 +358,7 @@ tsne = TSNE(perplexity=30,
             init='pca',
             n_iter=5000,
             method='exact')
-plot_only = 100
+plot_only = 500
 low_dim_embs = tsne.fit_transform(aryEmbFnl[:plot_only, :])
 aryCntxt = [dictRvrs[i] for i in xrange(plot_only)]
 plot_with_labels(low_dim_embs, aryCntxt, os.path.join(strTfLog,
