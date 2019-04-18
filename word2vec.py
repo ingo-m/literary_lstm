@@ -269,10 +269,10 @@ with tf.Session(graph=graph) as objSess:
         # Also, evaluate the merged op to get all summaries from the returned
         # "summary" variable. Feed metadata variable to session for visualizing
         # the graph in TensorBoard.
-        _, objSmry, varLoss = objSess.run([objOpt, objMrgSmry, varLoss],
-                                           feed_dict=dicFeed,
-                                           run_metadata=objMetadata)
-        varAvrgLoss += varLoss
+        _, objSmry, varTmpLoss = objSess.run([objOpt, objMrgSmry, varLoss],
+                                              feed_dict=dicFeed,
+                                              run_metadata=objMetadata)
+        varAvrgLoss += varTmpLoss
 
         # Add returned summaries to writer in each step.
         objWrtr.add_summary(objSmry, idxStp)
@@ -285,10 +285,10 @@ with tf.Session(graph=graph) as objSess:
             if idxStp > 0:
                 varAvrgLoss /= 2000
 
-        # The average loss is an estimate of the loss over the last 2000
-        # batches.
-        print('Average loss at step ', idxStp, ': ', varAvrgLoss)
-        varAvrgLoss = 0
+            # The average loss is an estimate of the loss over the last 2000
+            # batches.
+            print('Average loss at step ', idxStp, ': ', varAvrgLoss)
+            varAvrgLoss = 0
 
         # Note that this is expensive (~20% slowdown if computed every 500 steps)
         if idxStp % 10000 == 0:
