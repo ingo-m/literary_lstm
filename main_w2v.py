@@ -6,14 +6,13 @@ LSTM fun main function using word2vec embedding.
 
 
 # import time
-import random
+# import random
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib import rnn
 
-
-#from tensorflow.nn.rnn_cell import DropoutWrapper
-#from tf.contrib.rnn.DropoutWrapper
+# from tensorflow.nn.objRnn import DropoutWrapper
+# from tf.contrib.rnn.DropoutWrapper
 
 
 # -----------------------------------------------------------------------------
@@ -24,6 +23,25 @@ strPthIn = '/home/john/PhD/GitLab/literary_lstm/tf_log/word2vec_data.npz'
 
 # Log directory:
 strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
+
+# Learning rate:
+varLrnRte = 0.001
+
+# Number of training iterations:
+varNumItr = 1000000
+
+# Display steps (after x number of iterations):
+varDspStp = 1000
+
+# Number of input words from which to predict next word:
+varNumIn = 1
+
+# Number of neurons in first hidden layer:
+varNrn01 = 256
+
+# Number of neurons in second hidden layer:
+varNrn02 = 100
+
 
 # -----------------------------------------------------------------------------
 # *** Load data
@@ -43,189 +61,207 @@ dictRvrs = objNpz['dictRvrs'][()]
 # Embedding matrix:
 aryEmbFnl = objNpz['aryEmbFnl']
 
-
+# Transposed version of embedding matrix:
 aryEmbFnlT = aryEmbFnl.T
 
+
 # -----------------------------------------------------------------------------
-### Parameters
-
-# Learning rate:
-varLrnRte = 0.001
-
-# Number of training iterations:
-varNumItr = 10000000
-
-# Display steps (after x number of iterations):
-varDspStp = 1000
-
-# Number of input words from which to predict next word: (?)
-varNumIn = 5
-
-# Number of hidden units in RNN:
-varNumNrn = 512
+# *** Preparations
 
 # Vocabulary size (number of words):
 varNumWrds = aryEmbFnl.shape[0]
 
+print(('Size of vocabulary (number of unique words): ' + str(varNumWrds)))
+
+# Number of words in text (corpus):
+varLenTxt = len(lstC)
+
+print(('Length of text: ' + str(varLenTxt)))
+
+# Ratio number of words / text length:
+varNumRto = np.around((float(varNumWrds) / float(varLenTxt)), decimals=3)
+
+print(('Vocabulary / text ratio: ' + str(varNumRto)))
+
 # Size of embedding vector:
 varSzeEmb = aryEmbFnl.shape[1]
 
-# tf Graph input
-vecWrdsIn = tf.placeholder("float", [None, (varNumIn * varSzeEmb), 1])
-vecWrdsOut = tf.placeholder("float", [None, varNumWrds])
+# Total number of inputs (to input layer):
+varNumInTtl = varNumIn * varSzeEmb
 
-# RNN output node weights and biases
-weights = {
-    'out': tf.Variable(tf.random_normal([varNumNrn, varNumWrds]))
-}
-biases = {
-    'out': tf.Variable(tf.random_normal([varNumWrds]))
-}
+# Placeholder for inputs (to input layer):
+vecWrdsIn = tf.placeholder("float", [1, varNumInTtl])
 
-def RNN(vecWrdsIn, weights, biases):
+# Placeholder for output:
+vecWrdsOut = tf.placeholder("float", [varSzeEmb, 1])
 
-    # reshape to [1, varNumIn]
-    vecWrdsIn = tf.reshape(vecWrdsIn, [-1, varNumIn])
+# Weights of first & second hidden layers:
+aryWghts01 = tf.Variable(tf.random_normal([varNumInTtl, varNrn01]))
+aryWghts02 = tf.Variable(tf.random_normal([varNrn01, varNrn02]))
 
-    # Generate a varNumIn-element sequence of inputs
+# Biases for first & second hidden layers:
+vecBias01 = tf.Variable(tf.random_normal([varNrn01]))
+vecBias02 = tf.Variable(tf.random_normal([varNrn02]))
+
+# -----------------------------------------------------------------------------
+# *** RNN LSTM function
+
+def fncRnn(vecWrdsIn, aryWghts01, aryWghts02, vecBias01, vecBias02,
+           varNrn01, varNrn02):
+    """Recurrent neural network with LSTM cell and dropout."""
+
+    objRnn = rnn.MultiRNNCell(
+                              [rnn.DropoutWrapper(
+                                                  rnn.BasicLSTMCell(varNrn01),
+                                                  input_keep_prob=0.9,
+                                                  output_keep_prob=0.9,
+                                                  state_keep_prob=0.9,
+                                                  ),
+                               rnn.DropoutWrapper(
+                                                  rnn.BasicLSTMCell(varNrn02),
+                                                  input_keep_prob=0.9,
+                                                  output_keep_prob=0.9,
+                                                  state_keep_prob=0.9,
+                                                  )]
+                               )
+
+    # Generate a n_input-element sequence of inputs
     # (eg. [had] [a] [general] -> [20] [6] [33])
-    vecWrdsIn = tf.split(vecWrdsIn, varNumIn, 1)
+    # x = tf.split(x, n_input, 1)
 
-    rnn_cell = rnn.MultiRNNCell([rnn.DropoutWrapper(
-                                                    rnn.BasicLSTMCell(varNumNrn),
-                                                    input_keep_prob=0.7,
-                                                    output_keep_prob=0.7,
-                                                    state_keep_prob=0.7,
-                                                    ),
-                                 rnn.DropoutWrapper(
-                                                    rnn.BasicLSTMCell(varNumNrn),
-                                                    input_keep_prob=0.7,
-                                                    output_keep_prob=0.7,
-                                                    state_keep_prob=0.7,
-                                                    )
-                                 ])
+    # ?
+    lstOut, objState = rnn.static_rnn(objRnn, [vecWrdsIn], dtype=tf.float32)
 
-    # 2-layer LSTM, each layer has varNumNrn units.
-    # Average Accuracy= 95.20% at 50k iter
-    # rnn_cell = rnn.MultiRNNCell([rnn.BasicLSTMCell(varNumNrn),
-    #                              rnn.BasicLSTMCell(varNumNrn)])
+    #print('type(lstOut)')
+    #print(type(lstOut))
+    #print('len(lstOut)')
+    #print(len(lstOut))
+    #print('lstOut')
+    #print(lstOut)
 
-    # 1-layer LSTM with varNumNrn units but with lower accuracy.
-    # Average Accuracy= 90.60% 50k iter
-    # Uncomment line below to test but comment out the 2-layer rnn.MultiRNNCell above
-    # rnn_cell = rnn.BasicLSTMCell(varNumNrn)
+    #print('type(objState)')
+    #print(type(objState))
+    #print('len(objState)')
+    #print(len(objState))
+    #print('objState')
+    #print(objState)
 
-    # generate prediction
-    outputs, states = rnn.static_rnn(rnn_cell, vecWrdsIn, dtype=tf.float32)
+    # objState
+    # (
+    # LSTMStateTuple(c=<tf.Tensor 'rnn/rnn/multi_rnn_cell/cell_0/basic_lstm_cell/Add_1:0' shape=(1, 256) dtype=float32>,
+    # h=<tf.Tensor 'rnn/rnn/multi_rnn_cell/cell_0/dropout_1/mul:0' shape=(1, 256) dtype=float32>),
+    # LSTMStateTuple(c=<tf.Tensor 'rnn/rnn/multi_rnn_cell/cell_1/basic_lstm_cell/Add_1:0' shape=(1, 100) dtype=float32>,
+    # h=<tf.Tensor 'rnn/rnn/multi_rnn_cell/cell_1/dropout_1/mul:0' shape=(1, 100) dtype=float32>)
+    # )
 
-    # there are varNumIn outputs but
-    # we only want the last output
-    return tf.matmul(outputs[-1], weights['out']) + biases['out']
+    # Activation function (select second element in lstOut, corresponding to
+    # the output layer):
+    # aryOut = tf.add(tf.matmul(lstOut[0], aryWghts02), vecBias02)
+    aryOut = lstOut[0]
 
-pred = RNN(vecWrdsIn, weights, biases)
+    return aryOut
 
-# Loss and optimizer
-cost = tf.reduce_mean(
-                      tf.nn.softmax_cross_entropy_with_logits(logits=pred,
-                                                              labels=vecWrdsOut)
-                      )
+# -----------------------------------------------------------------------------
+# ***
 
-optimizer = tf.train.RMSPropOptimizer(
-                                      learning_rate=varLrnRte
-                                      ).minimize(cost)
+aryOut = fncRnn(vecWrdsIn, aryWghts01, aryWghts02, vecBias01, vecBias02,
+                varNrn01, varNrn02)
 
-# Model evaluation
-correct_pred = tf.equal(tf.argmax(pred,1), tf.argmax(vecWrdsOut,1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+# Cost function:
+objCost = tf.reduce_mean(tf.squared_difference(aryOut, vecWrdsOut))
 
-# Initializing the variables
-init = tf.global_variables_initializer()
+# Optimiser:
+objOpt = tf.train.RMSPropOptimizer(
+                                   learning_rate=varLrnRte
+                                    ).minimize(objCost)
 
-training_data = lstC
+# Variable initialiser:
+objInit = tf.global_variables_initializer()
+
+# To keep track of total accuracy & loss:
+varAccTtl = 0
+varLssTtl = 0
+
+# -----------------------------------------------------------------------------
+# *** Run optimisation
 
 # Launch the graph
-with tf.Session() as session:
-    session.run(init)
-    step = 0
-    offset = random.randint(0,varNumIn+1)
-    end_offset = varNumIn + 1
-    acc_total = 0
-    loss_total = 0
+with tf.Session() as objSess:
 
-    while step < varNumItr:
-        # Generate a minibatch. Add some randomness on selection process.
-        if offset > (len(training_data)-end_offset):
-            offset = random.randint(0, varNumIn+1)
+    # Initializing the variables:
+    objSess.run(objInit)
 
-        # symbols_in_keys = [ [dictionary[ str(training_data[i])]] for i in range(offset, offset+varNumIn) ]
-        # symbols_in_keys = np.reshape(np.array(symbols_in_keys), [-1, varNumIn, 1])
+    # Loop through iterations:
+    for idxItr in range(varNumItr):
 
-        # Get integer codes of next chunk of words:
-        lstTmpWrds = [lstC[x] for x in range(offset, offset+varNumIn)]
-        # Get embedding vectors for words:
-        aryTmpWrds = np.array(aryEmbFnl[lstTmpWrds, :]).reshape((-1, (varNumIn * varSzeEmb), 1))
+        # Loop through text (corpus). Index refers to target word (i.e. word
+        # to be predicted).
+        for idxWrd in range(varNumIn, varLenTxt):
 
-        #if step < 10:
-        #    print(aryTmpWrds.shape)
+            # Get integer codes of context word(s):
+            lstCntxt = lstC[(idxWrd - varNumIn):idxWrd]
 
-        # symbols_out_onehot = np.zeros([varNumWrds], dtype=float)
-        # symbols_out_onehot[dictionary[str(training_data[offset+varNumIn])]] = 1.0
-        # symbols_out_onehot = np.reshape(symbols_out_onehot,[1,-1])
+            # Get embedding vectors for words:
+            aryCntxt = np.array(aryEmbFnl[lstCntxt, :])
 
-        # Word to predict:
-        # lstC[(offset + varNumIn)]
-        symbols_out_onehot = np.zeros([varNumWrds], dtype=float)
-        symbols_out_onehot[lstC[(offset + varNumIn)]] = 1.0
-        symbols_out_onehot = np.reshape(symbols_out_onehot,[1,-1])
+            # Word to predict (target):
+            varTrgt = lstC[idxWrd]
 
-        _, acc, loss, onehot_pred = session.run([optimizer, accuracy, cost, pred], \
-                                                feed_dict={vecWrdsIn: aryTmpWrds, vecWrdsOut: symbols_out_onehot})
+            # Get embedding vector for target word:
+            vecTrgt = aryEmbFnl[varTrgt, :].reshape((varSzeEmb, 1))
 
-        # if step < 10:
-        #     print(onehot_pred.shape)
+            objSess.run(objOpt,
+                        feed_dict={vecWrdsIn: aryCntxt,
+                                   vecWrdsOut: vecTrgt}
+                        )
 
-        loss_total += loss
-        acc_total += acc
-        if (step+1) % varDspStp == 0:
-            print("Iter= " + str(step+1) + ", Average Loss= " + \
-                  "{:.6f}".format(loss_total/varDspStp) + ", Average Accuracy= " + \
-                  "{:.2f}%".format(100*acc_total/varDspStp))
-            acc_total = 0
-            loss_total = 0
-            symbols_in = [dictRvrs[training_data[i]] for i in range(offset, offset + varNumIn)]
-            symbols_out = dictRvrs[training_data[offset + varNumIn]]
+# -----------------------------------------------------------------------------
+# ***
 
-            #symbols_out_pred = dictRvrs[int(tf.argmax(onehot_pred, 1).eval())]
-            # Sum of squares 
-            vecTmp = np.sum(np.square(np.subtract(aryEmbFnlT, onehot_pred)), axis=0)
-            symbols_out_pred = dictRvrs[int(np.argmin(vecTmp))]
+assert False
 
-            print("%s - [%s] vs [%s]" % (symbols_in,symbols_out,symbols_out_pred))
-        step += 1
-        offset += (varNumIn+1)
+varLssTtl += loss
+varAccTtl += acc
+if (idxItr+1) % varDspStp == 0:
+    print("Iter= " + str(idxItr+1) + ", Average Loss= " + \
+          "{:.6f}".format(varLssTtl/varDspStp) + ", Average Accuracy= " + \
+          "{:.2f}%".format(100*varAccTtl/varDspStp))
+    varAccTtl = 0
+    varLssTtl = 0
+    symbols_in = [dictRvrs[lstC[i]] for i in range(offset, offset + varNumIn)]
+    symbols_out = dictRvrs[lstC[offset + varNumIn]]
 
-    print("Optimization Finished!")
-    print("Run on command line.")
-    # print("\ttensorboard --logdir=%s" % (logs_path))
-    # print("Point your web browser to: http://localhost:6006/")
-    while True:
-        prompt = "%s words: " % varNumIn
-        sentence = input(prompt)
-        sentence = sentence.strip()
-        words = sentence.split(' ')
-        if len(words) != varNumIn:
-            continue
-        try:
-            symbols_in_keys = [dicWdCnOdr[str(words[i])] for i in range(len(words))]
-            for i in range(32):
-                keys = np.reshape(np.array(symbols_in_keys), [-1, varNumIn, 1])
-                onehot_pred = session.run(pred, feed_dict={vecWrdsIn: keys})
+    #symbols_out_pred = dictRvrs[int(tf.argmax(onehot_pred, 1).eval())]
+    # Sum of squares
+    vecTmp = np.sum(np.square(np.subtract(aryEmbFnlT, onehot_pred)), axis=0)
+    symbols_out_pred = dictRvrs[int(np.argmin(vecTmp))]
 
-                onehot_pred_index = int(tf.argmax(onehot_pred, 1).eval())
+    print("%s - [%s] vs [%s]" % (symbols_in,symbols_out,symbols_out_pred))
+idxItr += 1
+offset += (varNumIn+1)
 
-                sentence = "%s %s" % (sentence,dictRvrs[onehot_pred_index])
-                symbols_in_keys = symbols_in_keys[1:]
-                symbols_in_keys.append(onehot_pred_index)
-            print(sentence)
-        except:
-            print("Word not in dictionary")
+print("Optimization Finished!")
+print("Run on command line.")
+# print("\ttensorboard --logdir=%s" % (logs_path))
+# print("Point your web browser to: http://localhost:6006/")
+while True:
+    prompt = "%s words: " % varNumIn
+    sentence = input(prompt)
+    sentence = sentence.strip()
+    words = sentence.split(' ')
+    if len(words) != varNumIn:
+        continue
+    try:
+        symbols_in_keys = [dicWdCnOdr[str(words[i])] for i in range(len(words))]
+        for i in range(32):
+            keys = np.reshape(np.array(symbols_in_keys), [-1, varNumIn, 1])
+            onehot_pred = objSess.run(pred, feed_dict={vecWrdsIn: keys})
+
+            onehot_pred_index = int(tf.argmax(onehot_pred, 1).eval())
+
+            sentence = "%s %s" % (sentence,dictRvrs[onehot_pred_index])
+            symbols_in_keys = symbols_in_keys[1:]
+            symbols_in_keys.append(onehot_pred_index)
+        print(sentence)
+    except:
+        print("Word not in dictionary")
