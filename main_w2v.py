@@ -31,7 +31,7 @@ varLrnRte = 0.001
 varNumItr = 1000000
 
 # Display steps (after x number of iterations):
-varDspStp = 10000
+varDspStp = 1
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -59,17 +59,20 @@ dicWdCnOdr = objNpz['dicWdCnOdr'][()]
 dictRvrs = objNpz['dictRvrs'][()]
 
 # Embedding matrix:
-aryEmbFnl = objNpz['aryEmbFnl']
+aryEmb = objNpz['aryEmbFnl']
+
+# Tensorflow constant fo embedding matrix:
+aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
 
 # Transposed version of embedding matrix:
-aryEmbFnlT = aryEmbFnl.T
+aryEmbT = aryEmb.T
 
 
 # -----------------------------------------------------------------------------
 # *** Preparations
 
 # Vocabulary size (number of words):
-varNumWrds = aryEmbFnl.shape[0]
+varNumWrds = aryEmb.shape[0]
 
 print(('Size of vocabulary (number of unique words): ' + str(varNumWrds)))
 
@@ -84,24 +87,16 @@ varNumRto = np.around((float(varNumWrds) / float(varLenTxt)), decimals=3)
 print(('Vocabulary / text ratio: ' + str(varNumRto)))
 
 # Size of embedding vector:
-varSzeEmb = aryEmbFnl.shape[1]
+varSzeEmb = aryEmb.shape[1]
 
 # Total number of inputs (to input layer):
 varNumInTtl = varNumIn * varSzeEmb
 
 # Placeholder for inputs (to input layer):
-vecWrdsIn = tf.placeholder("float", [1, varNumInTtl])
+vecWrdsIn = tf.placeholder(tf.float32, [1, varNumInTtl])
 
 # Placeholder for output:
-vecWrdsOut = tf.placeholder("float", [varSzeEmb, 1])
-
-# Weights of first & second hidden layers:
-# aryWghts01 = tf.Variable(tf.random_normal([varNumInTtl, varNrn01]))
-# aryWghts02 = tf.Variable(tf.random_normal([varNrn01, varNrn02]))
-
-# Biases for first & second hidden layers:
-# vecBias01 = tf.Variable(tf.random_normal([varNrn01]))
-# vecBias02 = tf.Variable(tf.random_normal([varNrn02]))
+vecWrdsOut = tf.placeholder(tf.float32, [varSzeEmb, 1])
 
 
 # -----------------------------------------------------------------------------
@@ -125,26 +120,8 @@ def fncRnn(vecWrdsIn, varNrn01, varNrn02):
                                                   )]
                                )
 
-    # Generate a n_input-element sequence of inputs
-    # (eg. [had] [a] [general] -> [20] [6] [33])
-    # x = tf.split(x, n_input, 1)
-
     # ?
     lstOut, objState = rnn.static_rnn(objRnn, [vecWrdsIn], dtype=tf.float32)
-
-    #print('type(lstOut)')
-    #print(type(lstOut))
-    #print('len(lstOut)')
-    #print(len(lstOut))
-    #print('lstOut')
-    #print(lstOut)
-
-    #print('type(objState)')
-    #print(type(objState))
-    #print('len(objState)')
-    #print(len(objState))
-    #print('objState')
-    #print(objState)
 
     # objState
     # (
@@ -159,20 +136,28 @@ def fncRnn(vecWrdsIn, varNrn01, varNrn02):
     # aryOut = tf.add(tf.matmul(lstOut[0], aryWghts02), vecBias02)
     aryOut = lstOut[0]
 
-    return aryOut, objState
+    return aryOut
+
 
 # -----------------------------------------------------------------------------
 # ***
 
-aryOut, objState = fncRnn(vecWrdsIn, varNrn01, varNrn02)
+aryOut = fncRnn(vecWrdsIn, varNrn01, varNrn02)
 
 # Cost function:
-objCost = tf.reduce_mean(tf.squared_difference(aryOut, vecWrdsOut))
+objCost = tf.sqrt(tf.reduce_sum(tf.squared_difference(aryOut, vecWrdsOut)))
 
 # Optimiser:
 objOpt = tf.train.RMSPropOptimizer(
                                    learning_rate=varLrnRte
                                    ).minimize(objCost)
+
+# Predicted word (integer code):
+objPrd = tf.to_int32(
+    tf.argmin(tf.reduce_sum(tf.squared_difference(aryTfEmb,
+    tf.broadcast_to(aryOut, [varNumWrds, varSzeEmb])), axis=1), axis=0)
+    )
+# objPrd = tf.reduce_sum(tf.squared_difference(aryTfEmb, tf.broadcast_to(aryOut, [varNumWrds, varSzeEmb])), axis=1)
 
 # Variable initialiser:
 objInit = tf.global_variables_initializer()
@@ -180,6 +165,7 @@ objInit = tf.global_variables_initializer()
 # To keep track of total accuracy & loss:
 varAccTtl = 0
 varLssTtl = 0
+
 
 # -----------------------------------------------------------------------------
 # *** Run optimisation
@@ -204,53 +190,57 @@ with tf.Session() as objSess:
             lstCntxt = lstC[(idxWrd - varNumIn):idxWrd]
 
             # Get embedding vectors for words:
-            aryCntxt = np.array(aryEmbFnl[lstCntxt, :])
+            aryCntxt = np.array(aryEmb[lstCntxt, :])
 
             # Word to predict (target):
             varTrgt = lstC[idxWrd]
 
             # Get embedding vector for target word:
-            vecTrgt = aryEmbFnl[varTrgt, :].reshape((varSzeEmb, 1))
+            vecTrgt = aryEmb[varTrgt, :].reshape((varSzeEmb, 1))
 
             # Run optimisation:
-            objSess.run(objOpt,
-                        feed_dict={vecWrdsIn: aryCntxt,
-                                   vecWrdsOut: vecTrgt}
-                        )
+            _, varPred, varLoss = objSess.run([objOpt, objPrd, objCost],
+                                              feed_dict={vecWrdsIn: aryCntxt,
+                                                         vecWrdsOut: vecTrgt}
+                                              )
 
             # Status feedback:
-            # if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
-            if idxWrd == varRndm:
+            if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
 
                 try:
 
-                    print(("Context: "
+                    print('---')
+
+                    print(('Context: '
                            + str([dictRvrs[x] for x in lstC[(idxWrd - 15):idxWrd]])))
 
-                    print(("Target: "
+                    print(('Target: '
                            + dictRvrs[varTrgt]))
 
                     # Get prediction for current context word(s):
-                    vecTmp = objSess.run(aryOut,
-                                         feed_dict={vecWrdsIn: aryCntxt}
-                                         ).flatten()
+                    #vecTmp = objSess.run([objPrd],
+                    #                     feed_dict={vecWrdsIn: aryCntxt}  #, vecWrdsOut: vecTrgt}
+                    #                     )[0].flatten()
 
                     # Minimum squared deviation between prediciton and embedding
                     # vectors:
-                    vecTmp = np.sum(
-                                    np.square(
-                                              np.subtract(
-                                                          aryEmbFnl,
-                                                          vecTmp[None, :]
-                                                          )
-                                              ),
-                                    axis=1
-                                    )
+                    #vecTmp = np.sum(
+                    #                np.square(
+                    #                          np.subtract(
+                    #                                      aryEmb,
+                    #                                      vecTmp[None, :]
+                    #                                      )
+                    #                          ),
+                    #                axis=1
+                    #                )
 
                     # Look up predicted word in dictionary:
-                    strWrdPrd = dictRvrs[int(np.argmin(vecTmp))]
+                    #strWrdPrd = dictRvrs[int(np.argmin(vecTmp))]
+                    strWrdPrd = dictRvrs[varPred]
 
                     print(('Prediction: ' + strWrdPrd))
+
+                    print(('Loss: ' + str(varLoss)))
 
                 except:
 
