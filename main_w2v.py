@@ -31,7 +31,7 @@ varLrnRte = 0.001
 varNumItr = 1000000
 
 # Display steps (after x number of iterations):
-varDspStp = 20000
+varDspStp = 10000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -219,32 +219,39 @@ with tf.Session() as objSess:
                         )
 
             # Status feedback:
-            if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
+            # if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
+            if idxWrd == varRndm:
 
-                print(("Context: "
-                       + str([dictRvrs[x] for x in lstC[(idxWrd - 15):idxWrd]])))
+                try:
 
-                print(("Target: "
-                       + dictRvrs[varTrgt]))
+                    print(("Context: "
+                           + str([dictRvrs[x] for x in lstC[(idxWrd - 15):idxWrd]])))
 
-                # Get prediction for current context word(s):
-                vecTmp = objSess.run(aryOut,
-                                     feed_dict={vecWrdsIn: aryCntxt}
-                                     ).flatten()
+                    print(("Target: "
+                           + dictRvrs[varTrgt]))
 
-                # Minimum squared deviation between prediciton and embedding
-                # vectors:
-                vecTmp = np.sum(
-                                np.square(
-                                          np.subtract(
-                                                      aryEmbFnl,
-                                                      vecTmp[None, :]
-                                                      )
-                                          ),
-                                axis=1
-                                )
+                    # Get prediction for current context word(s):
+                    vecTmp = objSess.run(aryOut,
+                                         feed_dict={vecWrdsIn: aryCntxt}
+                                         ).flatten()
 
-                # Look up predicted word in dictionary:
-                strWrdPrd = dictRvrs[int(np.argmin(vecTmp))]
+                    # Minimum squared deviation between prediciton and embedding
+                    # vectors:
+                    vecTmp = np.sum(
+                                    np.square(
+                                              np.subtract(
+                                                          aryEmbFnl,
+                                                          vecTmp[None, :]
+                                                          )
+                                              ),
+                                    axis=1
+                                    )
 
-                print(('Prediction: ' + strWrdPrd))
+                    # Look up predicted word in dictionary:
+                    strWrdPrd = dictRvrs[int(np.argmin(vecTmp))]
+
+                    print(('Prediction: ' + strWrdPrd))
+
+                except:
+
+                    pass
