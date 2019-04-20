@@ -6,7 +6,7 @@ LSTM fun main function using word2vec embedding.
 
 
 # import time
-# import random
+import random
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib import rnn
@@ -31,7 +31,7 @@ varLrnRte = 0.001
 varNumItr = 1000000
 
 # Display steps (after x number of iterations):
-varDspStp = 1000
+varDspStp = 20000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -96,18 +96,18 @@ vecWrdsIn = tf.placeholder("float", [1, varNumInTtl])
 vecWrdsOut = tf.placeholder("float", [varSzeEmb, 1])
 
 # Weights of first & second hidden layers:
-aryWghts01 = tf.Variable(tf.random_normal([varNumInTtl, varNrn01]))
-aryWghts02 = tf.Variable(tf.random_normal([varNrn01, varNrn02]))
+# aryWghts01 = tf.Variable(tf.random_normal([varNumInTtl, varNrn01]))
+# aryWghts02 = tf.Variable(tf.random_normal([varNrn01, varNrn02]))
 
 # Biases for first & second hidden layers:
-vecBias01 = tf.Variable(tf.random_normal([varNrn01]))
-vecBias02 = tf.Variable(tf.random_normal([varNrn02]))
+# vecBias01 = tf.Variable(tf.random_normal([varNrn01]))
+# vecBias02 = tf.Variable(tf.random_normal([varNrn02]))
+
 
 # -----------------------------------------------------------------------------
 # *** RNN LSTM function
 
-def fncRnn(vecWrdsIn, aryWghts01, aryWghts02, vecBias01, vecBias02,
-           varNrn01, varNrn02):
+def fncRnn(vecWrdsIn, varNrn01, varNrn02):
     """Recurrent neural network with LSTM cell and dropout."""
 
     objRnn = rnn.MultiRNNCell(
@@ -159,13 +159,12 @@ def fncRnn(vecWrdsIn, aryWghts01, aryWghts02, vecBias01, vecBias02,
     # aryOut = tf.add(tf.matmul(lstOut[0], aryWghts02), vecBias02)
     aryOut = lstOut[0]
 
-    return aryOut
+    return aryOut, objState
 
 # -----------------------------------------------------------------------------
 # ***
 
-aryOut = fncRnn(vecWrdsIn, aryWghts01, aryWghts02, vecBias01, vecBias02,
-                varNrn01, varNrn02)
+aryOut, objState = fncRnn(vecWrdsIn, varNrn01, varNrn02)
 
 # Cost function:
 objCost = tf.reduce_mean(tf.squared_difference(aryOut, vecWrdsOut))
@@ -173,7 +172,7 @@ objCost = tf.reduce_mean(tf.squared_difference(aryOut, vecWrdsOut))
 # Optimiser:
 objOpt = tf.train.RMSPropOptimizer(
                                    learning_rate=varLrnRte
-                                    ).minimize(objCost)
+                                   ).minimize(objCost)
 
 # Variable initialiser:
 objInit = tf.global_variables_initializer()
@@ -194,6 +193,9 @@ with tf.Session() as objSess:
     # Loop through iterations:
     for idxItr in range(varNumItr):
 
+        # Random number for status feedback:
+        varRndm = random.randint(20, (varLenTxt - 20))
+
         # Loop through text (corpus). Index refers to target word (i.e. word
         # to be predicted).
         for idxWrd in range(varNumIn, varLenTxt):
@@ -210,58 +212,39 @@ with tf.Session() as objSess:
             # Get embedding vector for target word:
             vecTrgt = aryEmbFnl[varTrgt, :].reshape((varSzeEmb, 1))
 
+            # Run optimisation:
             objSess.run(objOpt,
                         feed_dict={vecWrdsIn: aryCntxt,
                                    vecWrdsOut: vecTrgt}
                         )
 
-# -----------------------------------------------------------------------------
-# ***
+            # Status feedback:
+            if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
 
-assert False
+                print(("Context: "
+                       + str([dictRvrs[x] for x in lstC[(idxWrd - 15):idxWrd]])))
 
-varLssTtl += loss
-varAccTtl += acc
-if (idxItr+1) % varDspStp == 0:
-    print("Iter= " + str(idxItr+1) + ", Average Loss= " + \
-          "{:.6f}".format(varLssTtl/varDspStp) + ", Average Accuracy= " + \
-          "{:.2f}%".format(100*varAccTtl/varDspStp))
-    varAccTtl = 0
-    varLssTtl = 0
-    symbols_in = [dictRvrs[lstC[i]] for i in range(offset, offset + varNumIn)]
-    symbols_out = dictRvrs[lstC[offset + varNumIn]]
+                print(("Target: "
+                       + dictRvrs[varTrgt]))
 
-    #symbols_out_pred = dictRvrs[int(tf.argmax(onehot_pred, 1).eval())]
-    # Sum of squares
-    vecTmp = np.sum(np.square(np.subtract(aryEmbFnlT, onehot_pred)), axis=0)
-    symbols_out_pred = dictRvrs[int(np.argmin(vecTmp))]
+                # Get prediction for current context word(s):
+                vecTmp = objSess.run(aryOut,
+                                     feed_dict={vecWrdsIn: aryCntxt}
+                                     ).flatten()
 
-    print("%s - [%s] vs [%s]" % (symbols_in,symbols_out,symbols_out_pred))
-idxItr += 1
-offset += (varNumIn+1)
+                # Minimum squared deviation between prediciton and embedding
+                # vectors:
+                vecTmp = np.sum(
+                                np.square(
+                                          np.subtract(
+                                                      aryEmbFnl,
+                                                      vecTmp[None, :]
+                                                      )
+                                          ),
+                                axis=1
+                                )
 
-print("Optimization Finished!")
-print("Run on command line.")
-# print("\ttensorboard --logdir=%s" % (logs_path))
-# print("Point your web browser to: http://localhost:6006/")
-while True:
-    prompt = "%s words: " % varNumIn
-    sentence = input(prompt)
-    sentence = sentence.strip()
-    words = sentence.split(' ')
-    if len(words) != varNumIn:
-        continue
-    try:
-        symbols_in_keys = [dicWdCnOdr[str(words[i])] for i in range(len(words))]
-        for i in range(32):
-            keys = np.reshape(np.array(symbols_in_keys), [-1, varNumIn, 1])
-            onehot_pred = objSess.run(pred, feed_dict={vecWrdsIn: keys})
+                # Look up predicted word in dictionary:
+                strWrdPrd = dictRvrs[int(np.argmin(vecTmp))]
 
-            onehot_pred_index = int(tf.argmax(onehot_pred, 1).eval())
-
-            sentence = "%s %s" % (sentence,dictRvrs[onehot_pred_index])
-            symbols_in_keys = symbols_in_keys[1:]
-            symbols_in_keys.append(onehot_pred_index)
-        print(sentence)
-    except:
-        print("Word not in dictionary")
+                print(('Prediction: ' + strWrdPrd))
