@@ -54,7 +54,7 @@ import matplotlib.pyplot as plt
 strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/compilation.txt'
 
 # Tensorflow log directory:
-strTfLog = '/home/john/PhD/GitLab/literary_lstm/tf_log'
+strTfLog = '/home/john/PhD/GitLab/literary_lstm/log_w2v'
 
 # Read text from file:
 lstTxt = read_text(strPthIn)
@@ -74,7 +74,7 @@ if not os.path.exists(strTfLog):
 # Vocabulary size (number of words; rare words are replaced with 'unknown'
 # code if the vocabulary size is exceeded by the number of words in the
 # text).
-varVocSze = 18000 # 50000
+varVocSze = 15000 # 50000
 
 # Build coded dataset from text:
 lstC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(lstTxt, varVocSze)
@@ -94,7 +94,7 @@ varNumSkp = 2
 
 # Size of context window, i.e. how many words to consider to the left and to
 # the right of each target word.
-varConWin = 5
+varConWin = 10
 
 # Global index. ?
 glbVarIdx = 0
@@ -118,7 +118,7 @@ vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
 # Step 4: Build and train a skip-gram model.
 
 # Dimension of the embedding vector. (Number of neurons in hidden layer?)
-varSzeEmb = 100
+varSzeEmb = 500
 
 # Number of negative examples to sample.
 varNumNgtv = 300

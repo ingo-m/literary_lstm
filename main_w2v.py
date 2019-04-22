@@ -19,7 +19,7 @@ from tensorflow.contrib import rnn
 # *** Define parameters
 
 # Path of input data file:
-strPthIn = '/home/john/PhD/GitLab/literary_lstm/tf_log/word2vec_data.npz'
+strPthIn = '/home/john/PhD/GitLab/literary_lstm/log_w2v/word2vec_data.npz'
 
 # Log directory:
 strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
@@ -28,7 +28,7 @@ strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
 varLrnRte = 0.001
 
 # Number of training iterations:
-varNumItr = 1000000
+varNumItr = 10000
 
 # Display steps (after x number of iterations):
 varDspStp = 1
