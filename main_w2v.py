@@ -34,7 +34,7 @@ varNumItr = 1000000
 varDspStp = 1
 
 # Number of input words from which to predict next word:
-varNumIn = 1
+varNumIn = 3
 
 # Number of neurons in first hidden layer:
 varNrn01 = 256
@@ -190,7 +190,7 @@ with tf.Session() as objSess:
             lstCntxt = lstC[(idxWrd - varNumIn):idxWrd]
 
             # Get embedding vectors for words:
-            aryCntxt = np.array(aryEmb[lstCntxt, :])
+            aryCntxt = np.array(aryEmb[lstCntxt, :]).reshape((1, varNumInTtl))
 
             # Word to predict (target):
             varTrgt = lstC[idxWrd]
