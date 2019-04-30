@@ -286,7 +286,7 @@ def generate_batch_2(lstC, varIdx, varBatSze=5, varConWin=5.0, varTrnk=10):
     # labels = np.ndarray(shape=(varBatSze, 1), dtype=np.int32)
     aryCntxt = np.zeros((varBatSze, 1), dtype=np.int32)
 
-a = 0
+
 
 varBatSze = 10000
 vecConWin = 5
@@ -309,12 +309,27 @@ varTrnk=10
     # Cast indices to integer:
     vecRndn = vecRndn.astype(np.int32)
 
-aaa = np.equal(vecRndn, 0)
-np.sum(aaa)
+    # Truncate context words outside of cutoff limit (i.e. too far from sample
+    # word) - positive limit:
+    vecLgcTrc = np.logical_and(
+                               np.greater(vecRndn, int(varTrnk)),
+                               vecLgcPst
+                               )
+    vecRndn[vecLgcTrc] = int(varTrnk)
+
+    # Truncate context words outside of cutoff limit (i.e. too far from sample
+    # word) - negative limit:
+    vecLgcTrc = np.logical_and(
+                               np.less(vecRndn, int(-varTrnk)),
+                               vecLgcNgt
+                               )
+    vecRndn[vecLgcTrc] = int(-varTrnk)
 
 
 
-b = 2
+
+
+
 
     # Increment index:
     # varIdx += varSpan
