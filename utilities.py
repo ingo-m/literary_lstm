@@ -240,13 +240,13 @@ def generate_batch(lstC, glbVarIdx, varBatSze=8, varNumSkp=2, varConWin=1):
     return vecWrds, aryCntxt, glbVarIdx
 
 
-def generate_batch_2(lstC, varIdx, varBatSze=5, varConWin=5.0, varTrnk=10):
+def generate_batch_n(vecC, varIdx, varBatSze=5, varConWin=5.0, varTrnk=10):
     """
     Generate training batch for skip-gram model.
 
     Inputs
     ------
-    lstC : list
+    vecC : np.array
         Coded version of original text (corpus), where words are coded as
         integers. The integer code of a word is its ordinal occurence
         number (i.e. the 50th most common word has the code 50).
@@ -271,27 +271,19 @@ def generate_batch_2(lstC, varIdx, varBatSze=5, varConWin=5.0, varTrnk=10):
     vecWrds : np.array
         Batch of (integer) codes of input words (whose context to predict).
     aryCntxt : np.array
-        Vector (n*1) of context words (corresponding to the input words) to
-        predict.
+        Vector (batch_size * 1) of context words to predict.
     varIdx: int
         ???
 
     Notes
     -----
-    ???
+    The distance between sample word and context words are drawn from a normal
+    probability distribution, in order to sample close words with higher
+    probability.
+
+    TODO:
+    Sample common words (with repsect to occurence in corpus) more often.
     """
-    # Batch of (integer) codes of input words (whose context to predict).
-    vecWrds = np.zeros(varBatSze, dtype=np.int32)
-
-    # labels = np.ndarray(shape=(varBatSze, 1), dtype=np.int32)
-    aryCntxt = np.zeros((varBatSze, 1), dtype=np.int32)
-
-
-
-varBatSze = 10000
-vecConWin = 5
-varTrnk=10
-
     # Vector with indices of context words, relative to sample word (e.g. -1
     # would refer to word before sample word, +1 to the word after the sample
     # word. We start with a Gaussian distribution (float), which will
@@ -307,7 +299,7 @@ varTrnk=10
     # Positive indices are rounded to ceiling:
     vecRndn[vecLgcPst] = np.ceil(vecRndn[vecLgcPst])
     # Cast indices to integer:
-    vecRndn = vecRndn.astype(np.int32)
+    vecRndn = vecRndn.astype(np.int64)
 
     # Truncate context words outside of cutoff limit (i.e. too far from sample
     # word) - positive limit:
@@ -326,52 +318,18 @@ varTrnk=10
     vecRndn[vecLgcTrc] = int(-varTrnk)
 
 
+    # Indices of sample words in corpus (linear):
+    vecIdxWrds = np.arange(varIdx, (varIdx + varBatSze))
 
+    # Indices of context words in corpus:
+    vecIdxCtx = np.add(vecIdxWrds, vecRndn)
 
+    # Look up words in corpus.
 
+    # Batch of (integer) codes of input words (whose context to predict).
+    vecWrds = vecC[vecIdxWrds]
 
+    # Batch of (integer) codes of context words (to predict):
+    aryCntxt = vecC[vecIdxCtx].reshape(varBatSze, 1)
 
-    # Increment index:
-    # varIdx += varSpan
-
-    # Loop through batch:
-    for idx01 in range(varBatSze):
-
-        # Sample word for which context should be predicted into vector:
-        vecWrds[idx01] = lstC[varIdx]
-
-        #
-
-        context_words = [w for w in range(varSpan) if w != varConWin]
-
-        words_to_use = random.sample(context_words, varNumSkp)
-
-        # print("context_words: " + str([dictRvrs[x] for x in context_words]))
-        # print("words_to_use: " + str([dictRvrs[x] for x in words_to_use]))
-
-        for idx02, context_word in enumerate(words_to_use):
-
-            # print("idx02 = " + str(idx02))
-            # print("context_word: " + dictRvrs[context_word])
-
-            vecWrds[idx01 * varNumSkp + idx02] = objBuf[varConWin]
-
-            aryCntxt[idx01 * varNumSkp + idx02, 0] = objBuf[context_word]
-
-            # print("vecWrds: " + dictRvrs[vecWrds[idx01 * varNumSkp + idx02]])
-            # print("aryCntxt: " + dictRvrs[[idx01 * varNumSkp + idx02, 0][0]])
-
-            if glbVarIdx == len(lstC):
-                objBuf.extend(lstC[0:varSpan])
-                glbVarIdx = varSpan
-
-            else:
-                # print("glbVarIdx = " + dictRvrs[lstC[glbVarIdx]])
-                objBuf.append(lstC[glbVarIdx])
-                glbVarIdx += 1
-
-            # Backtrack a little bit to avoid skipping words in the end of a
-            # batch
-            glbVarIdx = (glbVarIdx + len(lstC) - varSpan) % len(lstC)
-
-#    return vecWrds, aryCntxt, glbVarIdx
+    return vecWrds, aryCntxt, varIdx
