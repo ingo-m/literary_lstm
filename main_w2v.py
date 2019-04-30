@@ -50,7 +50,7 @@ varNrn02 = 100
 objNpz = np.load(strPthIn)
 
 # Coded text:
-lstC = objNpz['lstC']
+vecC = objNpz['vecC']
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -77,7 +77,7 @@ varNumWrds = aryEmb.shape[0]
 print(('Size of vocabulary (number of unique words): ' + str(varNumWrds)))
 
 # Number of words in text (corpus):
-varLenTxt = len(lstC)
+varLenTxt = vecC.shape[0]
 
 print(('Length of text: ' + str(varLenTxt)))
 
@@ -187,13 +187,13 @@ with tf.Session() as objSess:
         for idxWrd in range(varNumIn, varLenTxt):
 
             # Get integer codes of context word(s):
-            lstCntxt = lstC[(idxWrd - varNumIn):idxWrd]
+            vecCntxt = vecC[(idxWrd - varNumIn):idxWrd]
 
             # Get embedding vectors for words:
-            aryCntxt = np.array(aryEmb[lstCntxt, :]).reshape((1, varNumInTtl))
+            aryCntxt = np.array(aryEmb[vecCntxt, :]).reshape((1, varNumInTtl))
 
             # Word to predict (target):
-            varTrgt = lstC[idxWrd]
+            varTrgt = vecC[idxWrd]
 
             # Get embedding vector for target word:
             vecTrgt = aryEmb[varTrgt, :].reshape((varSzeEmb, 1))
@@ -212,7 +212,7 @@ with tf.Session() as objSess:
                     print('---')
 
                     print(('Context: '
-                           + str([dictRvrs[x] for x in lstC[(idxWrd - 15):idxWrd]])))
+                           + str([dictRvrs[x] for x in vecC[(idxWrd - 15):idxWrd]])))
 
                     print(('Target: '
                            + dictRvrs[varTrgt]))

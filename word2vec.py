@@ -19,42 +19,57 @@
 
 """Basic word2vec example."""
 
-# cd '/home/john/PhD/GitLab/literary_lstm'
+# cd '/Users/john/PhD/GitLab/literary_lstm'
 
 import os
-# import collections
-# import random
 import numpy as np
-import tensorflow as tf
-from utilities import read_text
-from utilities import build_dataset
-from utilities import generate_batch
-
-
-# from __future__ import absolute_import
-# from __future__ import division
-# from __future__ import print_function
-#import argparse
 import math
-#import sys
-#from tempfile import gettempdir
-#from six.moves import urllib
-from six.moves import xrange  # pylint: disable=redefined-builtin
-from tensorflow.contrib.tensorboard.plugins import projector
-
-
+import tensorflow as tf
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 
+from utilities import read_text
+from utilities import build_dataset
+from utilities import generate_batch_n
 
+# from six.moves import xrange  # pylint: disable=redefined-builtin
+from tensorflow.contrib.tensorboard.plugins import projector
+
+# ------------------------------------------------------------------------------
+# *** Define parameters
 
 # Path of input text files:
-# strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks.txt'
-# strPthIn = '/home/john/Dropbox/Thomas_Mann/Thomas_Mann_1909_Buddenbrooks_excerpt.txt'
-strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/compilation.txt'
+strPthIn = '/Users/john/Dropbox/Ernest_Hemingway/redacted/compilation.txt'
 
 # Tensorflow log directory:
-strTfLog = '/home/john/PhD/GitLab/literary_lstm/log_w2v'
+strTfLog = '/Users/john/PhD/GitLab/literary_lstm/log_w2v'
+
+# Batch size:
+varBatSze = 500
+
+# Size of context window, i.e. how many words to consider to the left and to
+# the right of each target word.
+varConWin = 10
+
+# Dimension of the embedding vector. (Number of neurons in hidden layer?)
+varSzeEmb = 300
+
+# Number of negative examples to sample.
+varNumNgtv = 300
+
+# Random set of words to evaluate similarity on:
+varSzeEval = 10
+
+# Vocabulary size (number of words; rare words are replaced with 'unknown'
+# code if the vocabulary size is exceeded by the number of words in the
+# text).
+varVocSze = 15000
+
+# Number of training iterations:
+varNumIt = 100001
+
+# ------------------------------------------------------------------------------
+# *** Preparations
 
 # Read text from file:
 lstTxt = read_text(strPthIn)
@@ -62,74 +77,41 @@ lstTxt = read_text(strPthIn)
 # Make all words lower case:
 lstTxt = [x.lower() for x in lstTxt]
 
-#def word2vec_basic(strTfLog):
-#    """Example of building, training and visualizing a word2vec model."""
-
 # Create the directory for TensorBoard variables if there is not.
 if not os.path.exists(strTfLog):
     os.makedirs(strTfLog)
 
-# Step 2: Build the dictionary and replace rare words with UNK token.
-
-# Vocabulary size (number of words; rare words are replaced with 'unknown'
-# code if the vocabulary size is exceeded by the number of words in the
-# text).
-varVocSze = 15000 # 50000
+# ------------------------------------------------------------------------------
+# *** Code text
 
 # Build coded dataset from text:
-lstC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(lstTxt, varVocSze)
+vecC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(lstTxt, varVocSze)
 
 # Delete non-coded text (reduce memory usage):
 del lstTxt
 
-# print('Most common words (+UNK)', lstWrdCnt[:5])
-# print('Sample data', lstC[:10], [dictRvrs[i] for i in lstC[:10]])
+# Generate example batch
+vecWrds, aryCntxt = generate_batch_n(vecC,
+                                     50,
+                                     varBatSze=50,
+                                     varConWin=5.0,
+                                     varTrnk=10)
+print(' ')
+print('vecWrds.shape')
+print(vecWrds.shape)
 
-# Batch size: (?)
-varBatSze = 5000
+print(' ')
+print('aryCntxt.shape')
+print(aryCntxt.shape)
+print(' ')
 
-# How many times to reuse an input to generate a label.
-# ???
-varNumSkp = 2
-
-# Size of context window, i.e. how many words to consider to the left and to
-# the right of each target word.
-varConWin = 10
-
-# Global index. ?
-glbVarIdx = 0
-
-# Generate batch
-# ???
-vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
-                                              glbVarIdx,
-                                              varBatSze=varBatSze,
-                                              varNumSkp=varNumSkp,
-                                              varConWin=varConWin)
-
-# ???
-# print("vecWrds: " + str([dictRvrs[x] for x in list(vecWrds)]))
-# print("aryCntxt: " + str([dictRvrs[x] for x in list(aryCntxt[:, 0])]))
-
-# for i in range(4):
-#     print(vecWrds[i], dictRvrs[vecWrds[i]], '->', aryCntxt[i, 0],
-#           dictRvrs[aryCntxt[i, 0]])
-
-# Step 4: Build and train a skip-gram model.
-
-# Dimension of the embedding vector. (Number of neurons in hidden layer?)
-varSzeEmb = 500
-
-# Number of negative examples to sample.
-varNumNgtv = 300
+# ------------------------------------------------------------------------------
+# *** Build skip-gram model
 
 # We pick a random validation set to sample nearest neighbors. Here we limit
 # the validation samples to the words that have a low numeric ID, which by
 # construction are also the most frequent. These 3 variables are used only for
 # displaying model accuracy, they don't affect calculation.
-
-# Random set of words to evaluate similarity on:
-varSzeEval = 10
 
 # Only pick dev samples in the head of the distribution:
 varSzeEvalWin = int(np.around((varVocSze * 0.1)))
@@ -239,9 +221,6 @@ with graph.as_default():
     # Create a saver.
     objSaver = tf.train.Saver()
 
-# Step 5: Begin training.
-varNumStp = 100001
-
 with tf.Session(graph=graph) as objSess:
 
     # Open a writer to write summaries.
@@ -254,13 +233,24 @@ with tf.Session(graph=graph) as objSess:
     # Average loss, will be updated after certain number of steps.
     varAvrgLoss = 0
 
-    for idxStp in xrange(varNumStp):
+    # Initialise index (for looping through corpus), do not start at zero
+    # to avoid sampling at limits of corpus (words without sufficient context):
+    varTrnk = 10
+    varIdx = varTrnk
 
-        vecWrds, aryCntxt, glbVarIdx = generate_batch(lstC,
-                                                      glbVarIdx,
-                                                      varBatSze=varBatSze,
-                                                      varNumSkp=varNumSkp,
-                                                      varConWin=varConWin)
+    # Number of words in text:
+    varLenTxt = vecC.shape[0]
+
+    # Upper limit for sampling from corpus:
+    varSmpLimUp = ((varLenTxt - varTrnk) - varBatSze)
+
+    for idxItr in range(varNumIt):
+
+        vecWrds, aryCntxt = generate_batch_n(vecC,
+                                             varIdx,
+                                             varBatSze=varBatSze,
+                                             varConWin=varConWin,
+                                             varTrnk=varTrnk)
 
         dicFeed = {vecTfWrds: vecWrds, aryTfCntxt: aryCntxt}
 
@@ -278,28 +268,28 @@ with tf.Session(graph=graph) as objSess:
         varAvrgLoss += varTmpLoss
 
         # Add returned summaries to writer in each step.
-        objWrtr.add_summary(objSmry, idxStp)
+        objWrtr.add_summary(objSmry, idxItr)
 
         # Add metadata to visualize the graph for the last run.
-        if idxStp == (varNumStp - 1):
-            objWrtr.add_run_metadata(objMetadata, 'step%d' % idxStp)
+        if idxItr == (varNumIt - 1):
+            objWrtr.add_run_metadata(objMetadata, 'step%d' % idxItr)
 
-        if idxStp % 10000 == 0:
-            if idxStp > 0:
+        if idxItr % 10000 == 0:
+            if idxItr > 0:
                 varAvrgLoss /= 10000
 
             # The average loss is an estimate of the loss over the last 2000
             # batches.
-            print('Average loss at step ', idxStp, ': ', varAvrgLoss)
+            print('Average loss at step ', idxItr, ': ', varAvrgLoss)
             varAvrgLoss = 0
 
         # Note that this is expensive (~20% slowdown if computed every 500 steps)
-        if idxStp % 50000 == 0:
+        if idxItr % 50000 == 0:
 
             arySimTmp = arySim.eval()
 
             # Loop through words in validation set:
-            for idxEval in xrange(varSzeEval):
+            for idxEval in range(varSzeEval):
 
                 strEvalWrd = dictRvrs[vecEvalSmple[idxEval]]
                 varNnn = 8  # number of nearest neighbors
@@ -307,7 +297,7 @@ with tf.Session(graph=graph) as objSess:
                 strLogMsg = 'Nearest to %s:' % strEvalWrd
 
                 # Loop through nearest neighbouring words:
-                for idxNghb in xrange(varNnn):
+                for idxNghb in range(varNnn):
 
                     # Close word:
                     strWrdCls = dictRvrs[vecNearest[idxNghb]]
@@ -315,12 +305,17 @@ with tf.Session(graph=graph) as objSess:
 
                 print(strLogMsg)
 
+        # Increment index, reset if end of corpus has been reached:
+        varIdx += varBatSze
+        if varSmpLimUp <= varIdx:
+            varIdx = varTrnk
+
     # "Final embeddings":
     aryEmbFnl = aryNormEmb.eval()
 
     # Write corresponding labels for the embeddings.
     with open(strTfLog + '/metadata.tsv', 'w') as f:
-        for i in xrange(varVocSze):
+        for i in range(varVocSze):
             f.write(dictRvrs[i] + '\n')
 
     # Save the model for checkpoints.
@@ -338,7 +333,7 @@ objWrtr.close()
 
 # Save text, dictionary, and embeddings to disk:
 np.savez(os.path.join(strTfLog, 'word2vec_data.npz'),
-         lstC=lstC,  # Coded text
+         vecC=vecC,  # Coded text
          dicWdCnOdr=dicWdCnOdr,  # Dictionary, keys=words
          dictRvrs=dictRvrs,  # Reservse dictionary, keys=ordinal-word-count
          aryEmbFnl=aryEmbFnl  # Embedding matrix
@@ -376,7 +371,7 @@ tsne = TSNE(perplexity=30,
             method='exact')
 plot_only = 500
 low_dim_embs = tsne.fit_transform(aryEmbFnl[:plot_only, :])
-aryCntxt = [dictRvrs[i] for i in xrange(plot_only)]
+aryCntxt = [dictRvrs[i] for i in range(plot_only)]
 plot_with_labels(low_dim_embs, aryCntxt, os.path.join(strTfLog,
                                                       'tsne.png'))
 

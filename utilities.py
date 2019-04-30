@@ -73,7 +73,7 @@ def build_dataset(lstTxt, varVocSze=50000):
 
     Returns
     -------
-    lstC : list
+    vecC : np.array
         Coded version of original text (corpus), where words are coded as
         integers. The integer code of a word is its ordinal occurence
         number (i.e. the 50th most common word has the code 50).
@@ -134,7 +134,10 @@ def build_dataset(lstTxt, varVocSze=50000):
     # Create reverse dictionary (where keys are word order):
     dictRvrs = dict(zip(dicWdCnOdr.values(), dicWdCnOdr.keys()))
 
-    return lstC, lstWrdCnt, dicWdCnOdr, dictRvrs
+    # List to vector:
+    vecC = np.array(lstC)
+
+    return vecC, lstWrdCnt, dicWdCnOdr, dictRvrs
 
 
 def generate_batch(lstC, glbVarIdx, varBatSze=8, varNumSkp=2, varConWin=1):
@@ -272,8 +275,6 @@ def generate_batch_n(vecC, varIdx, varBatSze=5, varConWin=5.0, varTrnk=10):
         Batch of (integer) codes of input words (whose context to predict).
     aryCntxt : np.array
         Vector (batch_size * 1) of context words to predict.
-    varIdx: int
-        ???
 
     Notes
     -----
@@ -332,4 +333,4 @@ def generate_batch_n(vecC, varIdx, varBatSze=5, varConWin=5.0, varTrnk=10):
     # Batch of (integer) codes of context words (to predict):
     aryCntxt = vecC[vecIdxCtx].reshape(varBatSze, 1)
 
-    return vecWrds, aryCntxt, varIdx
+    return vecWrds, aryCntxt
