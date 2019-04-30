@@ -71,6 +71,10 @@ varNumIt = 100001
 # ------------------------------------------------------------------------------
 # *** Preparations
 
+print('-Word2vec')
+
+print('---Preparations.')
+
 # Read text from file:
 lstTxt = read_text(strPthIn)
 
@@ -90,23 +94,17 @@ vecC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(lstTxt, varVocSze)
 # Delete non-coded text (reduce memory usage):
 del lstTxt
 
-# Generate example batch
-vecWrds, aryCntxt = generate_batch_n(vecC,
-                                     50,
-                                     varBatSze=50,
-                                     varConWin=5.0,
-                                     varTrnk=10)
-print(' ')
-print('vecWrds.shape')
-print(vecWrds.shape)
-
-print(' ')
-print('aryCntxt.shape')
-print(aryCntxt.shape)
-print(' ')
+# Generate example batch:
+#vecWrds, aryCntxt = generate_batch_n(vecC,
+#                                     50,
+#                                     varBatSze=50,
+#                                     varConWin=5.0,
+#                                     varTrnk=10)
 
 # ------------------------------------------------------------------------------
 # *** Build skip-gram model
+
+print('---Initialising skip-gram model.')
 
 # We pick a random validation set to sample nearest neighbors. Here we limit
 # the validation samples to the words that have a low numeric ID, which by
@@ -220,6 +218,8 @@ with graph.as_default():
 
     # Create a saver.
     objSaver = tf.train.Saver()
+
+print('---Training skip-gram model.')
 
 with tf.Session(graph=graph) as objSess:
 
@@ -339,14 +339,11 @@ np.savez(os.path.join(strTfLog, 'word2vec_data.npz'),
          aryEmbFnl=aryEmbFnl  # Embedding matrix
          )
 
+# ------------------------------------------------------------------------------
+# *** Visualise embeddings
 
-# idxWrd = 1000
-# dictRvrs[idxWrd]
+print('---Visualising embeddings.')
 
-
-# Step 6: Visualize the embeddings.
-
-# pylint: disable=missing-docstring
 # Function to draw visualization of distance between embeddings.
 def plot_with_labels(low_dim_embs, aryCntxt, filename):
     assert low_dim_embs.shape[0] >= len(aryCntxt), 'More labels than embeddings'
@@ -374,6 +371,8 @@ low_dim_embs = tsne.fit_transform(aryEmbFnl[:plot_only, :])
 aryCntxt = [dictRvrs[i] for i in range(plot_only)]
 plot_with_labels(low_dim_embs, aryCntxt, os.path.join(strTfLog,
                                                       'tsne.png'))
+
+print('-Done.')
 
 ## All functionality is run after tf.app.run() (b/122547914). This could be split
 ## up but the methods are laid sequentially with their usage for clarity.
