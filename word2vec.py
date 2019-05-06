@@ -42,7 +42,7 @@ from tensorflow.contrib.tensorboard.plugins import projector
 strPthIn = '/Users/john/Dropbox/Ernest_Hemingway/redacted/compilation.txt'
 
 # Tensorflow log directory:
-strTfLog = '/Users/john/PhD/GitLab/literary_lstm/log_w2v'
+strTfLog = '/Users/john/1_PhD/GitLab/literary_lstm/log_w2v'
 
 # Batch size:
 varBatSze = 500
