@@ -9,7 +9,9 @@ LSTM fun main function using word2vec embedding.
 import random
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib import rnn
+
+# from tensorflow.contrib import rnn
+from tensorflow.keras import layers
 
 # from tensorflow.nn.objRnn import DropoutWrapper
 # from tf.contrib.rnn.DropoutWrapper
@@ -28,7 +30,7 @@ strPthLog = '/Users/john/1_PhD/GitLab/literary_lstm/log_lstm'
 varLrnRte = 0.001
 
 # Number of training iterations:
-varNumItr = 1000
+varNumItr = 1
 
 # Display steps (after x number of iterations):
 varDspStp = 1
@@ -42,12 +44,14 @@ varNrn01 = 256
 # Number of neurons in second hidden layer:
 varNrn02 = 100
 
-
 # -----------------------------------------------------------------------------
 # *** Load data
 
 # Load npz file:
 objNpz = np.load(strPthIn)
+
+# Enable object array:
+objNpz.allow_pickle = True
 
 # Coded text:
 vecC = objNpz['vecC']
@@ -93,7 +97,7 @@ varSzeEmb = aryEmb.shape[1]
 varNumInTtl = varNumIn * varSzeEmb
 
 # Placeholder for inputs (to input layer):
-vecWrdsIn = tf.placeholder(tf.float32, [1, varNumInTtl])
+aryWrdsIn = tf.placeholder(tf.float32, [1, varNumIn, varSzeEmb])
 
 # Placeholder for output:
 vecWrdsOut = tf.placeholder(tf.float32, [varSzeEmb, 1])
@@ -102,26 +106,68 @@ vecWrdsOut = tf.placeholder(tf.float32, [varSzeEmb, 1])
 # -----------------------------------------------------------------------------
 # *** RNN LSTM function
 
-def fncRnn(vecWrdsIn, varNrn01, varNrn02):
+def fncRnn(aryWrdsIn, varNrn01, varNrn02):
     """Recurrent neural network with LSTM cell and dropout."""
 
-    objRnn = rnn.MultiRNNCell(
-                              [rnn.DropoutWrapper(
-                                                  rnn.BasicLSTMCell(varNrn01),
-                                                  input_keep_prob=0.9,
-                                                  output_keep_prob=0.9,
-                                                  state_keep_prob=0.9,
-                                                  ),
-                               rnn.DropoutWrapper(
-                                                  rnn.BasicLSTMCell(varNrn02),
-                                                  input_keep_prob=0.9,
-                                                  output_keep_prob=0.9,
-                                                  state_keep_prob=0.9,
-                                                  )]
-                               )
+    objRnn = layers.StackedRNNCells(
+                                    [layers.LSTMCell(
+                                                     varNrn01,
+                                                     activation='tanh',
+                                                     recurrent_activation='hard_sigmoid',
+                                                     use_bias=True,
+                                                     kernel_initializer='glorot_uniform',
+                                                     recurrent_initializer='orthogonal',
+                                                     bias_initializer='zeros',
+                                                     unit_forget_bias=True,
+                                                     kernel_regularizer=None,
+                                                     recurrent_regularizer=None,
+                                                     bias_regularizer=None,
+                                                     kernel_constraint=None,
+                                                     recurrent_constraint=None,
+                                                     bias_constraint=None,
+                                                     dropout=0.1,
+                                                     recurrent_dropout=0.1,
+                                                     implementation=1
+                                                     ),
+                                     layers.LSTMCell(
+                                                     varNrn02,
+                                                     activation='tanh',
+                                                     recurrent_activation='hard_sigmoid',
+                                                     use_bias=True,
+                                                     kernel_initializer='glorot_uniform',
+                                                     recurrent_initializer='orthogonal',
+                                                     bias_initializer='zeros',
+                                                     unit_forget_bias=True,
+                                                     kernel_regularizer=None,
+                                                     recurrent_regularizer=None,
+                                                     bias_regularizer=None,
+                                                     kernel_constraint=None,
+                                                     recurrent_constraint=None,
+                                                     bias_constraint=None,
+                                                     dropout=0.1,
+                                                     recurrent_dropout=0.1,
+                                                     implementation=1
+                                                     )]
+                                    )
 
     # ?
-    lstOut, objState = rnn.static_rnn(objRnn, [vecWrdsIn], dtype=tf.float32)
+    # lstOut, objState = rnn.static_rnn(objRnn, [aryWrdsIn], dtype=tf.float32)  # keras.layers.RNN(cell, unroll=True)
+
+    # keras.layers.RNN(cell, unroll=True)
+
+    # lstOut, objState = layers.RNN(objRnn, unroll=True)(aryWrdsIn)
+    lstOut = layers.RNN(objRnn,
+                        return_sequences=False,
+                        return_state=False,
+                        stateful=True,
+                        unroll=True,
+                        time_major=False
+                        )(aryWrdsIn)
+
+    # TODO: What is the output type/shape of keras.layers.RNN()?
+
+    print('type(lstOut)')
+    print(type(lstOut))
 
     # objState
     # (
@@ -142,7 +188,7 @@ def fncRnn(vecWrdsIn, varNrn01, varNrn02):
 # -----------------------------------------------------------------------------
 # ***
 
-aryOut = fncRnn(vecWrdsIn, varNrn01, varNrn02)
+aryOut = fncRnn(aryWrdsIn, varNrn01, varNrn02)
 
 # Cost function:
 objCost = tf.sqrt(tf.reduce_sum(tf.squared_difference(aryOut, vecWrdsOut)))
@@ -185,12 +231,13 @@ with tf.Session() as objSess:
         # Loop through text (corpus). Index refers to target word (i.e. word
         # to be predicted).
         for idxWrd in range(varNumIn, varLenTxt):
+            print(idxWrd)
 
             # Get integer codes of context word(s):
             vecCntxt = vecC[(idxWrd - varNumIn):idxWrd]
 
             # Get embedding vectors for words:
-            aryCntxt = np.array(aryEmb[vecCntxt, :]).reshape((1, varNumInTtl))
+            aryCntxt = np.array(aryEmb[vecCntxt, :]).reshape((1, varNumIn, varSzeEmb))
 
             # Word to predict (target):
             varTrgt = vecC[idxWrd]
@@ -200,7 +247,7 @@ with tf.Session() as objSess:
 
             # Run optimisation:
             _, varPred, varLoss = objSess.run([objOpt, objPrd, objCost],
-                                              feed_dict={vecWrdsIn: aryCntxt,
+                                              feed_dict={aryWrdsIn: aryCntxt,
                                                          vecWrdsOut: vecTrgt}
                                               )
 
@@ -219,7 +266,7 @@ with tf.Session() as objSess:
 
                     # Get prediction for current context word(s):
                     #vecTmp = objSess.run([objPrd],
-                    #                     feed_dict={vecWrdsIn: aryCntxt}  #, vecWrdsOut: vecTrgt}
+                    #                     feed_dict={aryWrdsIn: aryCntxt}  #, vecWrdsOut: vecTrgt}
                     #                     )[0].flatten()
 
                     # Minimum squared deviation between prediciton and embedding
