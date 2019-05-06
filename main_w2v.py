@@ -19,22 +19,22 @@ from tensorflow.contrib import rnn
 # *** Define parameters
 
 # Path of input data file:
-strPthIn = '/home/john/PhD/GitLab/literary_lstm/log_w2v/word2vec_data.npz'
+strPthIn = '/Users/john/1_PhD/GitLab/literary_lstm/log_w2v/word2vec_data.npz'
 
 # Log directory:
-strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
+strPthLog = '/Users/john/1_PhD/GitLab/literary_lstm/log_lstm'
 
 # Learning rate:
 varLrnRte = 0.001
 
 # Number of training iterations:
-varNumItr = 10000
+varNumItr = 1000
 
 # Display steps (after x number of iterations):
 varDspStp = 1
 
 # Number of input words from which to predict next word:
-varNumIn = 3
+varNumIn = 8
 
 # Number of neurons in first hidden layer:
 varNrn01 = 256
