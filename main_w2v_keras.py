@@ -66,7 +66,7 @@ aryEmb = objNpz['aryEmbFnl']
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
 
 # Transposed version of embedding matrix:
-aryEmbT = aryEmb.T
+# aryEmbT = aryEmb.T
 
 
 # -----------------------------------------------------------------------------
@@ -121,7 +121,7 @@ vecWrdsOut = tf.placeholder(tf.float32, [1, varSzeEmb])
 
 
 # -----------------------------------------------------------------------------
-# *** 
+# ***
 
 lstClls = [tf.keras.layers.LSTMCell(varNrn01,
                                     activation='tanh',
@@ -211,34 +211,39 @@ for idxItr in range(varNumItr):
         vecTrgt = aryEmb[varTrgt, :].reshape((1, varSzeEmb))
 
         # Run optimisation:
-        objMdl.fit(x=aryCntxt,
-                   y=vecTrgt,
-                   verbose=0,
-                   epochs=1)
-                   # callbacks=[objCallback])
-        
+        #objMdl.fit(x=aryCntxt,  # run on entire dataset
+        #           y=vecTrgt,
+        #           verbose=0,
+        #           epochs=1)
+        #           # callbacks=[objCallback])
+        varLoss01 = objMdl.train_on_batch(aryCntxt,  # run on single batch
+                                          y=vecTrgt)
+
+
+
         # Status feedback:
         #if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
-        if (idxWrd % 100 == 0):
+        if (idxWrd % 10000 == 0):
 
             try:
 
                 print('---')
 
                 # Get prediction for current context word(s):
-                vecTmp = objMdl.predict(aryCntxt)
+                vecTmp = objMdl.predict_on_batch(aryCntxt)
 
                 # Current loss:
-                varLoss = np.sum(
-                                 np.square(
-                                           np.subtract(
-                                                       vecTrgt,
-                                                       vecTmp
-                                                       )
-                                           )
-                                 )
-                        
-                print(('Loss: ' + str(varLoss)))
+                varLoss02 = np.sum(
+                                   np.square(
+                                             np.subtract(
+                                                         vecTrgt,
+                                                         vecTmp
+                                                         )
+                                             )
+                                   )
+
+                print(('Loss auto:   ' + str(varLoss01)))
+                print(('Loss manual: ' + str(varLoss02)))
 
                 print(('Context: '
                        + str([dictRvrs[x] for x in vecC[(idxWrd - 15):idxWrd]])))
