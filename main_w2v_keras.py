@@ -187,9 +187,6 @@ objMdl.compile(optimizer=objOpt,
                loss=objCost,
                metrics=['accuracy'])
 
-
-
-
 # Loop through iterations:
 for idxItr in range(varNumItr):
 
@@ -229,14 +226,14 @@ for idxItr in range(varNumItr):
                 print('---')
 
                 # Get prediction for current context word(s):
-                vecTmp = objMdl.predict_on_batch(aryCntxt)
+                vecWrd = objMdl.predict_on_batch(aryCntxt)
 
                 # Current loss:
                 varLoss02 = np.sum(
                                    np.square(
                                              np.subtract(
                                                          vecTrgt,
-                                                         vecTmp
+                                                         vecWrd
                                                          )
                                              )
                                    )
@@ -252,18 +249,18 @@ for idxItr in range(varNumItr):
 
                 # Minimum squared deviation between prediciton and embedding
                 # vectors:
-                vecTmp = np.sum(
-                                np.square(
-                                          np.subtract(
-                                                      aryEmb,
-                                                      vecTmp[None, :]
-                                                      )
-                                          ),
-                                axis=1
-                                )
+                vecDiff = np.sum(
+                                 np.square(
+                                           np.subtract(
+                                                       aryEmb,
+                                                       vecWrd[None, :]
+                                                       )
+                                           ),
+                                 axis=1
+                                 )
 
                 # Look up predicted word in dictionary:
-                strWrdPrd = dictRvrs[int(np.argmin(vecTmp))]
+                strWrdPrd = dictRvrs[int(np.argmin(vecDiff))]
                 #strWrdPrd = dictRvrs[varPred]
 
                 print(('Prediction: ' + strWrdPrd))
@@ -273,26 +270,29 @@ for idxItr in range(varNumItr):
                 # Vector for next text (coded):
                 vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
 
+                # Use last context word as starting point for new text:
+                vecWrd = aryCntxt  # TODO: only works with input size one
+
                 # Generate new text:
                 for idxNew in range(varLenNewTxt):
 
                     # Get prediction for current word:
-                    vecTmp = objMdl.predict_on_batch(vecTmp.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+                    vecWrd = objMdl.predict_on_batch(vecWrd.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
 
                     # Minimum squared deviation between prediciton and embedding
                     # vectors:
-                    vecTmp = np.sum(
-                                    np.square(
-                                              np.subtract(
-                                                          aryEmb,
-                                                          vecTmp[None, :]
-                                                          )
-                                              ),
-                                    axis=1
-                                    )
+                    vecDiff = np.sum(
+                                     np.square(
+                                               np.subtract(
+                                                           aryEmb,
+                                                           vecWrd[None, :]
+                                                           )
+                                               ),
+                                     axis=1
+                                     )
 
                     # Get code of closest word vector:
-                    varTmp = int(np.argmin(vecTmp))
+                    varTmp = int(np.argmin(vecDiff))
 
                     # Save code of predicted word:
                     vecNew[idxNew] = varTmp
@@ -303,6 +303,7 @@ for idxItr in range(varNumItr):
                 # List to string:
                 strNew = ' '.join(lstNew)
                 print('New text:')
+                print(strNew)
 
             except:
 
@@ -342,7 +343,7 @@ aryBase = np.array(aryEmb[vecBase, :])
 for idxWrd in range(varLenBse):
 
     # Get prediction for current word:
-    vecTmp = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+    vecWrd = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
 
 # Vector for new text (coded):
 vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
@@ -351,22 +352,22 @@ vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
 for idxNew in range(varLenNewTxt):
 
     # Get prediction for current word:
-    vecTmp = objMdl.predict_on_batch(vecTmp.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+    vecWrd = objMdl.predict_on_batch(vecWrd.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
 
     # Minimum squared deviation between prediciton and embedding
     # vectors:
-    vecTmp = np.sum(
-                    np.square(
-                              np.subtract(
-                                          aryEmb,
-                                          vecTmp[None, :]
-                                          )
-                              ),
-                    axis=1
-                    )
+    vecDiff = np.sum(
+                     np.square(
+                               np.subtract(
+                                           aryEmb,
+                                           vecWrd[None, :]
+                                           )
+                               ),
+                     axis=1
+                     )
 
     # Get code of closest word vector:
-    varTmp = int(np.argmin(vecTmp))
+    varTmp = int(np.argmin(vecDiff))
 
     # Save code of predicted word:
     vecNew[idxNew] = varTmp
