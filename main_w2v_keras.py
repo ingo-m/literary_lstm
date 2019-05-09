@@ -28,7 +28,7 @@ strPthBse = '/home/john/Dropbox/Ernest_Hemingway/redacted/new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations:
-varNumItr = 1000
+varNumItr = 1
 
 # Display steps (after x number of iterations):
 varDspStp = 1
@@ -187,7 +187,8 @@ objMdl.compile(optimizer=objOpt,
 
 
 # Loop through iterations:
-for idxItr in range(varNumItr):
+#for idxItr in range(varNumItr):
+if False:
 
     # Random number for status feedback:
     varRndm = random.randint(20, (varLenTxt - 20))
@@ -313,13 +314,13 @@ aryBase = np.array(aryEmb[vecBase, :])
 for idxWrd in range(varLenBse):
 
     # Get prediction for current word:
-    vecTmp = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, varSzeEmb))  # TODO: only works with input size one
+    vecTmp = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
 
 # Generate new text:
 for idxNew in range(varLenNewTxt):
 
     # Get prediction for current word:
-    vecTmp = objMdl.predict_on_batch(vecTmp.reshape(1, varSzeEmb))  # TODO: only works with input size one
+    vecTmp = objMdl.predict_on_batch(vecTmp.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
 
     # Minimum squared deviation between prediciton and embedding
     # vectors:
@@ -342,10 +343,14 @@ for idxNew in range(varLenNewTxt):
 # Decode newly generated words:
 lstNew = [dictRvrs[x] for x in vecNew]
 
+# List to string:
+strBase = ' '.join(lstBase)
+strNew = ' '.join(lstNew)
+
 print('---')
 print('Base text:')
-print(lstBase)
+print(strBase)
 print('---')
 print('New text:')
-print(lstNew)
+print(strNew)
 print('---')
