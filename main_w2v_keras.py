@@ -9,12 +9,7 @@ import random
 import datetime
 import numpy as np
 import tensorflow as tf
-
-# from tensorflow.contrib import rnn
-# from tensorflow.keras import layers
-
-# from tensorflow.nn.objRnn import DropoutWrapper
-# from tf.contrib.rnn.DropoutWrapper
+from utilities import read_text
 
 
 # -----------------------------------------------------------------------------
@@ -25,6 +20,9 @@ strPthIn = '/home/john/PhD/GitLab/literary_lstm/log_w2v/word2vec_data.npz'
 
 # Log directory:
 strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
+
+# Path of sample text to base new predictions on (when generating new text):
+strPthBse = '/home/john/Dropbox/Ernest_Hemingway/redacted/new_base.txt'
 
 # Learning rate:
 varLrnRte = 0.001
@@ -275,5 +273,79 @@ for idxItr in range(varNumItr):
 
                 pass
 
-
 #objMdl.evaluate(x_test, y_test)
+
+
+# -----------------------------------------------------------------------------
+# *** Generate new text
+
+# Length of text to generate:
+varLenNewTxt = 100
+
+# Vector for next text (coded):
+vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
+
+# TODO: Does running data through model with model.predict_on_batch actually
+# change the state of the LSTM?
+
+# Load text to base new predictions on:
+lstBase = read_text(strPthBse)
+
+# Base text to code:
+varLenBse = len(lstBase)
+vecBase = np.zeros(varLenBse, dtype=np.int32)
+
+# Loop through base text:
+for idxWrd in range(varLenBse):
+
+    # Try to look up words in dictionary. If there is an unkown words, replace
+    # with unknown token.
+    try:
+        varTmp = dicWdCnOdr[lstBase[idxWrd].lower()]
+    except KeyError:
+        varTmp = 0
+    vecBase[idxWrd] = varTmp
+
+
+# Get embedding vectors for words:
+aryBase = np.array(aryEmb[vecBase, :])
+
+for idxWrd in range(varLenBse):
+
+    # Get prediction for current word:
+    vecTmp = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, varSzeEmb))  # TODO: only works with input size one
+
+# Generate new text:
+for idxNew in range(varLenNewTxt):
+
+    # Get prediction for current word:
+    vecTmp = objMdl.predict_on_batch(vecTmp.reshape(1, varSzeEmb))  # TODO: only works with input size one
+
+    # Minimum squared deviation between prediciton and embedding
+    # vectors:
+    vecTmp = np.sum(
+                    np.square(
+                              np.subtract(
+                                          aryEmb,
+                                          vecTmp[None, :]
+                                          )
+                              ),
+                    axis=1
+                    )
+
+    # Get code of closest word vector:
+    varTmp = int(np.argmin(vecTmp))
+
+    # Save code of predicted word:
+    vecNew[idxNew] = varTmp
+
+# Decode newly generated words:
+lstNew = [dictRvrs[x] for x in vecNew]
+
+print('---')
+print('Base text:')
+print(lstBase)
+print('---')
+print('New text:')
+print(lstNew)
+print('---')
