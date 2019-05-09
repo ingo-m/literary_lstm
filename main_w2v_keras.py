@@ -28,7 +28,7 @@ strPthBse = '/home/john/Dropbox/Ernest_Hemingway/redacted/new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations:
-varNumItr = 1
+varNumItr = 1000
 
 # Display steps (after x number of iterations):
 varDspStp = 1
@@ -38,6 +38,10 @@ varNumIn = 1
 
 # Number of neurons in first hidden layer:
 varNrn01 = 300
+
+# Length of new text to generate:
+varLenNewTxt = 100
+
 
 # -----------------------------------------------------------------------------
 # *** Load data
@@ -187,8 +191,7 @@ objMdl.compile(optimizer=objOpt,
 
 
 # Loop through iterations:
-#for idxItr in range(varNumItr):
-if False:
+for idxItr in range(varNumItr):
 
     # Random number for status feedback:
     varRndm = random.randint(20, (varLenTxt - 20))
@@ -218,11 +221,8 @@ if False:
         varLoss01 = objMdl.train_on_batch(aryCntxt,  # run on single batch
                                           y=vecTrgt)
 
-
-
         # Status feedback:
-        #if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
-        if (idxWrd % 10000 == 0):
+        if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
 
             try:
 
@@ -268,7 +268,41 @@ if False:
 
                 print(('Prediction: ' + strWrdPrd))
 
+                # ** Generate new text
 
+                # Vector for next text (coded):
+                vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
+
+                # Generate new text:
+                for idxNew in range(varLenNewTxt):
+
+                    # Get prediction for current word:
+                    vecTmp = objMdl.predict_on_batch(vecTmp.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+
+                    # Minimum squared deviation between prediciton and embedding
+                    # vectors:
+                    vecTmp = np.sum(
+                                    np.square(
+                                              np.subtract(
+                                                          aryEmb,
+                                                          vecTmp[None, :]
+                                                          )
+                                              ),
+                                    axis=1
+                                    )
+
+                    # Get code of closest word vector:
+                    varTmp = int(np.argmin(vecTmp))
+
+                    # Save code of predicted word:
+                    vecNew[idxNew] = varTmp
+
+                # Decode newly generated words:
+                lstNew = [dictRvrs[x] for x in vecNew]
+
+                # List to string:
+                strNew = ' '.join(lstNew)
+                print('New text:')
 
             except:
 
@@ -279,12 +313,6 @@ if False:
 
 # -----------------------------------------------------------------------------
 # *** Generate new text
-
-# Length of text to generate:
-varLenNewTxt = 100
-
-# Vector for next text (coded):
-vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
 
 # TODO: Does running data through model with model.predict_on_batch actually
 # change the state of the LSTM?
@@ -315,6 +343,9 @@ for idxWrd in range(varLenBse):
 
     # Get prediction for current word:
     vecTmp = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+
+# Vector for new text (coded):
+vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
 
 # Generate new text:
 for idxNew in range(varLenNewTxt):
