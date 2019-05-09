@@ -30,16 +30,16 @@ strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
 varLrnRte = 0.001
 
 # Number of training iterations:
-varNumItr = 1
+varNumItr = 1000
 
 # Display steps (after x number of iterations):
 varDspStp = 1
 
 # Number of input words from which to predict next word:
-varNumIn = 8
+varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 256
+varNrn01 = 300
 
 # -----------------------------------------------------------------------------
 # *** Load data
