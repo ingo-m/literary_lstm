@@ -28,7 +28,7 @@ strPthBse = '/home/john/Dropbox/Ernest_Hemingway/redacted/new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations:
-varNumItr = 1000
+varNumItr = 1
 
 # Display steps (after x number of iterations):
 varDspStp = 1
@@ -125,66 +125,75 @@ vecWrdsOut = tf.placeholder(tf.float32, [1, varSzeEmb])
 # -----------------------------------------------------------------------------
 # ***
 
-lstClls = [tf.keras.layers.LSTMCell(varNrn01,
-                                    activation='tanh',
-                                    recurrent_activation='hard_sigmoid',
-                                    use_bias=True,
-                                    kernel_initializer='glorot_uniform',
-                                    recurrent_initializer='orthogonal',
-                                    bias_initializer='zeros',
-                                    unit_forget_bias=True,
-                                    kernel_regularizer=None,
-                                    recurrent_regularizer=None,
-                                    bias_regularizer=None,
-                                    kernel_constraint=None,
-                                    recurrent_constraint=None,
-                                    bias_constraint=None,
-                                    dropout=0.1,
-                                    recurrent_dropout=0.1,
-                                    implementation=1
-                                    ),
-           tf.keras.layers.LSTMCell(
-                                    varNrn02,
-                                    activation='tanh',
-                                    recurrent_activation='hard_sigmoid',
-                                    use_bias=True,
-                                    kernel_initializer='glorot_uniform',
-                                    recurrent_initializer='orthogonal',
-                                    bias_initializer='zeros',
-                                    unit_forget_bias=True,
-                                    kernel_regularizer=None,
-                                    recurrent_regularizer=None,
-                                    bias_regularizer=None,
-                                    kernel_constraint=None,
-                                    recurrent_constraint=None,
-                                    bias_constraint=None,
-                                    dropout=0.1,
-                                    recurrent_dropout=0.1,
-                                    implementation=1
-                                    )]
+# objMdl = tf.keras.Model(inputs=aryWrdsIn, outputs=aryOut)
+objMdl = tf.keras.models.Sequential()
 
-# tf.keras.layers.StackedRNNCells ?
-aryOut = tf.keras.layers.RNN(lstClls)(aryWrdsIn)
+# Note that this cell is not optimized for performance on GPU.
+# Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
+objMdl.add(tf.keras.layers.LSTM(varNrn01,
+                                input_shape=(varNumIn, varSzeEmb),
+                                batch_size=1,
+                                activation='tanh',
+                                recurrent_activation='hard_sigmoid',
+                                use_bias=True,
+                                kernel_initializer='glorot_uniform',
+                                recurrent_initializer='orthogonal',
+                                bias_initializer='zeros',
+                                unit_forget_bias=True,
+                                kernel_regularizer=None,
+                                recurrent_regularizer=None,
+                                bias_regularizer=None,
+                                activity_regularizer=None,
+                                kernel_constraint=None,
+                                recurrent_constraint=None,
+                                bias_constraint=None,
+                                dropout=0.1,
+                                recurrent_dropout=0.1,
+                                implementation=1,
+                                return_sequences=True,  # ?
+                                return_state=False,
+                                go_backwards=False,
+                                stateful=True,
+                                unroll=False
+                                )
+           )
 
-objMdl = tf.keras.Model(inputs=aryWrdsIn, outputs=aryOut)
+objMdl.add(tf.keras.layers.LSTM(varNrn02,
+                                input_shape=(varNumIn, varNrn01),
+                                batch_size=1,
+                                activation='tanh',
+                                recurrent_activation='hard_sigmoid',
+                                use_bias=True,
+                                kernel_initializer='glorot_uniform',
+                                recurrent_initializer='orthogonal',
+                                bias_initializer='zeros',
+                                unit_forget_bias=True,
+                                kernel_regularizer=None,
+                                recurrent_regularizer=None,
+                                bias_regularizer=None,
+                                activity_regularizer=None,
+                                kernel_constraint=None,
+                                recurrent_constraint=None,
+                                bias_constraint=None,
+                                dropout=0.1,
+                                recurrent_dropout=0.1,
+                                implementation=1,
+                                return_sequences=False,  # ?
+                                return_state=False,
+                                go_backwards=False,
+                                stateful=True,
+                                unroll=False
+                                )
+           )
 
-# Cost function:
-# objCost = tf.sqrt(tf.reduce_sum(tf.squared_difference(aryOut, vecWrdsOut)))
-#objCost = tf.losses.mean_squared_error(
-#    vecWrdsOut,
-#    aryOut) #,
-#    reduction=tf.losses.Reduction.SUM
-#    )
-objCost = tf.losses.mean_squared_error
 
+# objMdl.add(tf.keras.layers.Dense(1))
 
 # Optimiser:
 # objOpt = tf.train.RMSPropOptimizer(learning_rate=varLrnRte).minimize(objCost)
-objOpt = tf.keras.optimizers.RMSprop(lr=varLrnRte)
 
-
-objMdl.compile(optimizer=objOpt,
-               loss=objCost,
+objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
+               loss=tf.losses.mean_squared_error,
                metrics=['accuracy'])
 
 # Loop through iterations:
@@ -219,7 +228,8 @@ for idxItr in range(varNumItr):
                                           y=vecTrgt)
 
         # Status feedback:
-        if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
+        #if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
+        if (idxWrd % 100 == 0):
 
             try:
 
