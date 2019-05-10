@@ -34,7 +34,7 @@ varNumItr = 1000
 varDspStp = 1
 
 # Number of input words from which to predict next word:
-varNumIn = 1
+varNumIn = 10
 
 # Number of neurons in first hidden layer:
 varNrn01 = 300
@@ -96,7 +96,7 @@ varSzeEmb = aryEmb.shape[1]
 varNrn02 = varSzeEmb
 
 # Total number of inputs (to input layer):
-varNumInTtl = varNumIn * varSzeEmb
+# varNumInTtl = varNumIn * varSzeEmb
 
 # Placeholder for inputs (to input layer):
 aryWrdsIn = tf.keras.Input(shape=(varNumIn, varSzeEmb),
@@ -279,13 +279,13 @@ for idxItr in range(varNumItr):
                 vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
 
                 # Use last context word as starting point for new text:
-                vecWrd = aryCntxt  # TODO: only works with input size one
+                # vecWrd = aryCntxt  # TODO: only works with input size one
 
                 # Generate new text:
                 for idxNew in range(varLenNewTxt):
 
                     # Get prediction for current word:
-                    vecWrd = objMdl.predict_on_batch(vecWrd.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+                    vecWrd = objMdl.predict_on_batch(aryCntxt)  # .reshape(1, varNumIn, varSzeEmb))  # TODO: only works with input size one?
 
                     # Minimum squared deviation between prediciton and embedding
                     # vectors:
@@ -305,6 +305,12 @@ for idxItr in range(varNumItr):
                     # Save code of predicted word:
                     vecNew[idxNew] = varTmp
 
+                    # Update context (leave out first - i.e. oldest - word in
+                    # context, and append newly predicted word):
+                    aryCntxt = np.concatenate((aryCntxt[:, 1:, :],
+                                               vecWrd.reshape(1, 1, varSzeEmb)
+                                               ), axis=1)
+
                 # Decode newly generated words:
                 lstNew = [dictRvrs[x] for x in vecNew]
 
@@ -323,74 +329,76 @@ for idxItr in range(varNumItr):
 # -----------------------------------------------------------------------------
 # *** Generate new text
 
-# TODO: Does running data through model with model.predict_on_batch actually
-# change the state of the LSTM?
+if False:
 
-# Load text to base new predictions on:
-lstBase = read_text(strPthBse)
+    # TODO: Does running data through model with model.predict_on_batch actually
+    # change the state of the LSTM?
 
-# Base text to code:
-varLenBse = len(lstBase)
-vecBase = np.zeros(varLenBse, dtype=np.int32)
+    # Load text to base new predictions on:
+    lstBase = read_text(strPthBse)
 
-# Loop through base text:
-for idxWrd in range(varLenBse):
+    # Base text to code:
+    varLenBse = len(lstBase)
+    vecBase = np.zeros(varLenBse, dtype=np.int32)
 
-    # Try to look up words in dictionary. If there is an unkown words, replace
-    # with unknown token.
-    try:
-        varTmp = dicWdCnOdr[lstBase[idxWrd].lower()]
-    except KeyError:
-        varTmp = 0
-    vecBase[idxWrd] = varTmp
+    # Loop through base text:
+    for idxWrd in range(varLenBse):
+
+        # Try to look up words in dictionary. If there is an unkown words, replace
+        # with unknown token.
+        try:
+            varTmp = dicWdCnOdr[lstBase[idxWrd].lower()]
+        except KeyError:
+            varTmp = 0
+        vecBase[idxWrd] = varTmp
 
 
-# Get embedding vectors for words:
-aryBase = np.array(aryEmb[vecBase, :])
+    # Get embedding vectors for words:
+    aryBase = np.array(aryEmb[vecBase, :])
 
-for idxWrd in range(varLenBse):
+    for idxWrd in range(varLenBse):
 
-    # Get prediction for current word:
-    vecWrd = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+        # Get prediction for current word:
+        vecWrd = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
 
-# Vector for new text (coded):
-vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
+    # Vector for new text (coded):
+    vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
 
-# Generate new text:
-for idxNew in range(varLenNewTxt):
+    # Generate new text:
+    for idxNew in range(varLenNewTxt):
 
-    # Get prediction for current word:
-    vecWrd = objMdl.predict_on_batch(vecWrd.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+        # Get prediction for current word:
+        vecWrd = objMdl.predict_on_batch(vecWrd.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
 
-    # Minimum squared deviation between prediciton and embedding
-    # vectors:
-    vecDiff = np.sum(
-                     np.square(
-                               np.subtract(
-                                           aryEmb,
-                                           vecWrd[None, :]
-                                           )
-                               ),
-                     axis=1
-                     )
+        # Minimum squared deviation between prediciton and embedding
+        # vectors:
+        vecDiff = np.sum(
+                         np.square(
+                                   np.subtract(
+                                               aryEmb,
+                                               vecWrd[None, :]
+                                               )
+                                   ),
+                         axis=1
+                         )
 
-    # Get code of closest word vector:
-    varTmp = int(np.argmin(vecDiff))
+        # Get code of closest word vector:
+        varTmp = int(np.argmin(vecDiff))
 
-    # Save code of predicted word:
-    vecNew[idxNew] = varTmp
+        # Save code of predicted word:
+        vecNew[idxNew] = varTmp
 
-# Decode newly generated words:
-lstNew = [dictRvrs[x] for x in vecNew]
+    # Decode newly generated words:
+    lstNew = [dictRvrs[x] for x in vecNew]
 
-# List to string:
-strBase = ' '.join(lstBase)
-strNew = ' '.join(lstNew)
+    # List to string:
+    strBase = ' '.join(lstBase)
+    strNew = ' '.join(lstNew)
 
-print('---')
-print('Base text:')
-print(strBase)
-print('---')
-print('New text:')
-print(strNew)
-print('---')
+    print('---')
+    print('Base text:')
+    print(strBase)
+    print('---')
+    print('New text:')
+    print(strNew)
+    print('---')
