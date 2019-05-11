@@ -39,23 +39,23 @@ from tensorflow.contrib.tensorboard.plugins import projector
 # *** Define parameters
 
 # Path of input text files:
-strPthIn = '/Users/john/Dropbox/Ernest_Hemingway/redacted/compilation.txt'
+strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/compilation.txt'
 
 # Tensorflow log directory:
-strTfLog = '/Users/john/1_PhD/GitLab/literary_lstm/log_w2v'
+strTfLog = '/home/john/PhD/GitLab/literary_lstm/log_w2v'
 
 # Batch size:
-varBatSze = 500
+varBatSze = 10000
 
 # Size of context window, i.e. how many words to consider to the left and to
 # the right of each target word.
 varConWin = 10
 
 # Dimension of the embedding vector. (Number of neurons in hidden layer?)
-varSzeEmb = 300
+varSzeEmb = 200
 
 # Number of negative examples to sample.
-varNumNgtv = 300
+varNumNgtv = 50
 
 # Random set of words to evaluate similarity on:
 varSzeEval = 10
@@ -63,10 +63,10 @@ varSzeEval = 10
 # Vocabulary size (number of words; rare words are replaced with 'unknown'
 # code if the vocabulary size is exceeded by the number of words in the
 # text).
-varVocSze = 15000
+varVocSze = 10000
 
 # Number of training iterations:
-varNumIt = 100001
+varNumIt = 2000000
 
 # ------------------------------------------------------------------------------
 # *** Preparations
