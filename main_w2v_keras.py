@@ -34,7 +34,7 @@ varNumItr = 1000
 varDspStp = 1
 
 # Number of input words from which to predict next word:
-varNumIn = 10
+varNumIn = 1
 
 # Number of neurons in first hidden layer:
 varNrn01 = 200
@@ -202,12 +202,12 @@ for idxItr in range(varNumItr):
     varRndm = random.randint(20, (varLenTxt - 20))
 
     # List for word indices to loop over, in randomised order:
-    lstRnd = list(range(varNumIn, varLenTxt))
-    random.shuffle(lstRnd)
+    # lstRnd = list(range(varNumIn, varLenTxt))
+    # random.shuffle(lstRnd)
 
     # Loop through text (corpus). Index refers to target word (i.e. word
     # to be predicted).
-    for idxWrd in lstRnd:
+    for idxWrd in range(varNumIn, varLenTxt):
 
         # Get integer codes of context word(s):
         vecCntxt = vecC[(idxWrd - varNumIn):idxWrd]
