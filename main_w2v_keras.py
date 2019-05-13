@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-LSTM fun main function using word2vec embedding.
-"""
+"""LSTM function using word2vec embedding."""
 
 import os
 import random
@@ -123,8 +121,9 @@ vecWrdsOut = tf.placeholder(tf.float32, [1, varSzeEmb])
 
 
 # -----------------------------------------------------------------------------
-# ***
+# *** Build the network
 
+# The actual LSTM layers.
 # Note that this cell is not optimized for performance on GPU.
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
 aryOut01 = tf.keras.layers.LSTM(varNrn01,
@@ -155,6 +154,7 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 name='LSTMlayer01'
                                 )(aryWrdsIn)
 
+# Second LSTM layer:
 aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 #input_shape=(varNumIn, varNrn01),
                                 #batch_size=1,
@@ -183,17 +183,26 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 name='LSTMlayer02'
                                 )(aryOut01)
 
+# Dense feedforward layer:
 # objMdl.add(tf.keras.layers.Dense(1))
 
-# inputs=model1_inputs, outputs = model1_outputs, name='model1
-#objMdl = tf.keras.models.Sequential([objLyr01, objLyr02])
+# Initialise the model:
 objMdl = tf.keras.models.Model(inputs=aryWrdsIn, outputs=aryOut02)
 
+# Print model summary:
 objMdl.summary()
 
+# Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
                loss=tf.losses.mean_squared_error,
                metrics=['accuracy'])
+
+# -----------------------------------------------------------------------------
+# *** Prepare batches
+
+
+# -----------------------------------------------------------------------------
+# *** Training
 
 # Loop through iterations:
 for idxItr in range(varNumItr):
@@ -329,82 +338,80 @@ for idxItr in range(varNumItr):
 
                 pass
 
-#objMdl.evaluate(x_test, y_test)
+# objMdl.evaluate(x_test, y_test)
 
 
 # -----------------------------------------------------------------------------
-# *** Generate new text
+# *** Validation - generate new text
 
-if False:
-
-    # TODO: Does running data through model with model.predict_on_batch actually
-    # change the state of the LSTM?
-
-    # Load text to base new predictions on:
-    lstBase = read_text(strPthBse)
-
-    # Base text to code:
-    varLenBse = len(lstBase)
-    vecBase = np.zeros(varLenBse, dtype=np.int32)
-
-    # Loop through base text:
-    for idxWrd in range(varLenBse):
-
-        # Try to look up words in dictionary. If there is an unkown words, replace
-        # with unknown token.
-        try:
-            varTmp = dicWdCnOdr[lstBase[idxWrd].lower()]
-        except KeyError:
-            varTmp = 0
-        vecBase[idxWrd] = varTmp
-
-
-    # Get embedding vectors for words:
-    aryBase = np.array(aryEmb[vecBase, :])
-
-    for idxWrd in range(varLenBse):
-
-        # Get prediction for current word:
-        vecWrd = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
-
-    # Vector for new text (coded):
-    vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
-
-    # Generate new text:
-    for idxNew in range(varLenNewTxt):
-
-        # Get prediction for current word:
-        vecWrd = objMdl.predict_on_batch(vecWrd.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
-
-        # Minimum squared deviation between prediciton and embedding
-        # vectors:
-        vecDiff = np.sum(
-                         np.square(
-                                   np.subtract(
-                                               aryEmb,
-                                               vecWrd[None, :]
-                                               )
-                                   ),
-                         axis=1
-                         )
-
-        # Get code of closest word vector:
-        varTmp = int(np.argmin(vecDiff))
-
-        # Save code of predicted word:
-        vecNew[idxNew] = varTmp
-
-    # Decode newly generated words:
-    lstNew = [dictRvrs[x] for x in vecNew]
-
-    # List to string:
-    strBase = ' '.join(lstBase)
-    strNew = ' '.join(lstNew)
-
-    print('---')
-    print('Base text:')
-    print(strBase)
-    print('---')
-    print('New text:')
-    print(strNew)
-    print('---')
+## TODO: Does running data through model with model.predict_on_batch actually
+## change the state of the LSTM?
+#
+## Load text to base new predictions on:
+#lstBase = read_text(strPthBse)
+#
+## Base text to code:
+#varLenBse = len(lstBase)
+#vecBase = np.zeros(varLenBse, dtype=np.int32)
+#
+## Loop through base text:
+#for idxWrd in range(varLenBse):
+#
+#    # Try to look up words in dictionary. If there is an unkown words, replace
+#    # with unknown token.
+#    try:
+#        varTmp = dicWdCnOdr[lstBase[idxWrd].lower()]
+#    except KeyError:
+#        varTmp = 0
+#    vecBase[idxWrd] = varTmp
+#
+#
+## Get embedding vectors for words:
+#aryBase = np.array(aryEmb[vecBase, :])
+#
+#for idxWrd in range(varLenBse):
+#
+#    # Get prediction for current word:
+#    vecWrd = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+#
+## Vector for new text (coded):
+#vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
+#
+## Generate new text:
+#for idxNew in range(varLenNewTxt):
+#
+#    # Get prediction for current word:
+#    vecWrd = objMdl.predict_on_batch(vecWrd.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
+#
+#    # Minimum squared deviation between prediciton and embedding
+#    # vectors:
+#    vecDiff = np.sum(
+#                     np.square(
+#                               np.subtract(
+#                                           aryEmb,
+#                                           vecWrd[None, :]
+#                                           )
+#                               ),
+#                     axis=1
+#                     )
+#
+#    # Get code of closest word vector:
+#    varTmp = int(np.argmin(vecDiff))
+#
+#    # Save code of predicted word:
+#    vecNew[idxNew] = varTmp
+#
+## Decode newly generated words:
+#lstNew = [dictRvrs[x] for x in vecNew]
+#
+## List to string:
+#strBase = ' '.join(lstBase)
+#strNew = ' '.join(lstNew)
+#
+#print('---')
+#print('Base text:')
+#print(strBase)
+#print('---')
+#print('New text:')
+#print(strNew)
+#print('---')
