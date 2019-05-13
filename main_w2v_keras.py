@@ -16,7 +16,7 @@ from utilities import read_text
 # *** Define parameters
 
 # Path of input data file:
-strPthIn = '/home/john/PhD/GitLab/literary_lstm/log_w2v/word2vec_data_200.npz'
+strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/word2vec_data_100.npz'
 
 # Log directory:
 strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
@@ -37,7 +37,7 @@ varDspStp = 1
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 200
+varNrn01 = 100
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -147,7 +147,7 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 dropout=0.1,
                                 recurrent_dropout=0.1,
                                 implementation=1,
-                                return_sequences=False,  # ?
+                                return_sequences=True,  # ?
                                 return_state=False,
                                 go_backwards=False,
                                 stateful=True,
@@ -155,39 +155,39 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 name='LSTMlayer01'
                                 )(aryWrdsIn)
 
-#aryOut02 = tf.keras.layers.LSTM(varNrn02,
-#                                #input_shape=(varNumIn, varNrn01),
-#                                #batch_size=1,
-#                                activation='tanh',
-#                                recurrent_activation='hard_sigmoid',
-#                                use_bias=True,
-#                                kernel_initializer='glorot_uniform',
-#                                recurrent_initializer='orthogonal',
-#                                bias_initializer='zeros',
-#                                unit_forget_bias=True,
-#                                kernel_regularizer=None,
-#                                recurrent_regularizer=None,
-#                                bias_regularizer=None,
-#                                activity_regularizer=None,
-#                                kernel_constraint=None,
-#                                recurrent_constraint=None,
-#                                bias_constraint=None,
-#                                dropout=0.1,
-#                                recurrent_dropout=0.1,
-#                                implementation=1,
-#                                return_sequences=False,  # ?
-#                                return_state=False,
-#                                go_backwards=False,
-#                                stateful=True,
-#                                unroll=False,
-#                                name='LSTMlayer02'
-#                                )(aryOut01)
+aryOut02 = tf.keras.layers.LSTM(varNrn02,
+                                #input_shape=(varNumIn, varNrn01),
+                                #batch_size=1,
+                                activation='tanh',
+                                recurrent_activation='hard_sigmoid',
+                                use_bias=True,
+                                kernel_initializer='glorot_uniform',
+                                recurrent_initializer='orthogonal',
+                                bias_initializer='zeros',
+                                unit_forget_bias=True,
+                                kernel_regularizer=None,
+                                recurrent_regularizer=None,
+                                bias_regularizer=None,
+                                activity_regularizer=None,
+                                kernel_constraint=None,
+                                recurrent_constraint=None,
+                                bias_constraint=None,
+                                dropout=0.1,
+                                recurrent_dropout=0.1,
+                                implementation=1,
+                                return_sequences=False,  # ?
+                                return_state=False,
+                                go_backwards=False,
+                                stateful=True,
+                                unroll=False,
+                                name='LSTMlayer02'
+                                )(aryOut01)
 
 # objMdl.add(tf.keras.layers.Dense(1))
 
 # inputs=model1_inputs, outputs = model1_outputs, name='model1
 #objMdl = tf.keras.models.Sequential([objLyr01, objLyr02])
-objMdl = tf.keras.models.Model(inputs=aryWrdsIn, outputs=aryOut01)
+objMdl = tf.keras.models.Model(inputs=aryWrdsIn, outputs=aryOut02)
 
 objMdl.summary()
 
@@ -236,6 +236,8 @@ for idxItr in range(varNumItr):
             try:
 
                 print('---')
+
+                print(('Iteration: ' + str(idxItr)))
 
                 # Get prediction for current context word(s):
                 vecWrd = objMdl.predict_on_batch(aryCntxt)
