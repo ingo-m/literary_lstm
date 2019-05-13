@@ -273,14 +273,15 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 )(aryOut01)
 
 # Dense feedforward layer:
-# objMdl.add(tf.keras.layers.Dense(1))
+# activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
+aryOut03 = tf.keras.layers.Dense(varSzeEmb, activation='softmax')(aryOut02)
 
 # Initialise the model:
-objMdl = tf.keras.models.Model(inputs=objTrnCtxt, outputs=aryOut02)
+objMdl = tf.keras.models.Model(inputs=objTrnCtxt, outputs=aryOut03)
 
 # An almost idential version of the model used for testing, with different
 # input size (only one batch).
-aryOut03 = tf.keras.layers.LSTM(varNrn01,
+aryOut04 = tf.keras.layers.LSTM(varNrn01,
                                 # input_shape=(varNumIn, varSzeEmb),
                                 # batch_size=1,
                                 activation='tanh',
@@ -310,7 +311,7 @@ aryOut03 = tf.keras.layers.LSTM(varNrn01,
 
 # Second LSTM layer:
 # objMdl.add(tf.keras.layers.LSTM(varNrn02,
-aryOut04 = tf.keras.layers.LSTM(varNrn02,
+aryOut05 = tf.keras.layers.LSTM(varNrn02,
                                 # input_shape=(varNumIn, varNrn01),
                                 # batch_size=1,
                                 activation='tanh',
@@ -336,9 +337,14 @@ aryOut04 = tf.keras.layers.LSTM(varNrn02,
                                 stateful=True,
                                 unroll=False,
                                 name='Test_LSTMlayer02'
-                                )(aryOut03)
+                                )(aryOut04)
 
-objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut04)
+# Dense feedforward layer:
+# activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
+aryOut06 = tf.keras.layers.Dense(varSzeEmb, activation='softmax')(aryOut05)
+
+# Initialise the model:
+objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut06)
 
 # Print model summary:
 print('Training model:')
@@ -348,7 +354,7 @@ objTstMdl.summary
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
-               loss=tf.losses.mean_squared_error,
+               loss=tf.losses.softmax_cross_entropy,  # tf.losses.mean_squared_error,
                metrics=['accuracy'])
 
 
@@ -617,6 +623,9 @@ for idxOpt in range(varNumOpt):
 # Get model weights:
 lstWghts = objMdl.get_weights()
 
+# print('len(lstWghts)')
+# print(len(lstWghts))
+
 # Save text, dictionary, and embeddings to disk:
 np.savez(os.path.join(strPthLog, 'lstm_data.npz'),
          varLrnRte=varLrnRte,
@@ -632,6 +641,8 @@ np.savez(os.path.join(strPthLog, 'lstm_data.npz'),
          aryWghts04=lstWghts[3],
          aryWghts05=lstWghts[4],
          aryWghts06=lstWghts[5],
+         aryWghts07=lstWghts[6],
+         aryWghts08=lstWghts[7],
          )
 
 
