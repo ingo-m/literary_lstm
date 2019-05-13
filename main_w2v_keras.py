@@ -475,7 +475,16 @@ for idxOpt in range(varNumOpt):
 
         print('---')
 
-        print(('Optimisation step: ' + str(idxOpt)))
+        print(('Optimisation step: '
+               + str(idxOpt)
+               + ' out of '
+               + str(varNumOpt)))
+
+
+        print(('                   '
+               + str(np.around((float(idxOpt) / float(varNumOpt)))
+                     ).split('.')[0]
+               + '%'))
 
         # Avoid beginning of text (not enough preceding context words):
         if varTst > varNumIn:
