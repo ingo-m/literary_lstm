@@ -42,7 +42,14 @@ varNrn01 = 100
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 1000
+varSzeBtch = 5000
+
+# Input dropout:
+varInDrp = 0.2
+
+# Recurrent state dropout:
+varStDrp = 0.0
+
 
 # -----------------------------------------------------------------------------
 # *** Load data
@@ -132,23 +139,28 @@ varNrn02 = varSzeEmb
 
 
 # -----------------------------------------------------------------------------
-# *** Prepare queue
+# *** Prepare queues
 
 # Batches are prepared in a queue-feeding-function that runs in a separate
 # thread.
 
 # Queue capacity:
-varCapQ = 10
+varCapQ = 5
 
-# Queue for batches of context words:
+# Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
                       dtypes=[tf.float32],
                       shapes=[(varSzeBtch, varNumIn, varSzeEmb)])
 
-# Queue for batches of target words:
+# Queue for training batches of target words:
 objQ02 = tf.FIFOQueue(capacity=varCapQ,
                       dtypes=[tf.float32],
                       shapes=[(varSzeBtch, varSzeEmb)])
+
+## Queue for testing batch, context words (one batch only):
+#objQ03 = tf.FIFOQueue(capacity=1,
+#                      dtypes=[tf.float32],
+#                      shapes=[(1, varNumIn, varSzeEmb)])
 
 # Method for getting queue size:
 objSzeQ = objQ01.size()
@@ -158,12 +170,15 @@ objPlcHld01 = tf.placeholder(tf.float32,
                              shape=[varSzeBtch, varNumIn, varSzeEmb])
 objPlcHld02 = tf.placeholder(tf.float32,
                              shape=[varSzeBtch, varSzeEmb])
+#objPlcHld03 = tf.placeholder(tf.float32,
+#                             shape=[1, varNumIn, varSzeEmb])
 
 # The enqueue operation that puts data on the graph.
 objEnQ01 = objQ01.enqueue([objPlcHld01])
 objEnQ02 = objQ02.enqueue([objPlcHld02])
+#objEnQ03 = objQ03.enqueue([objPlcHld03])
 
-# Number of threads that will be created:
+# Number of threads that will be created per queue:
 varNumThrd = 1
 
 # The queue runner (places the enqueue operation on the queue?).
@@ -171,26 +186,36 @@ objRunQ01 = tf.train.QueueRunner(objQ01, [objEnQ01] * varNumThrd)
 tf.train.add_queue_runner(objRunQ01)
 objRunQ02 = tf.train.QueueRunner(objQ02, [objEnQ02] * varNumThrd)
 tf.train.add_queue_runner(objRunQ02)
+#objRunQ03 = tf.train.QueueRunner(objQ03, [objEnQ03] * 1)
+#tf.train.add_queue_runner(objRunQ03)
 
 # The tensor object that is retrieved from the queue. Functions like
 # placeholders for the data in the queue when defining the graph.
-#objCntxt = objQ01.dequeue()
-#objTrgt = objQ02.dequeue()
-objCntxt = tf.keras.Input(shape=(varSzeBtch, varNumIn, varSzeEmb),
-                          tensor=objQ01.dequeue(),
-                          dtype=tf.float32)
-objTrgt = objQ02.dequeue()  # tf.placeholder(tf.float32, [varSzeBtch, varSzeEmb])
+# Training context placebolder (input):
+objTrnCtxt = tf.keras.Input(shape=(varSzeBtch, varNumIn, varSzeEmb),
+                            tensor=objQ01.dequeue(),
+                            dtype=tf.float32)
+# Training target placeholder:
+objTrgt = objQ02.dequeue()
+# Testing context placeholder:
+objTstCtxt = tf.keras.Input(shape=(varNumIn, varSzeEmb),
+                            batch_size=1,
+                            dtype=tf.float32)
 
 
 # -----------------------------------------------------------------------------
 # *** Build the network
 
+# Initialise the model:
+# objMdl = tf.keras.models.Sequential()
+
 # The actual LSTM layers.
 # Note that this cell is not optimized for performance on GPU.
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
+# objMdl.add(tf.keras.layers.LSTM(varNrn01,
 aryOut01 = tf.keras.layers.LSTM(varNrn01,
-                                #input_shape=(varNumIn, varSzeEmb),
-                                #batch_size=1,
+                                # input_shape=(varNumIn, varSzeEmb),
+                                # batch_size=varSzeBtch,
                                 activation='tanh',
                                 recurrent_activation='hard_sigmoid',
                                 use_bias=True,
@@ -205,8 +230,8 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                dropout=0.1,
-                                recurrent_dropout=0.1,
+                                dropout=varInDrp,
+                                recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=True,  # ?
                                 return_state=False,
@@ -214,12 +239,13 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 stateful=True,
                                 unroll=False,
                                 name='LSTMlayer01'
-                                )(objCntxt)
+                                )(objTrnCtxt)
 
 # Second LSTM layer:
+# objMdl.add(tf.keras.layers.LSTM(varNrn02,
 aryOut02 = tf.keras.layers.LSTM(varNrn02,
-                                #input_shape=(varNumIn, varNrn01),
-                                #batch_size=1,
+                                # input_shape=(varNumIn, varNrn01),
+                                # batch_size=varSzeBtch,
                                 activation='tanh',
                                 recurrent_activation='hard_sigmoid',
                                 use_bias=True,
@@ -234,8 +260,8 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                dropout=0.1,
-                                recurrent_dropout=0.1,
+                                dropout=varInDrp,
+                                recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=False,  # ?
                                 return_state=False,
@@ -249,10 +275,76 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
 # objMdl.add(tf.keras.layers.Dense(1))
 
 # Initialise the model:
-objMdl = tf.keras.models.Model(inputs=objCntxt, outputs=aryOut02)
+objMdl = tf.keras.models.Model(inputs=objTrnCtxt, outputs=aryOut02)
+
+# Inidialise copy of the model used for testing, with different input size
+# (only one batch).
+
+aryOut03 = tf.keras.layers.LSTM(varNrn01,
+                                # input_shape=(varNumIn, varSzeEmb),
+                                # batch_size=1,
+                                activation='tanh',
+                                recurrent_activation='hard_sigmoid',
+                                use_bias=True,
+                                kernel_initializer='glorot_uniform',
+                                recurrent_initializer='orthogonal',
+                                bias_initializer='zeros',
+                                unit_forget_bias=True,
+                                kernel_regularizer=None,
+                                recurrent_regularizer=None,
+                                bias_regularizer=None,
+                                activity_regularizer=None,
+                                kernel_constraint=None,
+                                recurrent_constraint=None,
+                                bias_constraint=None,
+                                dropout=varInDrp,
+                                recurrent_dropout=varStDrp,
+                                implementation=1,
+                                return_sequences=True,  # ?
+                                return_state=False,
+                                go_backwards=False,
+                                stateful=True,
+                                unroll=False,
+                                name='Test_LSTMlayer01'
+                                )(objTstCtxt)
+
+# Second LSTM layer:
+# objMdl.add(tf.keras.layers.LSTM(varNrn02,
+aryOut04 = tf.keras.layers.LSTM(varNrn02,
+                                # input_shape=(varNumIn, varNrn01),
+                                # batch_size=1,
+                                activation='tanh',
+                                recurrent_activation='hard_sigmoid',
+                                use_bias=True,
+                                kernel_initializer='glorot_uniform',
+                                recurrent_initializer='orthogonal',
+                                bias_initializer='zeros',
+                                unit_forget_bias=True,
+                                kernel_regularizer=None,
+                                recurrent_regularizer=None,
+                                bias_regularizer=None,
+                                activity_regularizer=None,
+                                kernel_constraint=None,
+                                recurrent_constraint=None,
+                                bias_constraint=None,
+                                dropout=varInDrp,
+                                recurrent_dropout=varStDrp,
+                                implementation=1,
+                                return_sequences=False,  # ?
+                                return_state=False,
+                                go_backwards=False,
+                                stateful=True,
+                                unroll=False,
+                                name='Test_LSTMlayer02'
+                                )(aryOut03)
+
+objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut04)
 
 # Print model summary:
+print('Training model:')
 objMdl.summary()
+print('Testing model:')
+objTstMdl.summary
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
@@ -261,17 +353,17 @@ objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
 
 
 # -----------------------------------------------------------------------------
-# *** Prepare batches
+# *** Queues
 
 # Batches are prepared in a queue-feeding-function that runs in a separate
 # thread.
 
-def funcPlcIn():
-    """Place data on queue."""
+def training_queue():
+    """Place training data on queue."""
 
     # Batch index:
-    idx01 = 0    
-    
+    idx01 = 0
+
     # Array for new batch of context words:
     aryCntxt = np.zeros((varSzeBtch, varNumIn, varSzeEmb), dtype=np.float32)
 
@@ -279,25 +371,25 @@ def funcPlcIn():
     aryTrgt = np.zeros((varSzeBtch, varSzeEmb), dtype=np.float32)
 
     # varNumBtch = int(np.ceil(float(varLenTxt) / float(varSzeBtch)))
-    
+
     # Loop through iterations:
     for idxItr in range(varNumItr):
-    
-          # Loop through text (corpus). Index refers to target word (i.e. word
+
+        # Loop through text (corpus). Index refers to target word (i.e. word
         # to be predicted).
         for idxWrd in range(varNumIn, varLenTxt):
 
             # Get integer codes of context word(s):
             vecCntxt = vecC[(idxWrd - varNumIn):idxWrd]
-            
+
             # Get embedding vectors for context word(s):
             aryCntxt[idx01, :, :] = np.array(aryEmb[vecCntxt, :])
 
             # Word to predict (target):
             varTrgt = vecC[idxWrd]
-            
+
             # Get embedding vector for target word:
-            aryTrgt[idx01, :] = aryEmb[varTrgt, :]            
+            aryTrgt[idx01, :] = aryEmb[varTrgt, :]
 
             # Increment index:
             idx01 += 1
@@ -306,11 +398,11 @@ def funcPlcIn():
             if idx01 == int(varSzeBtch):
 
                 # TODO
-                
+
                 aryTmp01 = aryCntxt
-                dicIn01 = {objPlcHld01: aryTmp01}                
+                dicIn01 = {objPlcHld01: aryTmp01}
                 aryTmp02 = aryTrgt
-                dicIn02 = {objPlcHld02: aryTmp02}                
+                dicIn02 = {objPlcHld02: aryTmp02}
 
                 # Batch is complete, push to the queue:
                 objSess.run(objEnQ01, feed_dict=dicIn01)
@@ -322,10 +414,20 @@ def funcPlcIn():
 
                 # Array for new batch of target words:
                 aryTrgt = np.zeros((varSzeBtch, varSzeEmb),
-                                   dtype=np.float32)                
-                
+                                   dtype=np.float32)
+
                 # Reset index:
                 idx01 = 0
+
+
+#def testing_queue(aryTstCntxt):
+#    """Place testing data on queue."""
+#    #
+#    aryTmp03 = aryTstCntxt
+#    dicIn03 = {objPlcHld03: aryTmp03}
+#
+#    # Batch is complete, push to the queue:
+#    objSess.run(objEnQ03, feed_dict=dicIn03)
 
 
 # -----------------------------------------------------------------------------
@@ -333,10 +435,10 @@ def funcPlcIn():
 
 # Buffer size (number of samples to put on queue before starting
 # execution of graph):
-varBuff = 10
+varBuff = 3
 
 # Define & run extra thread with graph that places data on queue:
-objThrd = threading.Thread(target=funcPlcIn)
+objThrd = threading.Thread(target=training_queue)
 objThrd.setDaemon(True)
 objThrd.start()
 
@@ -364,45 +466,89 @@ for idxItr in range(varNumItr):
     # to be predicted).
     for idxWrd in range(varNumIn, varLenTxt):
 
-        # Run optimisation:
-        #objMdl.fit(x=aryCntxt,  # run on entire dataset
-        #           y=vecTrgt,
-        #           verbose=0,
-        #           epochs=1)
-        #           # callbacks=[objCallback])
-        varLoss01 = objMdl.train_on_batch(objCntxt,  # run on single batch
-                                          y=objTrgt)
+        # Give status feedback or train next batch.
 
         # Status feedback:
-        if False:  # (idxItr % varDspStp == 0) and (idxWrd == varRndm):
+        if (idxItr % varDspStp == 0) and (idxWrd == varRndm):
 
-            try:
+            # ** Give status feedback
 
-                print('---')
+            print('---')
 
-                print(('Iteration: ' + str(idxItr)))
+            print(('Iteration: ' + str(idxItr)))
 
-                # Get prediction for current context word(s):
-                vecWrd = objMdl.predict_on_batch(aryCntxt)
+            # Copy weights from training model to test model:
+            objTstMdl.set_weights(objMdl.get_weights())
 
-                # Current loss:
-                varLoss02 = np.sum(
-                                   np.square(
-                                             np.subtract(
-                                                         vecTrgt,
-                                                         vecWrd
-                                                         )
-                                             )
-                                   )
+            # Get integer codes of context word(s):
+            vecTstCtxt = vecC[(idxWrd - varNumIn):idxWrd]
 
-                print(('Loss auto:   ' + str(varLoss01)))
-                print(('Loss manual: ' + str(varLoss02)))
+            # Get embedding vectors for context word(s):
+            aryTstCtxt = np.array(aryEmb[vecTstCtxt, :]
+                                  ).reshape(1, varNumIn, varSzeEmb)
 
-                print(('Context: '
-                       + str([dictRvrs[x] for x in vecC[(idxWrd - 15):idxWrd]])))
+            # Word to predict (target):
+            varTrgt = vecC[idxWrd]
 
-                print(('Target: '
-                       + dictRvrs[varTrgt]))
+            # Get embedding vector for target word:
+            aryTstTrgt = aryEmb[varTrgt, :].reshape(1, varSzeEmb)
+
+            # Get test prediction for current context word(s):
+            vecWrd = objTstMdl.predict_on_batch(aryTstCtxt)
+
+            print('vecWrd.shape')
+            print(vecWrd.shape)
+
+            # Current loss:
+            varLoss02 = np.sum(
+                               np.square(
+                                         np.subtract(
+                                                     aryTstTrgt,
+                                                     vecWrd
+                                                     )
+                                         )
+                               )
+
+            # print(('Loss auto:   ' + str(varLoss01)))
+            print(('Loss manual: ' + str(varLoss02)))
+
+            print(('Context: '
+                   + str([dictRvrs[x] for x in vecC[(idxWrd - 15):idxWrd]])))
+
+            print(('Target: '
+                   + dictRvrs[vecC[idxWrd]]))
+
+            # Minimum squared deviation between prediciton and embedding
+            # vectors:
+            vecDiff = np.sum(
+                             np.square(
+                                       np.subtract(
+                                                   aryEmb,
+                                                   vecWrd[None, :]
+                                                   )
+                                       ),
+                             axis=1
+                             )
+
+            # Look up predicted word in dictionary:
+            strWrdPrd = dictRvrs[int(np.argmin(vecDiff))]
+            #strWrdPrd = dictRvrs[varPred]
+
+            print(('Prediction: ' + strWrdPrd))
+
+            # ** Generate new text
+
+            # Vector for next text (coded):
+            vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
+
+            # Generate new text:
+            for idxNew in range(varLenNewTxt):
+
+                # Place testing context word(s) on queue:
+                # testing_queue(aryTstCtxt)
+
+                # Get test prediction for current context word(s):
+                vecWrd = objTstMdl.predict_on_batch(aryTstCtxt)
 
                 # Minimum squared deviation between prediciton and embedding
                 # vectors:
@@ -416,61 +562,37 @@ for idxItr in range(varNumItr):
                                  axis=1
                                  )
 
-                # Look up predicted word in dictionary:
-                strWrdPrd = dictRvrs[int(np.argmin(vecDiff))]
-                #strWrdPrd = dictRvrs[varPred]
+                # Get code of closest word vector:
+                varTmp = int(np.argmin(vecDiff))
 
-                print(('Prediction: ' + strWrdPrd))
+                # Save code of predicted word:
+                vecNew[idxNew] = varTmp
 
-                # ** Generate new text
+                # Update context (leave out first - i.e. oldest - word in
+                # context, and append newly predicted word):
+                aryTstCtxt = np.concatenate((aryTstCtxt[:, 1:, :],
+                                             vecWrd.reshape(1, 1, varSzeEmb)
+                                             ), axis=1)
 
-                # Vector for next text (coded):
-                vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
+            # Decode newly generated words:
+            lstNew = [dictRvrs[x] for x in vecNew]
 
-                # Use last context word as starting point for new text:
-                # vecWrd = aryCntxt  # TODO: only works with input size one
+            # List to string:
+            strNew = ' '.join(lstNew)
+            print('New text:')
+            print(strNew)
 
-                # Generate new text:
-                for idxNew in range(varLenNewTxt):
+        else:
 
-                    # Get prediction for current word:
-                    vecWrd = objMdl.predict_on_batch(aryCntxt)  # .reshape(1, varNumIn, varSzeEmb))  # TODO: only works with input size one?
+            # Run optimisation:
+            #objMdl.fit(x=aryCntxt,  # run on entire dataset
+            #           y=vecTrgt,
+            #           verbose=0,
+            #           epochs=1)
+            #           # callbacks=[objCallback])
+            varLoss01 = objMdl.train_on_batch(objTrnCtxt,  # run on single batch
+                                              y=objTrgt)
 
-                    # Minimum squared deviation between prediciton and embedding
-                    # vectors:
-                    vecDiff = np.sum(
-                                     np.square(
-                                               np.subtract(
-                                                           aryEmb,
-                                                           vecWrd[None, :]
-                                                           )
-                                               ),
-                                     axis=1
-                                     )
-
-                    # Get code of closest word vector:
-                    varTmp = int(np.argmin(vecDiff))
-
-                    # Save code of predicted word:
-                    vecNew[idxNew] = varTmp
-
-                    # Update context (leave out first - i.e. oldest - word in
-                    # context, and append newly predicted word):
-                    aryCntxt = np.concatenate((aryCntxt[:, 1:, :],
-                                               vecWrd.reshape(1, 1, varSzeEmb)
-                                               ), axis=1)
-
-                # Decode newly generated words:
-                lstNew = [dictRvrs[x] for x in vecNew]
-
-                # List to string:
-                strNew = ' '.join(lstNew)
-                print('New text:')
-                print(strNew)
-
-            except:
-
-                pass
 
 # objMdl.evaluate(x_test, y_test)
 
