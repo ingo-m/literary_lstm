@@ -274,7 +274,9 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
 
 # Dense feedforward layer:
 # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
-aryOut03 = tf.keras.layers.Dense(varSzeEmb, activation='softmax')(aryOut02)
+aryOut03 = tf.keras.layers.Dense(varSzeEmb,
+                                 activation=tf.keras.activations.tanh
+                                 )(aryOut02)
 
 # Initialise the model:
 objMdl = tf.keras.models.Model(inputs=objTrnCtxt, outputs=aryOut03)
@@ -341,7 +343,9 @@ aryOut05 = tf.keras.layers.LSTM(varNrn02,
 
 # Dense feedforward layer:
 # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
-aryOut06 = tf.keras.layers.Dense(varSzeEmb, activation='softmax')(aryOut05)
+aryOut06 = tf.keras.layers.Dense(varSzeEmb,
+                                 activation=tf.keras.activations.tanh
+                                 )(aryOut05)
 
 # Initialise the model:
 objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut06)
@@ -353,8 +357,8 @@ print('Testing model:')
 objTstMdl.summary
 
 # Define the optimiser and loss function:
-objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
-               loss=tf.losses.softmax_cross_entropy,  # tf.losses.mean_squared_error,
+objMdl.compile(optimizer=tf.train.AdamOptimizer(learning_rate=varLrnRte),  #tf.keras.optimizers.RMSprop(lr=varLrnRte),
+               loss=tf.nn.l2_loss,  # tf.losses.mean_squared_error,
                metrics=['accuracy'])
 
 
