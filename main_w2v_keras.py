@@ -15,7 +15,8 @@ from utilities import read_text
 # *** Define parameters
 
 # Path of input data file:
-strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/word2vec_data_100.npz'
+# strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/word2vec_data_100.npz'
+strPthIn = '/home/john/PhD/GitLab/literary_lstm/log_w2v/word2vec_data.npz'
 
 # Log directory:
 strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
@@ -27,7 +28,7 @@ strPthBse = '/home/john/Dropbox/Ernest_Hemingway/redacted/new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 100000
+varNumItr = 1000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -36,7 +37,7 @@ varDspStp = 1000
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 100
+varNrn01 = 20
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -45,7 +46,7 @@ varLenNewTxt = 100
 varSzeBtch = 10000
 
 # Input dropout:
-varInDrp = 0.2
+#varInDrp = 0.2
 
 # Recurrent state dropout:
 #varStDrp = 0.0
@@ -107,7 +108,7 @@ print(('Vocabulary / text ratio: ' + str(varNumRto)))
 varSzeEmb = aryEmb.shape[1]
 
 # Number of neurons in second hidden layer:
-varNrn02 = varSzeEmb
+varNrn02 = varNrn01
 
 # Number of optimisation steps:
 varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
@@ -231,7 +232,7 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                dropout=varInDrp,
+                                #dropout=varInDrp,
                                 #recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=True,  # ?
@@ -261,7 +262,7 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                dropout=varInDrp,
+                                #dropout=varInDrp,
                                 #recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=False,  # ?
@@ -300,7 +301,7 @@ aryOut04 = tf.keras.layers.LSTM(varNrn01,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                dropout=varInDrp,
+                                #dropout=varInDrp,
                                 #recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=True,  # ?
@@ -330,7 +331,7 @@ aryOut05 = tf.keras.layers.LSTM(varNrn02,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                dropout=varInDrp,
+                                #dropout=varInDrp,
                                 #recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=False,  # ?
@@ -354,11 +355,11 @@ objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut06)
 print('Training model:')
 objMdl.summary()
 print('Testing model:')
-objTstMdl.summary
+objTstMdl.summary()
 
 # Define the optimiser and loss function:
-objMdl.compile(optimizer=tf.train.AdamOptimizer(learning_rate=varLrnRte),  #tf.keras.optimizers.RMSprop(lr=varLrnRte),
-               loss=tf.nn.l2_loss,  # tf.losses.mean_squared_error,
+objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),  #tf.keras.optimizers.Adam(lr=varLrnRte),
+               loss=tf.losses.mean_squared_error,
                metrics=['accuracy'])
 
 
@@ -492,15 +493,28 @@ for idxOpt in range(varNumOpt):
 
 
         print(('                   '
-               + str(np.around((float(idxOpt) / float(varNumOpt)))
+               + str(np.around((float(idxOpt) / float(varNumOpt) * 100))
                      ).split('.')[0]
                + '%'))
 
         # Avoid beginning of text (not enough preceding context words):
-        if varTst > varNumIn:
+        # if varTst > varNumIn:
+        if varTst > 50:
 
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
+
+            # +++
+            varLenStt = 50
+            # Get integer codes of context word(s) for new state:
+            vecSttCtxt = vecC[(varTst - varLenStt):varTst]
+            # Get embedding vectors for context word(s):
+            arySttCtxt = np.array(aryEmb[vecSttCtxt, :]
+                                  ).reshape(1, varLenStt, varSzeEmb)
+            # TODO only works with varNumIn = 1
+            for idxStt in range(varLenStt):
+                _ = objTstMdl.predict_on_batch(arySttCtxt[:, idxStt, :].reshape(1, 1, varSzeEmb))
+            # +++
 
             # Get integer codes of context word(s):
             vecTstCtxt = vecC[(varTst - varNumIn):varTst]
@@ -605,6 +619,10 @@ for idxOpt in range(varNumOpt):
             strNew = ' '.join(lstNew)
             print('New text:')
             print(strNew)
+
+            # Reset model states:
+            objMdl.reset_states()
+            objTstMdl.reset_states()
 
     else:
 
