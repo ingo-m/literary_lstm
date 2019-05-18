@@ -15,12 +15,11 @@ from utilities import read_text
 # *** Define parameters
 
 # Path of input data file:
-# strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/word2vec_data_100.npz'
-strPthIn = '/Users/john/Dropbox/Ernest_Hemingway/redacted/word2vec_data_10_abc.npz'
+# strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/word2vec_data_10_abc.npz'
+strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/word2vec_data_100.npz'
 
 # Log directory:
-# strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
-strPthLog = '/Users/john/1_PhD/GitLab/literary_lstm/log_lstm'
+strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
 
 # Path of sample text to base new predictions on (when generating new text):
 # strPthBse = '/home/john/Dropbox/Ernest_Hemingway/redacted/new_base.txt'
@@ -39,19 +38,22 @@ varDspStp = 1000
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 20
+varNrn01 = 200
+
+# Number of neurons in second hidden layer:
+varNrn02 = 200
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 1
+varSzeBtch = 100
 
 # Input dropout:
-varInDrp = 0.2
+varInDrp = 0.3
 
 # Recurrent state dropout:
-#varStDrp = 0.0
+varStDrp = 0.1
 
 
 # -----------------------------------------------------------------------------
@@ -108,9 +110,6 @@ print(('Vocabulary / text ratio: ' + str(varNumRto)))
 
 # Size of embedding vector:
 varSzeEmb = aryEmb.shape[1]
-
-# Number of neurons in second hidden layer:
-varNrn02 = varNrn01
 
 # Number of optimisation steps:
 varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
@@ -234,8 +233,8 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                #dropout=varInDrp,
-                                #recurrent_dropout=varStDrp,
+                                dropout=varInDrp,
+                                recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=True,  # ?
                                 return_state=False,
@@ -264,8 +263,8 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                #dropout=varInDrp,
-                                #recurrent_dropout=varStDrp,
+                                dropout=varInDrp,
+                                recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=True,  # ?
                                 return_state=False,
@@ -304,7 +303,7 @@ aryOut04 = tf.keras.layers.LSTM(varNrn01,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
                                 dropout=varInDrp,
-                                #recurrent_dropout=varStDrp,
+                                recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=True,  # ?
                                 return_state=False,
@@ -334,7 +333,7 @@ aryOut05 = tf.keras.layers.LSTM(varNrn02,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
                                 dropout=varInDrp,
-                                #recurrent_dropout=varStDrp,
+                                recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=True,  # ?
                                 return_state=False,
@@ -631,13 +630,16 @@ for idxOpt in range(varNumOpt):
     else:
 
         # Run optimisation:
-        #objMdl.fit(x=aryCntxt,  # run on entire dataset
-        #           y=vecTrgt,
-        #           verbose=0,
-        #           epochs=1)
-        #           # callbacks=[objCallback])
+        # objMdl.fit(x=objTrnCtxt,
+        #            y=objTrgt,
+        #            epochs=10,
+        #            shuffle=False,
+        #            steps_per_epoch=1,
+        #            verbose=0)
+        #          callbacks=[objCallback])
         varLoss01 = objMdl.train_on_batch(objTrnCtxt,  # run on single batch
                                           y=objTrgt)
+        #objMdl.reset_states()
 
         # Increment test word index:
         varTst = varTst + varSzeBtch
@@ -661,6 +663,7 @@ np.savez(os.path.join(strPthLog, 'lstm_data.npz'),
          varSzeEmb=varSzeEmb,
          varSzeBtch=varSzeBtch,
          varInDrp=varInDrp,
+         varStDrp=varStDrp,
          aryWghts01=lstWghts[0],
          aryWghts02=lstWghts[1],
          aryWghts03=lstWghts[2],
