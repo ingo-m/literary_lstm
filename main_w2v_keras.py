@@ -33,7 +33,7 @@ varLrnRte = 0.001
 varNumItr = 100
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 5000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -234,7 +234,7 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                #dropout=varInDrp,
+                                dropout=varInDrp,
                                 #recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=True,  # ?
@@ -264,7 +264,7 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
-                                #dropout=varInDrp,
+                                dropout=varInDrp,
                                 #recurrent_dropout=varStDrp,
                                 implementation=1,
                                 return_sequences=True,  # ?
