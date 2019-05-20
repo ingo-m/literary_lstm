@@ -160,10 +160,12 @@ objQ02 = tf.FIFOQueue(capacity=varCapQ,
                       dtypes=[tf.float32],
                       shapes=[(varSzeBtch, varSzeEmb)])
 
-# Queue for training weights:
+# Queue for training weights (weights are applied to outputs, therefore the
+# shape is independent of number of input words to make prediction; the model
+# predicts one word at a time):
 objQ03 = tf.FIFOQueue(capacity=varCapQ,
                       dtypes=[tf.float32],
-                      shapes=[(varSzeBtch)])  # [(varSzeBtch, varNumIn)])
+                      shapes=[(varSzeBtch)])
 
 # Method for getting queue size:
 objSzeQ = objQ01.size()
@@ -174,7 +176,7 @@ objPlcHld01 = tf.placeholder(tf.float32,
 objPlcHld02 = tf.placeholder(tf.float32,
                              shape=[varSzeBtch, varSzeEmb])
 objPlcHld03 = tf.placeholder(tf.float32,
-                             shape=[varSzeBtch])  # [varSzeBtch, varNumIn])
+                             shape=[varSzeBtch])
 
 # The enqueue operation that puts data on the graph.
 objEnQ01 = objQ01.enqueue([objPlcHld01])
@@ -237,7 +239,7 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 dropout=varInDrp,
                                 recurrent_dropout=varStDrp,
                                 implementation=1,
-                                return_sequences=True,  # ?
+                                return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
                                 stateful=True,
@@ -267,7 +269,7 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 dropout=varInDrp,
                                 recurrent_dropout=varStDrp,
                                 implementation=1,
-                                return_sequences=True,  # ?
+                                return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
                                 stateful=True,
@@ -306,7 +308,7 @@ aryOut04 = tf.keras.layers.LSTM(varNrn01,
                                 dropout=varInDrp,
                                 recurrent_dropout=varStDrp,
                                 implementation=1,
-                                return_sequences=True,  # ?
+                                return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
                                 stateful=True,
@@ -336,7 +338,7 @@ aryOut05 = tf.keras.layers.LSTM(varNrn02,
                                 dropout=varInDrp,
                                 recurrent_dropout=varStDrp,
                                 implementation=1,
-                                return_sequences=True,  # ?
+                                return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
                                 stateful=True,
@@ -360,10 +362,9 @@ print('Testing model:')
 objTstMdl.summary()
 
 # Define the optimiser and loss function:
-objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),  #tf.keras.optimizers.Adam(lr=varLrnRte),
+objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
                loss=tf.losses.mean_squared_error,
                metrics=['accuracy'])
-               # sample_weight_mode='temporal')
 
 
 # -----------------------------------------------------------------------------
@@ -393,21 +394,29 @@ def training_queue():
 
     # Sample weighting.
     # In order to reduce the impact of very frequent words (e.g. 'the'), sample
-    # weights can be applied during training. The following implementation
-    # relies on the word dictionary, in which the order of words corresponds to
-    # their relative frequency (i.e. the order is from most frequent word to
-    # least frequent word). Alternatively, the actual number of occurences
-    # could be used.
+    # weights can be applied during training. There is one sample weight per
+    # output. (Thus, the size of the sample weight vector depends only on batch
+    # size, and not on the number of context words used to make a prediction,
+    # because the model predicts one word at a time.) The following
+    # implementation relies on the word dictionary, in which the order of words
+    # corresponds to their relative frequency (i.e. the order is from the most
+    # frequent word to the least frequent word). Alternatively, the actual
+    # number of occurences could be used.
 
     # Minimum weight to use (for most frequent word):
     varWghtMin = 0.05
 
+    # Exponent (slope of weighting function, higher value gives higher relative
+    # weight to infrequent words):
+    varPow = 4.0
+
     # Weight vector:    
-    vecWght = np.linspace((varWghtMin * float(varNumWrds)),
-                          float(varNumWrds),
+    vecWght = np.linspace(1.0,
+                          0.0,
                           num=varNumWrds)
-    vecWght = np.divide(vecWght, varNumWrds)   
-    vecWght = np.power(vecWght, 2.0)
+    vecWght = np.power(vecWght, varPow)
+    vecWght = np.multiply(vecWght, (1.0 - varWghtMin))
+    vecWght = np.subtract(1.0, vecWght)
 
     # Loop through iterations:
     for idxItr in range(varNumItr):
@@ -428,8 +437,8 @@ def training_queue():
             # Get embedding vector for target word:
             aryTrgt[idx01, :] = aryEmb[varTrgt, :]
 
-            # Get sample weights for current context words:
-            aryWght[idx01] = vecWght[vecCntxt]
+            # Get sample weight for current target word:
+            aryWght[idx01] = vecWght[varTrgt]
 
             # Increment index:
             idx01 += 1
@@ -460,7 +469,6 @@ def training_queue():
                                    dtype=np.float32)
 
                 # Array for new batch of sample weights:
-                # aryWght = np.zeros((varSzeBtch, varNumIn), dtype=np.float32)
                 aryWght = np.zeros((varSzeBtch), dtype=np.float32)
 
                 # Reset index:
