@@ -26,10 +26,10 @@ strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
 strPthBse = 'new_base.txt'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.01
 
 # Number of training iterations over the input text:
-varNumItr = 100
+varNumItr = 50
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -53,7 +53,7 @@ varSzeBtch = 1
 varInDrp = 0.3
 
 # Recurrent state dropout:
-varStDrp = 0.1
+varStDrp = 0.2
 
 
 # -----------------------------------------------------------------------------
@@ -280,7 +280,9 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
 # Dense feedforward layer:
 # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
 aryOut03 = tf.keras.layers.Dense(varSzeEmb,
-                                 activation=tf.keras.activations.tanh
+                                 # batch_size=varSzeBtch,
+                                 activation=tf.keras.activations.tanh,
+                                 name='Dense_FF_output'
                                  )(aryOut02)
 
 # Initialise the model:
@@ -364,7 +366,7 @@ objTstMdl.summary()
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
                loss=tf.losses.mean_squared_error,
-               metrics=['accuracy'])
+               metrics=['accuracy'])  # sample_weight_mode="temporal")
 
 
 # -----------------------------------------------------------------------------
@@ -404,13 +406,13 @@ def training_queue():
     # number of occurences could be used.
 
     # Minimum weight to use (for most frequent word):
-    varWghtMin = 0.05
+    varWghtMin = 0.001
 
     # Exponent (slope of weighting function, higher value gives higher relative
     # weight to infrequent words):
     varPow = 4.0
 
-    # Weight vector:    
+    # Weight vector:
     vecWght = np.linspace(1.0,
                           0.0,
                           num=varNumWrds)
@@ -682,6 +684,7 @@ for idxOpt in range(varNumOpt):
         varLoss01 = objMdl.train_on_batch(objTrnCtxt,  # run on single batch
                                           y=objTrgt,
                                           sample_weight=objWght)
+
         #objMdl.reset_states()
 
         # Increment test word index:
