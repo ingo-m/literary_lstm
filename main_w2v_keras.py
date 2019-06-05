@@ -29,10 +29,10 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 2
+varNumItr = 1000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 5000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -47,7 +47,7 @@ varNrn02 = 200
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 128
+varSzeBtch = 512
 
 # Input dropout:
 varInDrp = 0.3
