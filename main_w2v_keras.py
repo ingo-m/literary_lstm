@@ -47,7 +47,7 @@ varNrn02 = 200
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 10
+varSzeBtch = 128
 
 # Input dropout:
 varInDrp = 0.3
@@ -366,7 +366,7 @@ objTstMdl.summary()
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
-               loss=tf.losses.mean_squared_error)
+               loss=tf.keras.losses.mean_squared_error)
 #               metrics=['accuracy'])  # sample_weight_mode="temporal")
 
 

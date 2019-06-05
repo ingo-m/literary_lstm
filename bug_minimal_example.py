@@ -28,7 +28,7 @@ model = tf.keras.models.Model(inputs=train_input, outputs=dense_layer)
 model.summary()
 
 model.compile(optimizer=tf.keras.optimizers.RMSprop(lr=0.001),
-              loss=tf.losses.mean_squared_error)
+              loss=tf.keras.losses.mean_squared_error)
 
 loss = model.train_on_batch(x_train,
                             y=y_train,
