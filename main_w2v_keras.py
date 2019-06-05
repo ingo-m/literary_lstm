@@ -408,17 +408,20 @@ def training_queue():
     # Minimum weight to use (for most frequent word):
     varWghtMin = 0.001
 
+    # Maximum weight to use (for least frequent word):
+    varWghtMax = 10.0
+
     # Exponent (slope of weighting function, higher value gives higher relative
     # weight to infrequent words):
-    varPow = 4.0
+    varPow = 3.0
 
     # Weight vector:
     vecWght = np.linspace(1.0,
                           0.0,
                           num=varNumWrds)
     vecWght = np.power(vecWght, varPow)
-    vecWght = np.multiply(vecWght, (1.0 - varWghtMin))
-    vecWght = np.subtract(1.0, vecWght)
+    vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
+    vecWght = np.subtract(varWghtMax, vecWght)
 
     # Loop through iterations:
     for idxItr in range(varNumItr):
