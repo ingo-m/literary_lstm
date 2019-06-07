@@ -45,7 +45,7 @@ varNrn02 = 100
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 1
+varSzeBtch = 500
 
 # Input dropout:
 varInDrp = 0.3
@@ -241,7 +241,7 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=True,
+                                stateful=False,
                                 unroll=False,
                                 name='LSTMlayer01'
                                 )(objTrnCtxt)
@@ -271,7 +271,7 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 return_sequences=False,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=True,
+                                stateful=False,
                                 unroll=False,
                                 name='LSTMlayer02'
                                 )(aryOut01)
@@ -312,7 +312,7 @@ aryOut04 = tf.keras.layers.LSTM(varNrn01,
                                 return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=True,
+                                stateful=False,
                                 unroll=False,
                                 name='Test_LSTMlayer01'
                                 )(objTstCtxt)
@@ -342,7 +342,7 @@ aryOut05 = tf.keras.layers.LSTM(varNrn02,
                                 return_sequences=False,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=True,
+                                stateful=False,
                                 unroll=False,
                                 name='Test_LSTMlayer02'
                                 )(aryOut04)
@@ -451,6 +451,41 @@ def training_queue():
             if idx01 == int(varSzeBtch):
 
                 # TODO
+                if idx02 == 253:
+
+                    print('Context words in batch')
+                    for idx03 in range(varSzeBtch):
+                        vecTmpCntxt = aryCntxt[idx03, 0, :]
+                        vecDiff = np.sum(
+                                         np.square(
+                                                   np.subtract(
+                                                               aryEmb,
+                                                               vecTmpCntxt
+                                                               )
+                                                   ),
+                                         axis=1
+                                         )
+                        # Get code of closest word vector:
+                        varTmp = int(np.argmin(vecDiff))
+                        strTmp = dictRvrs[varTmp]
+                        print(strTmp)
+
+                    print('Target words in batch')
+                    for idx03 in range(varSzeBtch):
+                        vecTmpTrgt = aryTrgt[idx03, :]
+                        vecDiff = np.sum(
+                                         np.square(
+                                                   np.subtract(
+                                                               aryEmb,
+                                                               vecTmpTrgt
+                                                               )
+                                                   ),
+                                         axis=1
+                                         )
+                        # Get code of closest word vector:
+                        varTmp = int(np.argmin(vecDiff))
+                        strTmp = dictRvrs[varTmp]
+                        print(strTmp)
 
                 aryTmp01 = aryCntxt
                 dicIn01 = {objPlcHld01: aryTmp01}
