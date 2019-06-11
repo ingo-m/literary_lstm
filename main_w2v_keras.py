@@ -15,39 +15,37 @@ from utilities import read_text
 # *** Define parameters
 
 # Path of input data file:
-# strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/word2vec_data_10_abc.npz'
-strPthIn = '/home/john/Dropbox/Ernest_Hemingway/redacted/word2vec_data_100.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/word2vec_data_HP1_e100.npz'
 
 # Log directory:
 strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
 
 # Path of sample text to base new predictions on (when generating new text):
-# strPthBse = '/home/john/Dropbox/Ernest_Hemingway/redacted/new_base.txt'
 strPthBse = 'new_base.txt'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.01
 
 # Number of training iterations over the input text:
-varNumItr = 1000
+varNumItr = 10000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 5000
+varDspStp = 1000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 200
+varNrn01 = 100
 
 # Number of neurons in second hidden layer:
-varNrn02 = 200
+varNrn02 = 100
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 512
+varSzeBtch = 250
 
 # Input dropout:
 varInDrp = 0.3
@@ -243,7 +241,7 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=True,
+                                stateful=False,
                                 unroll=False,
                                 name='LSTMlayer01'
                                 )(objTrnCtxt)
@@ -273,7 +271,7 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 return_sequences=False,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=True,
+                                stateful=False,
                                 unroll=False,
                                 name='LSTMlayer02'
                                 )(aryOut01)
@@ -314,7 +312,7 @@ aryOut04 = tf.keras.layers.LSTM(varNrn01,
                                 return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=True,
+                                stateful=False,
                                 unroll=False,
                                 name='Test_LSTMlayer01'
                                 )(objTstCtxt)
@@ -344,7 +342,7 @@ aryOut05 = tf.keras.layers.LSTM(varNrn02,
                                 return_sequences=False,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=True,
+                                stateful=False,
                                 unroll=False,
                                 name='Test_LSTMlayer02'
                                 )(aryOut04)
