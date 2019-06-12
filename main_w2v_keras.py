@@ -407,7 +407,7 @@ def training_queue():
     varWghtMin = 0.001
 
     # Maximum weight to use (for least frequent word):
-    varWghtMax = 10.0
+    varWghtMax = 2.0
 
     # Exponent (slope of weighting function, higher value gives higher relative
     # weight to infrequent words):
@@ -669,8 +669,8 @@ for idxOpt in range(varNumOpt):
             print(strNew)
 
             # Reset model states:
-            objMdl.reset_states()
-            objTstMdl.reset_states()
+            # objMdl.reset_states()
+            # objTstMdl.reset_states()
 
     else:
 
