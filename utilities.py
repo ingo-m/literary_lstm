@@ -46,7 +46,7 @@ def read_text(strPth):
             strTxt = strTxt.replace(strTmp, " ")
 
     # Custom replacements in order facilitate convergence:
-    strTxt = strTxt.replace('...', 'punktpunktpunkt')
+    strTxt = strTxt.replace('...', ' ellipsis')
     strTxt = strTxt.replace(',', '')
 
     # Split text into words and punctuation marks:
