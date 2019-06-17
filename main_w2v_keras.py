@@ -15,7 +15,7 @@ from utilities import read_text
 # *** Define parameters
 
 # Path of input data file:
-strPthIn = '/home/john/Dropbox/Harry_Potter/word2vec_data_HP1_e100.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/word2vec_data_HP1_e300.npz'
 
 # Log directory:
 strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
@@ -24,7 +24,7 @@ strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
 strPthBse = 'new_base.txt'
 
 # Learning rate:
-varLrnRte = 0.01
+varLrnRte = 0.001
 
 # Number of training iterations over the input text:
 varNumItr = 10000
@@ -36,10 +36,10 @@ varDspStp = 5000
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 100
+varNrn01 = 200
 
 # Number of neurons in second hidden layer:
-varNrn02 = 100
+varNrn02 = 200
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -404,7 +404,7 @@ def training_queue():
     # number of occurences could be used.
 
     # Minimum weight to use (for most frequent word):
-    varWghtMin = 0.001
+    varWghtMin = 0.01
 
     # Maximum weight to use (for least frequent word):
     varWghtMax = 2.0
