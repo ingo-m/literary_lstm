@@ -39,7 +39,7 @@ from tensorflow.contrib.tensorboard.plugins import projector
 # *** Define parameters
 
 # Path of input text files:
-strPthIn = '/home/john/Dropbox/Harry_Potter/HP1.txt'
+strPthIn = '/home/john/Dropbox/Harry_Potter/books/redacted/HP_all_books.txt'
 
 # Tensorflow log directory:
 strTfLog = '/home/john/PhD/GitLab/literary_lstm/log_w2v'
@@ -63,7 +63,7 @@ varSzeEval = 10
 # Vocabulary size (number of words; rare words are replaced with 'unknown'
 # code if the vocabulary size is exceeded by the number of words in the
 # text).
-varVocSze = 1000
+varVocSze = 5000
 
 # Number of training iterations:
 varNumIt = 2000000
