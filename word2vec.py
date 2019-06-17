@@ -52,7 +52,7 @@ varBatSze = 10000
 varConWin = 10
 
 # Dimension of the embedding vector. (Number of neurons in hidden layer?)
-varSzeEmb = 100
+varSzeEmb = 300
 
 # Number of negative examples to sample.
 varNumNgtv = 50
@@ -63,7 +63,7 @@ varSzeEval = 10
 # Vocabulary size (number of words; rare words are replaced with 'unknown'
 # code if the vocabulary size is exceeded by the number of words in the
 # text).
-varVocSze = 5000
+varVocSze = 1000
 
 # Number of training iterations:
 varNumIt = 2000000
