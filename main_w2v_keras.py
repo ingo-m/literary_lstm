@@ -18,7 +18,7 @@ from utilities import read_text
 strPthIn = '/home/john/Dropbox/Harry_Potter/word2vec_data_HP1_e300.npz'
 
 # Log directory:
-strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm'
+strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm_e300'
 
 # Path of sample text to base new predictions on (when generating new text):
 strPthBse = 'new_base.txt'
