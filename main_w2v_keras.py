@@ -312,7 +312,7 @@ aryOut04 = tf.keras.layers.LSTM(varNrn01,
                                 return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=False,
+                                stateful=True,
                                 unroll=False,
                                 name='Test_LSTMlayer01'
                                 )(objTstCtxt)
@@ -342,7 +342,7 @@ aryOut05 = tf.keras.layers.LSTM(varNrn02,
                                 return_sequences=False,
                                 return_state=False,
                                 go_backwards=False,
-                                stateful=False,
+                                stateful=True,
                                 unroll=False,
                                 name='Test_LSTMlayer02'
                                 )(aryOut04)
