@@ -15,7 +15,7 @@ from utilities import read_text
 # *** Define parameters
 
 # Path of input data file:
-strPthIn = '/home/john/Dropbox/Harry_Potter/word2vec_data_HP1_e300.npz'
+strPthIn = '/home/john/PhD/GitLab/literary_lstm/log_w2v/word2vec_data.npz'
 
 # Log directory:
 strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm_e300'
@@ -30,16 +30,16 @@ varLrnRte = 0.001
 varNumItr = 10000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 5000
+varDspStp = 10000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 200
+varNrn01 = 300
 
 # Number of neurons in second hidden layer:
-varNrn02 = 200
+varNrn02 = 300
 
 # Length of new text to generate:
 varLenNewTxt = 100
