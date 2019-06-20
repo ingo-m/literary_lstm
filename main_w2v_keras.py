@@ -48,10 +48,10 @@ varLenNewTxt = 100
 varSzeBtch = 250
 
 # Input dropout:
-varInDrp = 0.3
+varInDrp = 0.1  # 0.3
 
 # Recurrent state dropout:
-varStDrp = 0.2
+varStDrp = 0.1  # 0.2
 
 
 # -----------------------------------------------------------------------------
@@ -200,6 +200,8 @@ objWght = objQ03.dequeue()
 # Initialise the model:
 # objMdl = tf.keras.models.Sequential()
 
+objRegL2 = tf.keras.regularizers.l2(l=0.005)
+
 # The actual LSTM layers.
 # Note that this cell is not optimized for performance on GPU.
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
@@ -214,10 +216,10 @@ aryOut01 = tf.keras.layers.LSTM(varNrn01,
                                 recurrent_initializer='orthogonal',
                                 bias_initializer='zeros',
                                 unit_forget_bias=True,
-                                kernel_regularizer=None,
-                                recurrent_regularizer=None,
-                                bias_regularizer=None,
-                                activity_regularizer=None,
+                                kernel_regularizer=objRegL2,
+                                recurrent_regularizer=objRegL2,
+                                bias_regularizer=objRegL2,
+                                activity_regularizer=objRegL2,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
@@ -244,10 +246,10 @@ aryOut02 = tf.keras.layers.LSTM(varNrn02,
                                 recurrent_initializer='orthogonal',
                                 bias_initializer='zeros',
                                 unit_forget_bias=True,
-                                kernel_regularizer=None,
-                                recurrent_regularizer=None,
-                                bias_regularizer=None,
-                                activity_regularizer=None,
+                                kernel_regularizer=objRegL2,
+                                recurrent_regularizer=objRegL2,
+                                bias_regularizer=objRegL2,
+                                activity_regularizer=objRegL2,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
@@ -285,10 +287,10 @@ aryOut04 = tf.keras.layers.LSTM(varNrn01,
                                 recurrent_initializer='orthogonal',
                                 bias_initializer='zeros',
                                 unit_forget_bias=True,
-                                kernel_regularizer=None,
-                                recurrent_regularizer=None,
-                                bias_regularizer=None,
-                                activity_regularizer=None,
+                                kernel_regularizer=objRegL2,
+                                recurrent_regularizer=objRegL2,
+                                bias_regularizer=objRegL2,
+                                activity_regularizer=objRegL2,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
@@ -315,10 +317,10 @@ aryOut05 = tf.keras.layers.LSTM(varNrn02,
                                 recurrent_initializer='orthogonal',
                                 bias_initializer='zeros',
                                 unit_forget_bias=True,
-                                kernel_regularizer=None,
-                                recurrent_regularizer=None,
-                                bias_regularizer=None,
-                                activity_regularizer=None,
+                                kernel_regularizer=objRegL2,
+                                recurrent_regularizer=objRegL2,
+                                bias_regularizer=objRegL2,
+                                activity_regularizer=objRegL2,
                                 kernel_constraint=None,
                                 recurrent_constraint=None,
                                 bias_constraint=None,
@@ -418,7 +420,7 @@ def training_queue():
     # number of occurences could be used.
 
     # Minimum weight to use (for most frequent word):
-    varWghtMin = 0.1
+    varWghtMin = 0.01
 
     # Maximum weight to use (for least frequent word):
     varWghtMax = 2.0
