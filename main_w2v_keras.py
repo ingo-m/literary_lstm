@@ -75,6 +75,10 @@ dictRvrs = objNpz['dictRvrs'][()]
 # Embedding matrix:
 aryEmb = objNpz['aryEmbFnl']
 
+# Scale embedding matrix (this is only for a more convenience range of loss
+# values during visualisation):
+aryEmb = np.multiply(aryEmb, 100.0)
+
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
 
@@ -417,7 +421,7 @@ def training_queue():
     varWghtMin = 0.1
 
     # Maximum weight to use (for least frequent word):
-    varWghtMax = 1.0
+    varWghtMax = 2.0
 
     # Exponent (slope of weighting function, higher value gives higher relative
     # weight to infrequent words):
@@ -687,12 +691,12 @@ for idxOpt in range(varNumOpt):
                                           y=objTrgt,
                                           sample_weight=objWght)
 
-        # Use old (tf 1.13) implementation for writing loss (after each
-        # train_on_batch) to tensorboard summary. We scale the loss for
-        # convenience.
-        objSmry = tf.Summary(value=[tf.Summary.Value(tag="loss",
-            simple_value=(varLoss01 * 1000.0)), ])
-        objLogWrt.add_summary(objSmry, idxOpt)
+        if (idxOpt % 50 == 0):
+            # Use old (tf 1.13) implementation for writing loss to tensorboard
+            # summary.
+            objSmry = tf.Summary(value=[tf.Summary.Value(tag="loss",
+                simple_value=varLoss01), ])
+            objLogWrt.add_summary(objSmry, global_step=idxOpt)
 
         #objMdl.reset_states()
 
