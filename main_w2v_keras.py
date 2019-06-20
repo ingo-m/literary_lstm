@@ -15,7 +15,7 @@ from utilities import read_text
 # *** Define parameters
 
 # Path of input data file:
-strPthIn = '/home/john/PhD/GitLab/literary_lstm/log_w2v/word2vec_data.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 
 # Log directory:
 strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm_e300'
@@ -27,7 +27,7 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 10000
+varNumItr = 100
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -404,10 +404,10 @@ def training_queue():
     # number of occurences could be used.
 
     # Minimum weight to use (for most frequent word):
-    varWghtMin = 0.01
+    varWghtMin = 0.1
 
     # Maximum weight to use (for least frequent word):
-    varWghtMax = 2.0
+    varWghtMax = 1.0
 
     # Exponent (slope of weighting function, higher value gives higher relative
     # weight to infrequent words):
