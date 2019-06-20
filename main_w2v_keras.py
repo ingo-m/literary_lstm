@@ -17,8 +17,8 @@ from utilities import read_text
 # Path of input data file:
 strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 
-# Log directory:
-strPthLog = '/home/john/PhD/GitLab/literary_lstm/log_lstm_e300'
+# Log directory (parent directory, new session directory will be created):
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Path of sample text to base new predictions on (when generating new text):
 strPthBse = 'new_base.txt'
@@ -78,9 +78,6 @@ aryEmb = objNpz['aryEmbFnl']
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
 
-# Transposed version of embedding matrix:
-# aryEmbT = aryEmb.T
-
 
 # -----------------------------------------------------------------------------
 # *** Preparations
@@ -122,21 +119,6 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 
 # Placeholder for output:
 #vecWrdsOut = tf.placeholder(tf.float32, [1, varSzeEmb])
-
-
-# -----------------------------------------------------------------------------
-# *** Logging
-
-## Get date string as default session name:
-#strDate = str(datetime.datetime.now())
-#lstD = strDate[0:10].split('-')
-#lstT = strDate[11:19].split(':')
-#strDate = (lstD[0] + lstD[1] + lstD[2] + '_' + lstT[0] + lstT[1] + lstT[2])
-#
-## Log directory:
-#strPthLog = os.path.join(strPthLog, strDate)
-#
-#objCallback = tf.keras.callbacks.TensorBoard(log_dir=strPthLog)
 
 
 # -----------------------------------------------------------------------------
@@ -368,6 +350,34 @@ objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
 
 
 # -----------------------------------------------------------------------------
+# *** Logging
+
+# Get date string as default session name:
+strDate = str(datetime.datetime.now())
+lstD = strDate[0:10].split('-')
+lstT = strDate[11:19].split(':')
+strDate = (lstD[0] + lstD[1] + lstD[2] + '_' + lstT[0] + lstT[1] + lstT[2])
+
+# Log directory:
+strPthLogSes = os.path.join(strPthLog, strDate)
+
+# Create session subdirectory:
+if not os.path.exists(strPthLogSes):
+    os.makedirs(strPthLogSes)
+
+# Tf 2.0 / keras implementation does not work with train_on_batch.
+# Create object for tensorboard visualisations:
+# objCallback = tf.keras.callbacks.TensorBoard(log_dir=strPthLogSes,
+#                                              write_graph=True,
+#                                              write_images=True,
+#                                              update_freq='batch')
+# objCallback.set_model(objMdl)
+
+# Old (tf 1.13) summary implementation for tensorboard:
+objLogWrt = tf.summary.FileWriter(strPthLogSes)
+
+
+# -----------------------------------------------------------------------------
 # *** Queues
 
 # Batches are prepared in a queue-feeding-function that runs in a separate
@@ -484,15 +494,6 @@ def training_queue():
                 if idx02 == varNumOpt:
 
                     break
-
-#def testing_queue(aryTstCntxt):
-#    """Place testing data on queue."""
-#    #
-#    aryTmp03 = aryTstCntxt
-#    dicIn03 = {objPlcHld03: aryTmp03}
-#
-#    # Batch is complete, push to the queue:
-#    objSess.run(objEnQ03, feed_dict=dicIn03)
 
 
 # -----------------------------------------------------------------------------
@@ -685,6 +686,13 @@ for idxOpt in range(varNumOpt):
         varLoss01 = objMdl.train_on_batch(objTrnCtxt,  # run on single batch
                                           y=objTrgt,
                                           sample_weight=objWght)
+
+        # Use old (tf 1.13) implementation for writing loss (after each
+        # train_on_batch) to tensorboard summary. We scale the loss for
+        # convenience.
+        objSmry = tf.Summary(value=[tf.Summary.Value(tag="loss",
+            simple_value=(varLoss01 * 1000.0)), ])
+        objLogWrt.add_summary(objSmry, idxOpt)
 
         #objMdl.reset_states()
 
