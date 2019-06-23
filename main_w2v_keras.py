@@ -48,10 +48,10 @@ varLenNewTxt = 100
 varSzeBtch = 250
 
 # Input dropout:
-varInDrp = 0.1  # 0.3
+varInDrp = 0.3
 
 # Recurrent state dropout:
-varStDrp = 0.1  # 0.2
+varStDrp = 0.2
 
 
 # -----------------------------------------------------------------------------
@@ -65,6 +65,9 @@ objNpz.allow_pickle = True
 
 # Coded text:
 vecC = objNpz['vecC']
+
+# Only train on part of text:
+vecC = vecC[0:10000]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -200,7 +203,8 @@ objWght = objQ03.dequeue()
 # Initialise the model:
 # objMdl = tf.keras.models.Sequential()
 
-objRegL2 = tf.keras.regularizers.l2(l=0.005)
+# objRegL2 = tf.keras.regularizers.l2(l=0.005)
+objRegL2 = None
 
 # The actual LSTM layers.
 # Note that this cell is not optimized for performance on GPU.
@@ -716,7 +720,7 @@ lstWghts = objMdl.get_weights()
 # print(len(lstWghts))
 
 # Save text, dictionary, and embeddings to disk:
-np.savez(os.path.join(strPthLog, 'lstm_data.npz'),
+np.savez(os.path.join(strPthLog, '/lstm_data.npz'),
          varLrnRte=varLrnRte,
          varNumItr=varNumItr,
          varNumIn=varNumIn,
@@ -725,14 +729,7 @@ np.savez(os.path.join(strPthLog, 'lstm_data.npz'),
          varSzeBtch=varSzeBtch,
          varInDrp=varInDrp,
          varStDrp=varStDrp,
-         aryWghts01=lstWghts[0],
-         aryWghts02=lstWghts[1],
-         aryWghts03=lstWghts[2],
-         aryWghts04=lstWghts[3],
-         aryWghts05=lstWghts[4],
-         aryWghts06=lstWghts[5],
-         aryWghts07=lstWghts[6],
-         aryWghts08=lstWghts[7],
+         lstWghts=lstWghts,
          )
 
 
