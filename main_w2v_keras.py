@@ -66,7 +66,8 @@ objNpz.allow_pickle = True
 # Coded text:
 vecC = objNpz['vecC']
 
-# Only train on part of text:
+# Only train on part of text (retain copy of full text for weights):
+vecFullC = np.copy(vecC)
 vecC = vecC[0:10077]
 
 # Dictionary, with words as keys:
@@ -431,7 +432,7 @@ def training_queue():
 
     # Vector with word count in corpus (returns vector with unique values,
     # which  is identical to word codes, and corresponding word counts):
-    _, vecCnt = np.unique(vecC, return_counts=True)
+    _, vecCnt = np.unique(vecFullC, return_counts=True)
 
     # Minimum number of occurences:
     vecCntMin = np.min(vecCnt)
