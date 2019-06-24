@@ -27,7 +27,7 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 100
+varNumItr = 50000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -67,7 +67,7 @@ objNpz.allow_pickle = True
 vecC = objNpz['vecC']
 
 # Only train on part of text:
-vecC = vecC[0:10000]
+vecC = vecC[0:10077]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -424,22 +424,36 @@ def training_queue():
     # number of occurences could be used.
 
     # Minimum weight to use (for most frequent word):
-    varWghtMin = 0.01
+    varWghtMin = 0.05
 
     # Maximum weight to use (for least frequent word):
     varWghtMax = 2.0
 
+    # Vector with word count in corpus (returns vector with unique values,
+    # which  is identical to word codes, and corresponding word counts):
+    _, vecCnt = np.unique(vecC, return_counts=True)
+
+    # Minimum number of occurences:
+    vecCntMin = np.min(vecCnt)
+
+    # Weights that are inversely proportional to number of occurences:
+    vecWght = np.divide(vecCntMin, vecCnt)
+
+    # Scale weights to respective range:
+    vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
+    vecWght = np.add(varWghtMin, vecWght)
+
     # Exponent (slope of weighting function, higher value gives higher relative
     # weight to infrequent words):
-    varPow = 3.0
+    # varPow = 3.0
 
     # Weight vector:
-    vecWght = np.linspace(1.0,
-                          0.0,
-                          num=varNumWrds)
-    vecWght = np.power(vecWght, varPow)
-    vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
-    vecWght = np.subtract(varWghtMax, vecWght)
+    # vecWght = np.linspace(1.0,
+    #                       0.0,
+    #                       num=varNumWrds)
+    # vecWght = np.power(vecWght, varPow)
+    # vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
+    # vecWght = np.subtract(varWghtMax, vecWght)
 
     # Loop through iterations:
     for idxItr in range(varNumItr):
