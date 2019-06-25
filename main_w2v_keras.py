@@ -425,7 +425,7 @@ def training_queue():
     # number of occurences could be used.
 
     # Minimum weight to use (for most frequent word):
-    varWghtMin = 0.05
+    varWghtMin = 0.002
 
     # Maximum weight to use (for least frequent word):
     varWghtMax = 2.0
