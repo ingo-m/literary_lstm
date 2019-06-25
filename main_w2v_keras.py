@@ -735,7 +735,7 @@ lstWghts = objMdl.get_weights()
 # print(len(lstWghts))
 
 # Save text, dictionary, and embeddings to disk:
-np.savez(os.path.join(strPthLog, '/lstm_data.npz'),
+np.savez(os.path.join(strPthLog, 'lstm_data.npz'),
          varLrnRte=varLrnRte,
          varNumItr=varNumItr,
          varNumIn=varNumIn,
