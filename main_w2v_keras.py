@@ -27,7 +27,7 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 50000
+varNumItr = 105
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -735,7 +735,7 @@ lstWghts = objMdl.get_weights()
 # print(len(lstWghts))
 
 # Save text, dictionary, and embeddings to disk:
-np.savez(os.path.join(strPthLog, 'lstm_data.npz'),
+np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varLrnRte=varLrnRte,
          varNumItr=varNumItr,
          varNumIn=varNumIn,
