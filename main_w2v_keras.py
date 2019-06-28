@@ -6,6 +6,7 @@ import os
 import random
 import datetime
 import threading
+import queue
 import numpy as np
 import tensorflow as tf
 from utilities import read_text
@@ -31,10 +32,10 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 50000
+varNumItr = 500
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 100
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -72,7 +73,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[0:10077]
+vecC = vecC[0:1077]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -407,17 +408,19 @@ objLogWrt = tf.summary.FileWriter(strPthLogSes)
 # -----------------------------------------------------------------------------
 # *** Queues
 
+# Create FIFO queue for target word index (to get current target word index
+# from batch-creating queue for validation):
+objIdxQ = queue.Queue(maxsize=varCapQ)
+
 # Batches are prepared in a queue-feeding-function that runs in a separate
 # thread.
 
 def training_queue():
     """Place training data on queue."""
 
-    # Batch index:
-    idx01 = 0
-
-    # Optimisation step index:
-    idx02 = 0
+    # Word index; refers to position of target word (i.e. word to be predicted)
+    # in the corpus.
+    varIdxWrd = varNumIn
 
     # Array for new batch of context words:
     aryCntxt = np.zeros((varSzeBtch, varNumIn, varSzeEmb), dtype=np.float32)
@@ -472,69 +475,64 @@ def training_queue():
     # vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
     # vecWght = np.subtract(varWghtMax, vecWght)
 
-    # Loop through iterations:
-    for idxItr in range(varNumItr):
+    # Loop through optimisation steps (one batch per optimisation step):
+    for idxOpt in range(varNumOpt):
 
-        # Loop through text (corpus). Index refers to target word (i.e. word
-        # to be predicted).
-        for idxWrd in range(varNumIn, varLenTxt):
+        # Loop through batch:
+        for idxBtch in range(varSzeBtch):
 
-            # Get integer codes of context word(s):
-            vecCntxt = vecC[(idxWrd - varNumIn):idxWrd]
+            # Get integer codes of context word (the word preceeding the target
+            # word):
+            varCntxt = vecC[(varIdxWrd - 1)]
 
-            # Get embedding vectors for context word(s):
-            aryCntxt[idx01, :, :] = np.array(aryEmb[vecCntxt, :])
+            # Get embedding vector for context word (the word preceeding the
+            # target word):
+            aryCntxt[idxBtch, :, :] = np.array(aryEmb[varCntxt, :])
 
             # Word to predict (target):
-            varTrgt = vecC[idxWrd]
+            varTrgt = vecC[varIdxWrd]
 
             # Get embedding vector for target word:
-            aryTrgt[idx01, :] = aryEmb[varTrgt, :]
+            aryTrgt[idxBtch, :] = aryEmb[varTrgt, :]
 
             # Get sample weight for current target word:
-            aryWght[idx01] = vecWght[varTrgt]
+            aryWght[idxBtch] = vecWght[varTrgt]
 
-            # Increment index:
-            idx01 += 1
+            # Increment word index:
+            varIdxWrd = varIdxWrd + 1
+            if varIdxWrd >= varLenTxt:
+                varIdxWrd = varNumIn
 
-            # Check whether end of batch has been reached:
-            if idx01 == int(varSzeBtch):
+        # Put index of next target word on the queue (target word after current
+        # batch, because index has already been incremented):
+        objIdxQ.put(varIdxWrd)
 
-                # TODO
+        # TODO
 
-                aryTmp01 = aryCntxt
-                dicIn01 = {objPlcHld01: aryTmp01}
-                aryTmp02 = aryTrgt
-                dicIn02 = {objPlcHld02: aryTmp02}
-                aryTmp03 = aryWght
-                dicIn03 = {objPlcHld03: aryTmp03}
+        aryTmp01 = aryCntxt
+        dicIn01 = {objPlcHld01: aryTmp01}
+        aryTmp02 = aryTrgt
+        dicIn02 = {objPlcHld02: aryTmp02}
+        aryTmp03 = aryWght
+        dicIn03 = {objPlcHld03: aryTmp03}
 
-                # Batch is complete, push to the queue:
-                objSess.run(objEnQ01, feed_dict=dicIn01)
-                objSess.run(objEnQ02, feed_dict=dicIn02)
-                objSess.run(objEnQ03, feed_dict=dicIn03)
+        # Batch is complete, push to the queue:
+        objSess.run(objEnQ01, feed_dict=dicIn01)
+        objSess.run(objEnQ02, feed_dict=dicIn02)
+        objSess.run(objEnQ03, feed_dict=dicIn03)
 
-                # Array for new batch of context words:
-                aryCntxt = np.zeros((varSzeBtch, varNumIn, varSzeEmb),
-                                    dtype=np.float32)
+        # Array for new batch of context words:
+        aryCntxt = np.zeros((varSzeBtch, varNumIn, varSzeEmb),
+                            dtype=np.float32)
 
-                # Array for new batch of target words:
-                aryTrgt = np.zeros((varSzeBtch, varSzeEmb),
-                                   dtype=np.float32)
+        # Array for new batch of target words:
+        aryTrgt = np.zeros((varSzeBtch, varSzeEmb),
+                           dtype=np.float32)
 
-                # Array for new batch of sample weights:
-                aryWght = np.zeros((varSzeBtch), dtype=np.float32)
+        # Array for new batch of sample weights:
+        aryWght = np.zeros((varSzeBtch), dtype=np.float32)
 
-                # Reset index:
-                idx01 = 0
-
-                # Count optimisation steps:
-                idx02 += 1
-
-                # Exit threat when last optimisation step has been reached:
-                if idx02 == varNumOpt:
-
-                    break
+    print('--> End of feeding thread.')
 
 
 # -----------------------------------------------------------------------------
@@ -559,18 +557,36 @@ while varTmpSzeQ < varBuff:
 # -----------------------------------------------------------------------------
 # *** Training
 
-# Index for testing word:
-varTst = 0
+print('--> Beginning of training.')
 
 # Loop through optimisation steps (one batch per optimisation step):
 for idxOpt in range(varNumOpt):
 
-    # Give status feedback or train next batch.
+    # Run optimisation:
+    # objMdl.fit(x=objTrnCtxt,
+    #            y=objTrgt,
+    #            epochs=10,
+    #            shuffle=False,
+    #            steps_per_epoch=1,
+    #            verbose=0)
+    #          callbacks=[objCallback])
+    varLoss01 = objMdl.train_on_batch(objTrnCtxt,  # run on single batch
+                                      y=objTrgt,
+                                      sample_weight=objWght)
 
-    # Status feedback:
+    # Take target word index from queue:
+    varTmpWrd = objIdxQ.get()
+
+    # Update tensorboard information:
+    if (idxOpt % 50 == 0):
+        # Use old (tf 1.13) implementation for writing loss to tensorboard
+        # summary.
+        objSmry = tf.Summary(value=[tf.Summary.Value(tag="loss",
+            simple_value=varLoss01), ])
+        objLogWrt.add_summary(objSmry, global_step=idxOpt)
+
+    # Give status feedback:
     if (idxOpt % varDspStp == 0):
-
-        # ** Give status feedback
 
         print('---')
 
@@ -579,40 +595,38 @@ for idxOpt in range(varNumOpt):
                + ' out of '
                + str(varNumOpt)))
 
-
         print(('                   '
                + str(np.around((float(idxOpt) / float(varNumOpt) * 100))
                      ).split('.')[0]
                + '%'))
 
         # Avoid beginning of text (not enough preceding context words):
-        # if varTst > varNumIn:
-        if varTst > 50:
+        if varTmpWrd > 50:
 
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
 
-            # +++
-            varLenStt = 50
-            # Get integer codes of context word(s) for new state:
-            vecSttCtxt = vecC[(varTst - varLenStt):varTst]
-            # Get embedding vectors for context word(s):
-            arySttCtxt = np.array(aryEmb[vecSttCtxt, :]
-                                  ).reshape(1, varLenStt, varSzeEmb)
-            # TODO only works with varNumIn = 1
-            for idxStt in range(varLenStt):
-                _ = objTstMdl.predict_on_batch(arySttCtxt[:, idxStt, :].reshape(1, 1, varSzeEmb))
-            # +++
+            # # +++
+            # varLenStt = 50
+            # # Get integer codes of context word(s) for new state:
+            # vecSttCtxt = vecC[(varTmpWrd - varLenStt):varTmpWrd]
+            # # Get embedding vectors for context word(s):
+            # arySttCtxt = np.array(aryEmb[vecSttCtxt, :]
+            #                       ).reshape(1, varLenStt, varSzeEmb)
+            # # TODO only works with varNumIn = 1
+            # for idxStt in range(varLenStt):
+            #     _ = objTstMdl.predict_on_batch(arySttCtxt[:, idxStt, :].reshape(1, 1, varSzeEmb))
+            # # +++
 
-            # Get integer codes of context word(s):
-            vecTstCtxt = vecC[(varTst - varNumIn):varTst]
+            # Get integer code of context word:
+            varTstCtxt = vecC[(varTmpWrd - 1)]
 
             # Get embedding vectors for context word(s):
-            aryTstCtxt = np.array(aryEmb[vecTstCtxt, :]
+            aryTstCtxt = np.array(aryEmb[varTstCtxt, :]
                                   ).reshape(1, varNumIn, varSzeEmb)
 
             # Word to predict (target):
-            varTrgt = vecC[varTst]
+            varTrgt = vecC[varTmpWrd]
 
             # Get embedding vector for target word:
             vecTstTrgt = aryEmb[varTrgt, :].reshape(1, varSzeEmb)
@@ -634,12 +648,12 @@ for idxOpt in range(varNumOpt):
             print(('Loss manual: ' + str(varLoss02)))
 
             # Context:
-            lstCtxt = [dictRvrs[x] for x in vecC[(varTst - 15):varTst]]
+            lstCtxt = [dictRvrs[x] for x in vecC[(varTmpWrd - 15):varTmpWrd]]
             strCtxt = ' '.join(lstCtxt)
 
             print(('Context: ' + strCtxt))
 
-            print(('Target: ' + dictRvrs[vecC[varTst]]))
+            print(('Target: ' + dictRvrs[vecC[varTmpWrd]]))
 
             # Minimum squared deviation between prediciton and embedding
             # vectors:
@@ -714,33 +728,7 @@ for idxOpt in range(varNumOpt):
             # objMdl.reset_states()
             # objTstMdl.reset_states()
 
-    else:
-
-        # Run optimisation:
-        # objMdl.fit(x=objTrnCtxt,
-        #            y=objTrgt,
-        #            epochs=10,
-        #            shuffle=False,
-        #            steps_per_epoch=1,
-        #            verbose=0)
-        #          callbacks=[objCallback])
-        varLoss01 = objMdl.train_on_batch(objTrnCtxt,  # run on single batch
-                                          y=objTrgt,
-                                          sample_weight=objWght)
-
-        if (idxOpt % 50 == 0):
-            # Use old (tf 1.13) implementation for writing loss to tensorboard
-            # summary.
-            objSmry = tf.Summary(value=[tf.Summary.Value(tag="loss",
-                simple_value=varLoss01), ])
-            objLogWrt.add_summary(objSmry, global_step=idxOpt)
-
-        #objMdl.reset_states()
-
-        # Increment test word index:
-        varTst = varTst + varSzeBtch
-        if varTst >= varLenTxt:
-            varTst = varTst - varLenTxt
+print('--> End of training.')
 
 # objMdl.evaluate(x_test, y_test)
 
