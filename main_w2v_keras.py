@@ -20,7 +20,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = None
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20190629_105710/'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
@@ -32,10 +32,10 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 500
+varNumItr = 250000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 100
+varDspStp = 10000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -73,7 +73,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[0:1077]
+vecC = vecC[0:107]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -601,7 +601,7 @@ for idxOpt in range(varNumOpt):
                + '%'))
 
         # Avoid beginning of text (not enough preceding context words):
-        if varTmpWrd > 50:
+        if varTmpWrd > 5:
 
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
