@@ -16,14 +16,14 @@ from utilities import read_text
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/Users/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = None
+strPthMdl = '/Users/john/Dropbox/Harry_Potter/lstm/20190629_121803'
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = '/Users/john/Dropbox/Harry_Potter/lstm'
 
 # Path of sample text to base new predictions on (when generating new text):
 strPthBse = 'new_base.txt'
@@ -84,9 +84,9 @@ dictRvrs = objNpz['dictRvrs'][()]
 # Embedding matrix:
 aryEmb = objNpz['aryEmbFnl']
 
-# Scale embedding matrix (this is only for a more convenience range of loss
-# values during visualisation):
-aryEmb = np.multiply(aryEmb, 100.0)
+# Scale embedding matrix (to have an absolute maximum of 1):
+varAbsMax = np.max(np.absolute(aryEmb.flatten()))
+aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
@@ -373,8 +373,8 @@ print('Testing model:')
 objTstMdl.summary()
 
 # Define the optimiser and loss function:
-objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),
-               loss=tf.keras.losses.mean_squared_error)
+objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
+               loss=tf.keras.losses.mean_squared_error)  # Also try tf.keras.losses.CosineSimilarity
 
 
 # -----------------------------------------------------------------------------
