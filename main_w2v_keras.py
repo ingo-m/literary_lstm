@@ -20,7 +20,7 @@ strPthIn = '/Users/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = '/Users/john/Dropbox/Harry_Potter/lstm/20190629_121803'
+strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/Users/john/Dropbox/Harry_Potter/lstm'
@@ -32,10 +32,10 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 250000
+varNumItr = 10000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 100
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -50,7 +50,7 @@ varNrn02 = 300
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 250
+varSzeBtch = 100  # 250
 
 # Input dropout:
 varInDrp = 0.3
@@ -73,7 +73,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[0:107]
+vecC = vecC[14:121]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -373,7 +373,7 @@ print('Testing model:')
 objTstMdl.summary()
 
 # Define the optimiser and loss function:
-objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
+objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),  # Or use Adam?
                loss=tf.keras.losses.mean_squared_error)  # Also try tf.keras.losses.CosineSimilarity
 
 
@@ -401,8 +401,16 @@ if not os.path.exists(strPthLogSes):
 #                                              update_freq='batch')
 # objCallback.set_model(objMdl)
 
+# Placeholder for word vector of predicted words:
+# objPlcPredWrd = tf.placeholder(tf.float32, shape=varSzeEmb)
+
+# Create histrogram:
+# objHistPred = tf.summary.histogram("Prediction", objPlcPredWrd)
+
 # Old (tf 1.13) summary implementation for tensorboard:
 objLogWrt = tf.summary.FileWriter(strPthLogSes)
+
+# objMrgSmry = tf.summary.merge_all()
 
 
 # -----------------------------------------------------------------------------
@@ -633,6 +641,10 @@ for idxOpt in range(varNumOpt):
 
             # Get test prediction for current context word(s):
             vecWrd = objTstMdl.predict_on_batch(aryTstCtxt)
+
+            #objSmry = objSess.run(objMrgSmry,
+            #                      feed_dict={objPlcPredWrd: vecWrd.flatten()})
+            #objLogWrt.add_summary(objSmry, global_step=idxOpt)
 
             # Current loss:
             varLoss02 = np.sum(
