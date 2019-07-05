@@ -29,31 +29,31 @@ strPthLog = '/Users/john/Dropbox/Harry_Potter/lstm'
 strPthBse = 'new_base.txt'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.1
 
 # Number of training iterations over the input text:
-varNumItr = 10000
+varNumItr = 1000000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 100
+varDspStp = 10000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 300
+varNrn01 = 512
 
 # Number of neurons in second hidden layer:
-varNrn02 = 300
+varNrn02 = 512
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 100  # 250
+varSzeBtch = 250
 
 # Input dropout:
-varInDrp = 0.3
+varInDrp = 0.5
 
 # Recurrent state dropout:
 varStDrp = 0.2
@@ -212,33 +212,22 @@ if strPthMdl is None:
     print('Building new model.')
 
     # Regularisation:
-    objRegL2 = tf.keras.regularizers.l2(l=0.005)
-    # objRegL2 = None
+    # objRegL2 = tf.keras.regularizers.l2(l=0.005)
+    objRegL2 = None
 
     # The actual LSTM layers.
     # Note that this cell is not optimized for performance on GPU.
     # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
     # objMdl.add(tf.keras.layers.LSTM(varNrn01,
     aryOut01 = tf.keras.layers.LSTM(varNrn01,
-                                    # input_shape=(varNumIn, varSzeEmb),
-                                    # batch_size=varSzeBtch,
                                     activation='tanh',
                                     recurrent_activation='hard_sigmoid',
-                                    use_bias=True,
-                                    kernel_initializer='glorot_uniform',
-                                    recurrent_initializer='orthogonal',
-                                    bias_initializer='zeros',
-                                    unit_forget_bias=True,
                                     kernel_regularizer=objRegL2,
                                     recurrent_regularizer=objRegL2,
                                     bias_regularizer=objRegL2,
                                     activity_regularizer=objRegL2,
-                                    kernel_constraint=None,
-                                    recurrent_constraint=None,
-                                    bias_constraint=None,
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
-                                    implementation=1,
                                     return_sequences=True,
                                     return_state=False,
                                     go_backwards=False,
@@ -250,25 +239,14 @@ if strPthMdl is None:
     # Second LSTM layer:
     # objMdl.add(tf.keras.layers.LSTM(varNrn02,
     aryOut02 = tf.keras.layers.LSTM(varNrn02,
-                                    # input_shape=(varNumIn, varNrn01),
-                                    # batch_size=varSzeBtch,
                                     activation='tanh',
                                     recurrent_activation='hard_sigmoid',
-                                    use_bias=True,
-                                    kernel_initializer='glorot_uniform',
-                                    recurrent_initializer='orthogonal',
-                                    bias_initializer='zeros',
-                                    unit_forget_bias=True,
                                     kernel_regularizer=objRegL2,
                                     recurrent_regularizer=objRegL2,
                                     bias_regularizer=objRegL2,
                                     activity_regularizer=objRegL2,
-                                    kernel_constraint=None,
-                                    recurrent_constraint=None,
-                                    bias_constraint=None,
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
-                                    implementation=1,
                                     return_sequences=False,
                                     return_state=False,
                                     go_backwards=False,
@@ -291,25 +269,14 @@ if strPthMdl is None:
     # An almost idential version of the model used for testing, with different
     # input size (only one batch).
     aryOut04 = tf.keras.layers.LSTM(varNrn01,
-                                    # input_shape=(varNumIn, varSzeEmb),
-                                    # batch_size=1,
                                     activation='tanh',
                                     recurrent_activation='hard_sigmoid',
-                                    use_bias=True,
-                                    kernel_initializer='glorot_uniform',
-                                    recurrent_initializer='orthogonal',
-                                    bias_initializer='zeros',
-                                    unit_forget_bias=True,
                                     kernel_regularizer=objRegL2,
                                     recurrent_regularizer=objRegL2,
                                     bias_regularizer=objRegL2,
                                     activity_regularizer=objRegL2,
-                                    kernel_constraint=None,
-                                    recurrent_constraint=None,
-                                    bias_constraint=None,
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
-                                    implementation=1,
                                     return_sequences=True,
                                     return_state=False,
                                     go_backwards=False,
@@ -321,25 +288,14 @@ if strPthMdl is None:
     # Second LSTM layer:
     # objMdl.add(tf.keras.layers.LSTM(varNrn02,
     aryOut05 = tf.keras.layers.LSTM(varNrn02,
-                                    # input_shape=(varNumIn, varNrn01),
-                                    # batch_size=1,
                                     activation='tanh',
                                     recurrent_activation='hard_sigmoid',
-                                    use_bias=True,
-                                    kernel_initializer='glorot_uniform',
-                                    recurrent_initializer='orthogonal',
-                                    bias_initializer='zeros',
-                                    unit_forget_bias=True,
                                     kernel_regularizer=objRegL2,
                                     recurrent_regularizer=objRegL2,
                                     bias_regularizer=objRegL2,
                                     activity_regularizer=objRegL2,
-                                    kernel_constraint=None,
-                                    recurrent_constraint=None,
-                                    bias_constraint=None,
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
-                                    implementation=1,
                                     return_sequences=False,
                                     return_state=False,
                                     go_backwards=False,
