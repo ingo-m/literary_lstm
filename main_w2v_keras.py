@@ -16,14 +16,14 @@ from utilities import read_text
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/Users/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/Users/john/Dropbox/Harry_Potter/lstm'
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Path of sample text to base new predictions on (when generating new text):
 strPthBse = 'new_base.txt'
@@ -32,7 +32,7 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 250000
+varNumItr = 1000000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -50,7 +50,7 @@ varNrn02 = 300
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 250
+varSzeBtch = 100
 
 # Input dropout:
 varInDrp = 0.3
@@ -274,8 +274,8 @@ if strPthMdl is None:
                                     recurrent_regularizer=objRegL2,
                                     bias_regularizer=objRegL2,
                                     activity_regularizer=objRegL2,
-                                    dropout=varInDrp,
-                                    recurrent_dropout=varStDrp,
+                                    dropout=0.0,
+                                    recurrent_dropout=0.0,
                                     return_sequences=True,
                                     return_state=False,
                                     go_backwards=False,
@@ -293,8 +293,8 @@ if strPthMdl is None:
                                     recurrent_regularizer=objRegL2,
                                     bias_regularizer=objRegL2,
                                     activity_regularizer=objRegL2,
-                                    dropout=varInDrp,
-                                    recurrent_dropout=varStDrp,
+                                    dropout=0.0,
+                                    recurrent_dropout=0.0,
                                     return_sequences=False,
                                     return_state=False,
                                     go_backwards=False,
