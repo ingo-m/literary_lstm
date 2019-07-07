@@ -29,7 +29,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 strPthBse = 'new_base.txt'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
 varNumItr = 1000000
@@ -41,10 +41,10 @@ varDspStp = 10000
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 300
+varNrn01 = 500
 
 # Number of neurons in second hidden layer:
-varNrn02 = 300
+varNrn02 = 500
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -53,7 +53,7 @@ varLenNewTxt = 100
 varSzeBtch = 100
 
 # Input dropout:
-varInDrp = 0.3
+varInDrp = 0.5
 
 # Recurrent state dropout:
 varStDrp = 0.2
@@ -212,7 +212,8 @@ if strPthMdl is None:
     print('Building new model.')
 
     # Regularisation:
-    objRegL2 = tf.keras.regularizers.l2(l=0.005)
+    # objRegL2 = tf.keras.regularizers.l2(l=0.005)
+    objRegL2 = None
 
     # The actual LSTM layers.
     # Note that this cell is not optimized for performance on GPU.
