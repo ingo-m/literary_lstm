@@ -565,7 +565,7 @@ for idxOpt in range(varNumOpt):
                + '%'))
 
         # Avoid beginning of text (not enough preceding context words):
-        if varTmpWrd > 5:
+        if varTmpWrd > 15:
 
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
