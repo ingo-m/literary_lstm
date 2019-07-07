@@ -32,7 +32,7 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 1000000
+varNumItr = 1000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -50,7 +50,7 @@ varNrn02 = 500
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 100
+varSzeBtch = 1
 
 # Input dropout:
 varInDrp = 0.5
@@ -73,7 +73,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[14:121]
+vecC = vecC[14:1021]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -231,7 +231,7 @@ if strPthMdl is None:
                                     return_sequences=True,
                                     return_state=False,
                                     go_backwards=False,
-                                    stateful=False,
+                                    stateful=True,
                                     unroll=False,
                                     name='LSTMlayer01'
                                     )(objTrnCtxt)
@@ -250,7 +250,7 @@ if strPthMdl is None:
                                     return_sequences=False,
                                     return_state=False,
                                     go_backwards=False,
-                                    stateful=False,
+                                    stateful=True,
                                     unroll=False,
                                     name='LSTMlayer02'
                                     )(aryOut01)
