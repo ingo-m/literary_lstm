@@ -29,7 +29,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 1000000
+varNumItr = 10000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -772,9 +772,10 @@ for idxOpt in range(varNumOpt):
             print('New text:')
             print(strNew)
 
-            # Reset model states:
-            # objMdl.reset_states()
-            # objTstMdl.reset_states()
+        # Reset model states:
+        print('Resetting model states.')
+        objMdl.reset_states()
+        objTstMdl.reset_states()
 
 print('--> End of training.')
 
