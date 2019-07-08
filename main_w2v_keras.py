@@ -9,7 +9,6 @@ import threading
 import queue
 import numpy as np
 import tensorflow as tf
-from google.colab import drive
 import time
 
 
@@ -75,6 +74,14 @@ except:
 
 # -----------------------------------------------------------------------------
 # *** Load data
+
+try:
+    # Prepare import from google drive, if on colab:
+    from google.colab import drive
+    # Mount google drive:
+    drive.mount('drive')
+except:
+    pass
 
 # Load npz file:
 objNpz = np.load(strPthIn)
