@@ -20,7 +20,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = None
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20190708_031442'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
@@ -32,11 +32,11 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.0001
 
 # Number of optimisation steps:
-varNumOpt = 2000000
+varNumOpt = 1000000
 
 # Initial length of text segment to train on (training window will be
 # increased iteratively during training):
-varIniTrainWin = 100
+varIniTrainWin = 1000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -501,7 +501,7 @@ def training_queue():
 
                 # Do not increment training window at the very beginning of
                 # training:
-                if idxOpt > 100000:
+                if idxOpt > 10000:
 
                     # Only increase length of training window if end of text
                     # has not been reached yet:
@@ -549,7 +549,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        !nvidia-smi
+        #!nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -770,21 +770,22 @@ lstWghts = objMdl.get_weights()
 # print('len(lstWghts)')
 # print(len(lstWghts))
 
-# Save model weights and training parameters to disk:
-np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
-         varLrnRte=varLrnRte,
-         varNumItr=varNumItr,
-         varNumIn=varNumIn,
-         varNrn01=varNrn01,
-         varSzeEmb=varSzeEmb,
-         varSzeBtch=varSzeBtch,
-         varInDrp=varInDrp,
-         varStDrp=varStDrp,
-         lstWghts=lstWghts,
-         )
-
 # Save model to disk:
 tf.keras.models.save_model(objMdl,
                            os.path.join(strPthLogSes, 'lstm_training_model'))
 tf.keras.models.save_model(objTstMdl,
                            os.path.join(strPthLogSes, 'lstm_test_model'))
+
+# Save model weights and training parameters to disk:
+np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
+         varLrnRte=varLrnRte,
+         varNumIn=varNumIn,
+         varNrn01=varNrn01,
+         varNrn02=varNrn02,
+         varSzeEmb=varSzeEmb,
+         varSzeBtch=varSzeBtch,
+         varInDrp=varInDrp,
+         varStDrp=varStDrp,
+         varIniTrainWin=varIniTrainWin,
+         lstWghts=lstWghts,
+         )
