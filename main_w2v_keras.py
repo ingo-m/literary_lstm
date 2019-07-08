@@ -62,26 +62,26 @@ varStDrp = 0.2
 # -----------------------------------------------------------------------------
 # *** Use GPU if available:
 
-#try:
-#    from tensorflow.python.client import device_lib
-#    gpus = tf.config.experimental.list_physical_devices('GPU')
-#    tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-#    print(('--> Using device: ' + gpus[0].name))
-#    lgcGpu = True
-#except:
-#    lgcGpu = False
+try:
+    from tensorflow.python.client import device_lib
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+    print(('--> Using device: ' + gpus[0].name))
+    lgcGpu = True
+except:
+    lgcGpu = False
 
 
 # -----------------------------------------------------------------------------
 # *** Load data
 
-#try:
-#    # Prepare import from google drive, if on colab:
-#    from google.colab import drive
-#    # Mount google drive:
-#    drive.mount('drive')
-#except:
-#    pass
+try:
+    # Prepare import from google drive, if on colab:
+    from google.colab import drive
+    # Mount google drive:
+    drive.mount('drive')
+except:
+    pass
 
 # Load npz file:
 objNpz = np.load(strPthIn)
@@ -562,13 +562,13 @@ def training_queue():
     print('--> End of feeding thread.')
 
 
-#def gpu_status():
-#    """Print GPU status information."""
-#    while True:
-#        # Print nvidia GPU status information:
-#        !nvidia-smi
-#        # Sleep some time before next status message:
-#        time.sleep(600)
+def gpu_status():
+    """Print GPU status information."""
+    while True:
+        # Print nvidia GPU status information:
+        !nvidia-smi
+        # Sleep some time before next status message:
+        time.sleep(600)
 
 
 # -----------------------------------------------------------------------------
@@ -592,10 +592,10 @@ while varTmpSzeQ < varBuff:
 
 # -----------------------------------------------------------------------------
 # Additional thread for GPU status information:
-#if lgcGpu:
-#    objThrdGpuStt = threading.Thread(target=gpu_status)
-#    objThrdGpuStt.setDaemon(True)
-#    objThrdGpuStt.start()
+if lgcGpu:
+    objThrdGpuStt = threading.Thread(target=gpu_status)
+    objThrdGpuStt.setDaemon(True)
+    objThrdGpuStt.start()
 
 
 # -----------------------------------------------------------------------------
