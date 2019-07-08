@@ -9,7 +9,8 @@ import threading
 import queue
 import numpy as np
 import tensorflow as tf
-from utilities import read_text
+from google.colab import drive
+import time
 
 
 # -----------------------------------------------------------------------------
@@ -57,6 +58,19 @@ varInDrp = 0.5
 
 # Recurrent state dropout:
 varStDrp = 0.2
+
+
+# -----------------------------------------------------------------------------
+# *** Use GPU if available:
+
+try:
+    from tensorflow.python.client import device_lib
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+    print(('--> Using device: ' + gpus[0].name))
+    lgcGpu = True
+except:
+    lgcGpu = False
 
 
 # -----------------------------------------------------------------------------
@@ -499,6 +513,15 @@ def training_queue():
     print('--> End of feeding thread.')
 
 
+def gpu_status():
+    """Print GPU status information."""
+    while True:
+        # Print nvidia GPU status information:
+        !nvidia-smi
+        # Sleep some time before next status message:
+        time.sleep(600)
+
+
 # -----------------------------------------------------------------------------
 # *** Fill queue
 
@@ -516,6 +539,14 @@ objThrd.start()
 varTmpSzeQ = 0
 while varTmpSzeQ < varBuff:
     varTmpSzeQ = objSess.run(objSzeQ)
+
+
+# -----------------------------------------------------------------------------
+# Additional thread for GPU status information:
+if lgcGpu:
+    objThrdGpuStt = threading.Thread(target=gpu_status)
+    objThrdGpuStt.setDaemon(True)
+    objThrdGpuStt.start()
 
 
 # -----------------------------------------------------------------------------
