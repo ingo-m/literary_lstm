@@ -632,7 +632,7 @@ def gpu_status():
 
 # Buffer size (number of samples to put on queue before starting
 # execution of graph):
-varBuff = 3
+varBuff = (varCapQ - 1)
 
 # Define & run extra thread with graph that places data on queue:
 objThrd = threading.Thread(target=training_queue)
