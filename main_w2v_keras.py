@@ -229,6 +229,14 @@ if strPthMdl is None:
     # objRegL2 = tf.keras.regularizers.l2(l=0.005)
     objRegL2 = None
 
+    # Adjust model's statefullness according to batch size:
+    if varSzeBtch == 1:
+        print('Stateful training model.')
+        lgcState = True
+    else:
+        print('Stateless training model.')
+        lgcState = False
+
     # The actual LSTM layers.
     # Note that this cell is not optimized for performance on GPU.
     # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
@@ -245,7 +253,7 @@ if strPthMdl is None:
                                     return_sequences=True,
                                     return_state=False,
                                     go_backwards=False,
-                                    stateful=True,
+                                    stateful=lgcState,
                                     unroll=False,
                                     name='LSTMlayer01'
                                     )(objTrnCtxt)
@@ -264,7 +272,7 @@ if strPthMdl is None:
                                     return_sequences=False,
                                     return_state=False,
                                     go_backwards=False,
-                                    stateful=True,
+                                    stateful=lgcState,
                                     unroll=False,
                                     name='LSTMlayer02'
                                     )(aryOut01)
