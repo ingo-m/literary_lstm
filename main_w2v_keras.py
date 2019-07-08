@@ -20,7 +20,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = None
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20190707_212746'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
@@ -32,7 +32,7 @@ strPthBse = 'new_base.txt'
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 1000
+varNumItr = 2000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -62,26 +62,26 @@ varStDrp = 0.2
 # -----------------------------------------------------------------------------
 # *** Use GPU if available:
 
-try:
-    from tensorflow.python.client import device_lib
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-    print(('--> Using device: ' + gpus[0].name))
-    lgcGpu = True
-except:
-    lgcGpu = False
+#try:
+#    from tensorflow.python.client import device_lib
+#    gpus = tf.config.experimental.list_physical_devices('GPU')
+#    tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+#    print(('--> Using device: ' + gpus[0].name))
+#    lgcGpu = True
+#except:
+#    lgcGpu = False
 
 
 # -----------------------------------------------------------------------------
 # *** Load data
 
-try:
-    # Prepare import from google drive, if on colab:
-    from google.colab import drive
-    # Mount google drive:
-    drive.mount('drive')
-except:
-    pass
+#try:
+#    # Prepare import from google drive, if on colab:
+#    from google.colab import drive
+#    # Mount google drive:
+#    drive.mount('drive')
+#except:
+#    pass
 
 # Load npz file:
 objNpz = np.load(strPthIn)
@@ -358,7 +358,7 @@ print('Testing model:')
 objTstMdl.summary()
 
 # Define the optimiser and loss function:
-objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),  # Or use Adam?
+objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
                loss=tf.keras.losses.mean_squared_error)  # Also try tf.keras.losses.CosineSimilarity
 
 
@@ -528,13 +528,13 @@ def training_queue():
     print('--> End of feeding thread.')
 
 
-def gpu_status():
-    """Print GPU status information."""
-    while True:
-        # Print nvidia GPU status information:
-        !nvidia-smi
-        # Sleep some time before next status message:
-        time.sleep(600)
+#def gpu_status():
+#    """Print GPU status information."""
+#    while True:
+#        # Print nvidia GPU status information:
+#        !nvidia-smi
+#        # Sleep some time before next status message:
+#        time.sleep(600)
 
 
 # -----------------------------------------------------------------------------
@@ -558,10 +558,10 @@ while varTmpSzeQ < varBuff:
 
 # -----------------------------------------------------------------------------
 # Additional thread for GPU status information:
-if lgcGpu:
-    objThrdGpuStt = threading.Thread(target=gpu_status)
-    objThrdGpuStt.setDaemon(True)
-    objThrdGpuStt.start()
+#if lgcGpu:
+#    objThrdGpuStt = threading.Thread(target=gpu_status)
+#    objThrdGpuStt.setDaemon(True)
+#    objThrdGpuStt.start()
 
 
 # -----------------------------------------------------------------------------
