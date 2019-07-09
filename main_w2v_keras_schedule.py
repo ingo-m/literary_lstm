@@ -33,7 +33,7 @@ varNumOpt = 1000000
 
 # Initial length of text segment to train on (training window will be
 # increased iteratively during training):
-varIniTrainWin = 1000
+varIniTrainWin = 100
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -580,7 +580,7 @@ def training_queue():
 
                 # Do not increment training window at the very beginning of
                 # training:
-                if idxOpt > 10000:
+                if idxOpt > 100000:
 
                     # Only increase length of training window if end of text
                     # has not been reached yet:
