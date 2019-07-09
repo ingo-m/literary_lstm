@@ -68,6 +68,9 @@ varInDrp = 0.5
 # Recurrent state dropout:
 varStDrp = 0.2
 
+# Standard deviation of noise added to latent vector:
+varNoiseSd = 0.01
+
 
 # -----------------------------------------------------------------------------
 # *** Use GPU if available:
@@ -292,6 +295,12 @@ if strPthMdl is None:
                                     name='LSTMlayer03'
                                     )(aryOut02)
 
+    # Add random normal noise:
+    aryOut03R = tf.keras.layers.GaussianNoise(stddev=varNoiseSd,
+                                              name='RandomNormal',
+                                              training=True,
+                                              )(aryOut03)
+
     # Fourth LSTM layer:
     aryOut04 = tf.keras.layers.LSTM(varNrn04,
                                     activation='tanh',
@@ -308,7 +317,7 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='LSTMlayer04'
-                                    )(aryOut03)
+                                    )(aryOut03R)
 
     # Fifth LSTM layer:
     aryOut05 = tf.keras.layers.LSTM(varNrn05,
