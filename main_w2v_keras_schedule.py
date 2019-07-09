@@ -586,21 +586,20 @@ def training_queue():
                 # length has been reached:
                 varIdxWrd = varNumIn
 
-        # Do not increment training window at the very beginning of
-        # training:
-        if idxOpt > 200000:
-            # Do not increment training window on every single optimisation
-            # step:
-            if (idxOpt % 50 == 0):
-                # Only increase length of training window if end of text
-                # has not been reached yet:
-                if varLenTxt > varTrainWin:
-                    print('---')
-                    print('Optimisation step: '
-                          + str(idxOpt)
-                          + ' --- Training window length: '
-                          + str(varTrainWin))
-                    varTrainWin += 1
+                # Do not increment training window at the very beginning of
+                # training:
+                if idxOpt > 200000:
+                    # Only increase length of training window if the end of the
+                    # text has not been reached yet:
+                    if varLenTxt > varTrainWin:
+                        varTrainWin += 1
+                        # Reduce verbosity:
+                        if (varTrainWin % 100 == 0):
+                            print('---')
+                            print('Optimisation step: '
+                                  + str(idxOpt)
+                                  + ' --- Training window length: '
+                                  + str(varTrainWin))
 
         # Put index of next target word on the queue (target word after current
         # batch, because index has already been incremented):
