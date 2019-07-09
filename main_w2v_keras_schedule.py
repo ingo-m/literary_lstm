@@ -298,7 +298,6 @@ if strPthMdl is None:
     # Add random normal noise:
     aryOut03R = tf.keras.layers.GaussianNoise(stddev=varNoiseSd,
                                               name='RandomNormal',
-                                              training=True,
                                               )(aryOut03)
 
     # Fourth LSTM layer:
