@@ -241,8 +241,8 @@ if strPthMdl is None:
 
     # The actual LSTM layers.
     aryOut01 = tf.keras.layers.CuDNNLSTM(varNrn01,
-                                         activation='tanh',
-                                         recurrent_activation='hard_sigmoid',
+                                         # activation='tanh',
+                                         # recurrent_activation='hard_sigmoid',
                                          kernel_regularizer=objRegL2,
                                          recurrent_regularizer=objRegL2,
                                          bias_regularizer=objRegL2,
@@ -257,8 +257,8 @@ if strPthMdl is None:
 
     # Second LSTM layer:
     aryOut02 = tf.keras.layers.CuDNNLSTM(varNrn02,
-                                         activation='tanh',
-                                         recurrent_activation='hard_sigmoid',
+                                         # activation='tanh',
+                                         # recurrent_activation='hard_sigmoid',
                                          kernel_regularizer=objRegL2,
                                          recurrent_regularizer=objRegL2,
                                          bias_regularizer=objRegL2,
@@ -273,8 +273,8 @@ if strPthMdl is None:
 
     # Third LSTM layer:
     aryOut03 = tf.keras.layers.CuDNNLSTM(varNrn03,
-                                         activation='tanh',
-                                         recurrent_activation='hard_sigmoid',
+                                         # activation='tanh',
+                                         # recurrent_activation='hard_sigmoid',
                                          kernel_regularizer=objRegL2,
                                          recurrent_regularizer=objRegL2,
                                          bias_regularizer=objRegL2,
@@ -294,8 +294,8 @@ if strPthMdl is None:
 
     # Fourth LSTM layer:
     aryOut04 = tf.keras.layers.CuDNNLSTM(varNrn04,
-                                         activation='tanh',
-                                         recurrent_activation='hard_sigmoid',
+                                         # activation='tanh',
+                                         # recurrent_activation='hard_sigmoid',
                                          kernel_regularizer=objRegL2,
                                          recurrent_regularizer=objRegL2,
                                          bias_regularizer=objRegL2,
@@ -310,8 +310,8 @@ if strPthMdl is None:
 
     # Fifth LSTM layer:
     aryOut05 = tf.keras.layers.CuDNNLSTM(varNrn05,
-                                         activation='tanh',
-                                         recurrent_activation='hard_sigmoid',
+                                         # activation='tanh',
+                                         # recurrent_activation='hard_sigmoid',
                                          kernel_regularizer=objRegL2,
                                          recurrent_regularizer=objRegL2,
                                          bias_regularizer=objRegL2,
@@ -336,8 +336,8 @@ if strPthMdl is None:
     # An almost idential version of the model used for testing, without dropout
     # and possibly different input size (fixed batch size of one).
     aryOut01T = tf.keras.layers.CuDNNLSTM(varNrn01,
-                                          activation='tanh',
-                                          recurrent_activation='hard_sigmoid',
+                                          # activation='tanh',
+                                          # recurrent_activation='hard_sigmoid',
                                           kernel_regularizer=objRegL2,
                                           recurrent_regularizer=objRegL2,
                                           bias_regularizer=objRegL2,
@@ -351,8 +351,8 @@ if strPthMdl is None:
 
     # Second LSTM layer:
     aryOut02T = tf.keras.layers.CuDNNLSTM(varNrn02,
-                                          activation='tanh',
-                                          recurrent_activation='hard_sigmoid',
+                                          # activation='tanh',
+                                          # recurrent_activation='hard_sigmoid',
                                           kernel_regularizer=objRegL2,
                                           recurrent_regularizer=objRegL2,
                                           bias_regularizer=objRegL2,
@@ -366,8 +366,8 @@ if strPthMdl is None:
 
     # Third LSTM layer:
     aryOut03T = tf.keras.layers.CuDNNLSTM(varNrn03,
-                                          activation='tanh',
-                                          recurrent_activation='hard_sigmoid',
+                                          # activation='tanh',
+                                          # recurrent_activation='hard_sigmoid',
                                           kernel_regularizer=objRegL2,
                                           recurrent_regularizer=objRegL2,
                                           bias_regularizer=objRegL2,
@@ -381,8 +381,8 @@ if strPthMdl is None:
 
     # Fourth LSTM layer:
     aryOut04T = tf.keras.layers.CuDNNLSTM(varNrn04,
-                                          activation='tanh',
-                                          recurrent_activation='hard_sigmoid',
+                                          # activation='tanh',
+                                          # recurrent_activation='hard_sigmoid',
                                           kernel_regularizer=objRegL2,
                                           recurrent_regularizer=objRegL2,
                                           bias_regularizer=objRegL2,
@@ -396,8 +396,8 @@ if strPthMdl is None:
 
     # Fifth LSTM layer:
     aryOut05T = tf.keras.layers.CuDNNLSTM(varNrn05,
-                                          activation='tanh',
-                                          recurrent_activation='hard_sigmoid',
+                                          # activation='tanh',
+                                          # recurrent_activation='hard_sigmoid',
                                           kernel_regularizer=objRegL2,
                                           recurrent_regularizer=objRegL2,
                                           bias_regularizer=objRegL2,
