@@ -9,30 +9,31 @@ import threading
 import queue
 import numpy as np
 import tensorflow as tf
-from utilities import read_text
+import time
 
 
 # -----------------------------------------------------------------------------
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/Users/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/Users/john/Dropbox/Harry_Potter/lstm'
-
-# Path of sample text to base new predictions on (when generating new text):
-strPthBse = 'new_base.txt'
+strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.0001
 
-# Number of training iterations over the input text:
-varNumItr = 500000
+# Number of optimisation steps:
+varNumOpt = 2000000
+
+# Initial length of text segment to train on (training window will be
+# increased iteratively during training):
+varIniTrainWin = 100
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -41,26 +42,59 @@ varDspStp = 10000
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 512
+varNrn01 = 500
 
 # Number of neurons in second hidden layer:
-varNrn02 = 512
+varNrn02 = 200
+
+# Number of neurons in third hidden layer:
+varNrn03 = 50
+
+# Number of neurons in fourth hidden layer:
+varNrn04 = 200
+
+# Number of neurons in fifth hidden layer:
+varNrn05 = 500
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 250
+varSzeBtch = 1
 
 # Input dropout:
-# varInDrp = 0.3
+varInDrp = 0.5
 
 # Recurrent state dropout:
-# varStDrp = 0.2
+# varStDrp = 0.4
+
+# Standard deviation of noise added to latent vector:
+# varNoiseSd = 0.01
+
+
+# -----------------------------------------------------------------------------
+# *** Use GPU if available:
+
+try:
+    from tensorflow.python.client import device_lib
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+    print(('--> Using device: ' + gpus[0].name))
+    lgcGpu = True
+except:
+    lgcGpu = False
 
 
 # -----------------------------------------------------------------------------
 # *** Load data
+
+try:
+    # Prepare import from google drive, if on colab:
+    from google.colab import drive
+    # Mount google drive:
+    drive.mount('drive')
+except:
+    pass
 
 # Load npz file:
 objNpz = np.load(strPthIn)
@@ -70,10 +104,6 @@ objNpz.allow_pickle = True
 
 # Coded text:
 vecC = objNpz['vecC']
-
-# Only train on part of text (retain copy of full text for weights):
-vecFullC = np.copy(vecC)
-vecC = vecC[14:121]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -119,20 +149,6 @@ print(('Vocabulary / text ratio: ' + str(varNumRto)))
 # Size of embedding vector:
 varSzeEmb = aryEmb.shape[1]
 
-# Number of optimisation steps:
-varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
-
-# Total number of inputs (to input layer):
-# varNumInTtl = varNumIn * varSzeEmb
-
-# Placeholder for inputs (to input layer):
-#aryWrdsIn = tf.keras.Input(shape=(varNumIn, varSzeEmb),
-#                           batch_size=1,
-#                           dtype=tf.float32)
-
-# Placeholder for output:
-#vecWrdsOut = tf.placeholder(tf.float32, [1, varSzeEmb])
-
 
 # -----------------------------------------------------------------------------
 # *** Prepare queues
@@ -141,7 +157,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 5
+varCapQ = 100
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -200,13 +216,6 @@ objTrgt = objQ02.dequeue()
 objTstCtxt = tf.keras.Input(shape=(varNumIn, varSzeEmb),
                             batch_size=1,
                             dtype=tf.float32)
-
-aryOut01 = tf.placeholder(tf.float32,
-                          shape=[(varSzeEmb + varNrn01 + varNrn02)])
-aryOut02 = tf.placeholder(tf.float32,
-                          shape=[(varNrn01 + varNrn02)])
-
-
 objWght = objQ03.dequeue()
 
 
@@ -222,65 +231,192 @@ if strPthMdl is None:
     # objRegL2 = tf.keras.regularizers.l2(l=0.005)
     objRegL2 = None
 
-    aryOut01 = tf.keras.layers.Dense(varNrn01,
-                                     activation=tf.keras.activations.tanh,
-                                     use_bias=True,
-                                     kernel_regularizer=objRegL2,
-                                     bias_regularizer=objRegL2,
-                                     activity_regularizer=objRegL2,
-                                     # dropout=varInDrp,
-                                     name='layer01',
-                                     )(tf.stack([objTrnCtxt,
-                                                 aryOut01,
-                                                 aryOut02],
-                                                0))
+    # Adjust model's statefullness according to batch size:
+    if varSzeBtch == 1:
+        print('Stateful training model.')
+        lgcState = True
+    else:
+        print('Stateless training model.')
+        lgcState = False
 
-    aryOut02 = tf.keras.layers.Dense(varNrn02,
+    # The actual LSTM layers.
+    aryOut01 = tf.keras.layers.CuDNNLSTM(varNrn01,
+                                         activation='tanh',
+                                         recurrent_activation='hard_sigmoid',
+                                         kernel_regularizer=objRegL2,
+                                         recurrent_regularizer=objRegL2,
+                                         bias_regularizer=objRegL2,
+                                         activity_regularizer=objRegL2,
+                                         return_sequences=True,
+                                         return_state=False,
+                                         go_backwards=False,
+                                         stateful=lgcState,
+                                         name='LSTM01'
+                                         )(objTrnCtxt)
+    aryOut01D = tf.keras.layers.Dropout(varInDrp)(aryOut01)
+
+    # Second LSTM layer:
+    aryOut02 = tf.keras.layers.CuDNNLSTM(varNrn02,
+                                         activation='tanh',
+                                         recurrent_activation='hard_sigmoid',
+                                         kernel_regularizer=objRegL2,
+                                         recurrent_regularizer=objRegL2,
+                                         bias_regularizer=objRegL2,
+                                         activity_regularizer=objRegL2,
+                                         return_sequences=True,
+                                         return_state=False,
+                                         go_backwards=False,
+                                         stateful=lgcState,
+                                         name='LSTM02'
+                                         )(aryOut01D)
+    aryOut02D = tf.keras.layers.Dropout(varInDrp)(aryOut02)
+
+    # Third LSTM layer:
+    aryOut03 = tf.keras.layers.CuDNNLSTM(varNrn03,
+                                         activation='tanh',
+                                         recurrent_activation='hard_sigmoid',
+                                         kernel_regularizer=objRegL2,
+                                         recurrent_regularizer=objRegL2,
+                                         bias_regularizer=objRegL2,
+                                         activity_regularizer=objRegL2,
+                                         return_sequences=True,
+                                         return_state=False,
+                                         go_backwards=False,
+                                         stateful=lgcState,
+                                         name='LSTM03'
+                                         )(aryOut02D)
+    aryOut03D = tf.keras.layers.Dropout(varInDrp)(aryOut03)
+
+    # Add random normal noise:
+    # aryOut03R = tf.keras.layers.GaussianNoise(stddev=varNoiseSd,
+    #                                           name='RandomNormal',
+    #                                           )(aryOut03D)
+
+    # Fourth LSTM layer:
+    aryOut04 = tf.keras.layers.CuDNNLSTM(varNrn04,
+                                         activation='tanh',
+                                         recurrent_activation='hard_sigmoid',
+                                         kernel_regularizer=objRegL2,
+                                         recurrent_regularizer=objRegL2,
+                                         bias_regularizer=objRegL2,
+                                         activity_regularizer=objRegL2,
+                                         return_sequences=True,
+                                         return_state=False,
+                                         go_backwards=False,
+                                         stateful=lgcState,
+                                         name='LSTM04'
+                                         )(aryOut03D)
+    aryOut04D = tf.keras.layers.Dropout(varInDrp)(aryOut04)
+
+    # Fifth LSTM layer:
+    aryOut05 = tf.keras.layers.CuDNNLSTM(varNrn05,
+                                         activation='tanh',
+                                         recurrent_activation='hard_sigmoid',
+                                         kernel_regularizer=objRegL2,
+                                         recurrent_regularizer=objRegL2,
+                                         bias_regularizer=objRegL2,
+                                         activity_regularizer=objRegL2,
+                                         return_sequences=False,
+                                         return_state=False,
+                                         go_backwards=False,
+                                         stateful=lgcState,
+                                         name='LSTM05'
+                                         )(aryOut04D)
+    aryOut05D = tf.keras.layers.Dropout(varInDrp)(aryOut05)
+
+    # Dense feedforward layer:
+    aryOut06 = tf.keras.layers.Dense(varSzeEmb,
                                      activation=tf.keras.activations.tanh,
-                                     use_bias=True,
-                                     kernel_regularizer=objRegL2,
-                                     bias_regularizer=objRegL2,
-                                     activity_regularizer=objRegL2,
-                                     # dropout=varInDrp,
-                                     name='layer02',
-                                     )(tf.stack([aryOut01,
-                                                 aryOut02],
-                                                0))
+                                     name='Dense_FF'
+                                     )(aryOut05D)
 
     # Initialise the model:
-    objMdl = tf.keras.models.Model(inputs=objTrnCtxt, outputs=aryOut02)
+    objMdl = tf.keras.models.Model(inputs=objTrnCtxt, outputs=aryOut06)
 
-    # ---
+    # An almost idential version of the model used for testing, without dropout
+    # and possibly different input size (fixed batch size of one).
+    aryOut01T = tf.keras.layers.CuDNNLSTM(varNrn01,
+                                          activation='tanh',
+                                          recurrent_activation='hard_sigmoid',
+                                          kernel_regularizer=objRegL2,
+                                          recurrent_regularizer=objRegL2,
+                                          bias_regularizer=objRegL2,
+                                          activity_regularizer=objRegL2,
+                                          return_sequences=True,
+                                          return_state=False,
+                                          go_backwards=False,
+                                          stateful=True,
+                                          name='TestLSTM01'
+                                          )(objTstCtxt)
 
-    # An almost idential version of the model used for testing, with different
-    # input size (only one batch).
-    aryOut01T = tf.keras.layers.Dense(varNrn01,
+    # Second LSTM layer:
+    aryOut02T = tf.keras.layers.CuDNNLSTM(varNrn02,
+                                          activation='tanh',
+                                          recurrent_activation='hard_sigmoid',
+                                          kernel_regularizer=objRegL2,
+                                          recurrent_regularizer=objRegL2,
+                                          bias_regularizer=objRegL2,
+                                          activity_regularizer=objRegL2,
+                                          return_sequences=True,
+                                          return_state=False,
+                                          go_backwards=False,
+                                          stateful=True,
+                                          name='TestLSTM02'
+                                          )(aryOut01T)
+
+    # Third LSTM layer:
+    aryOut03T = tf.keras.layers.CuDNNLSTM(varNrn03,
+                                          activation='tanh',
+                                          recurrent_activation='hard_sigmoid',
+                                          kernel_regularizer=objRegL2,
+                                          recurrent_regularizer=objRegL2,
+                                          bias_regularizer=objRegL2,
+                                          activity_regularizer=objRegL2,
+                                          return_sequences=True,
+                                          return_state=False,
+                                          go_backwards=False,
+                                          stateful=True,
+                                          name='TestLSTM03'
+                                          )(aryOut02T)
+
+    # Fourth LSTM layer:
+    aryOut04T = tf.keras.layers.CuDNNLSTM(varNrn04,
+                                          activation='tanh',
+                                          recurrent_activation='hard_sigmoid',
+                                          kernel_regularizer=objRegL2,
+                                          recurrent_regularizer=objRegL2,
+                                          bias_regularizer=objRegL2,
+                                          activity_regularizer=objRegL2,
+                                          return_sequences=True,
+                                          return_state=False,
+                                          go_backwards=False,
+                                          stateful=True,
+                                          name='TestLSTM04'
+                                          )(aryOut03T)
+
+    # Fifth LSTM layer:
+    aryOut05T = tf.keras.layers.CuDNNLSTM(varNrn05,
+                                          activation='tanh',
+                                          recurrent_activation='hard_sigmoid',
+                                          kernel_regularizer=objRegL2,
+                                          recurrent_regularizer=objRegL2,
+                                          bias_regularizer=objRegL2,
+                                          activity_regularizer=objRegL2,
+                                          return_sequences=False,
+                                          return_state=False,
+                                          go_backwards=False,
+                                          stateful=True,
+                                          name='TestLSTM05'
+                                          )(aryOut04T)
+
+    # Dense feedforward layer:
+    # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
+    aryOut06T = tf.keras.layers.Dense(varSzeEmb,
                                       activation=tf.keras.activations.tanh,
-                                      use_bias=True,
-                                      kernel_regularizer=objRegL2,
-                                      bias_regularizer=objRegL2,
-                                      activity_regularizer=objRegL2,
-                                      # dropout=varInDrp,
-                                      name='layer01',
-                                      )(tf.stack([objTstCtxt,
-                                                  aryOut01T,
-                                                  aryOut02T],
-                                                 0))
-
-    aryOut02T = tf.keras.layers.Dense(varNrn02,
-                                      activation=tf.keras.activations.tanh,
-                                      use_bias=True,
-                                      kernel_regularizer=objRegL2,
-                                      bias_regularizer=objRegL2,
-                                      activity_regularizer=objRegL2,
-                                      # dropout=varInDrp,
-                                      name='layer02',
-                                      )(tf.stack([aryOut01T,
-                                                  aryOut02T],
-                                                 0))
-
+                                      name='TestDense_FF'
+                                      )(aryOut05T)
     # Initialise the model:
-    objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut02T)
+    objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut06T)
 
 else:
     print('Loading pre-trained model from disk.')
@@ -298,7 +434,7 @@ print('Testing model:')
 objTstMdl.summary()
 
 # Define the optimiser and loss function:
-objMdl.compile(optimizer=tf.keras.optimizers.RMSprop(lr=varLrnRte),  # Or use Adam?
+objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
                loss=tf.keras.losses.mean_squared_error)  # Also try tf.keras.losses.CosineSimilarity
 
 
@@ -355,6 +491,9 @@ def training_queue():
     # in the corpus.
     varIdxWrd = varNumIn
 
+    # Initial training window length:
+    varTrainWin = varIniTrainWin
+
     # Array for new batch of context words:
     aryCntxt = np.zeros((varSzeBtch, varNumIn, varSzeEmb), dtype=np.float32)
 
@@ -384,7 +523,7 @@ def training_queue():
 
     # Vector with word count in corpus (returns vector with unique values,
     # which  is identical to word codes, and corresponding word counts):
-    _, vecCnt = np.unique(vecFullC, return_counts=True)
+    _, vecCnt = np.unique(vecC, return_counts=True)
 
     # Minimum number of occurences:
     vecCntMin = np.min(vecCnt)
@@ -433,8 +572,26 @@ def training_queue():
 
             # Increment word index:
             varIdxWrd = varIdxWrd + 1
-            if varIdxWrd >= varLenTxt:
+            if varIdxWrd >= varTrainWin:
+
+                # Reset word index to beginning of text if current training
+                # length has been reached:
                 varIdxWrd = varNumIn
+
+                # Do not increment training window at the very beginning of
+                # training:
+                if idxOpt > 200000:
+                    # Only increase length of training window if the end of the
+                    # text has not been reached yet:
+                    if varLenTxt > varTrainWin:
+                        varTrainWin += 1
+                        # Reduce verbosity:
+                        if (varTrainWin % 100 == 0):
+                            print('---')
+                            print('Optimisation step: '
+                                  + str(idxOpt)
+                                  + ' --- Training window length: '
+                                  + str(varTrainWin))
 
         # Put index of next target word on the queue (target word after current
         # batch, because index has already been incremented):
@@ -468,12 +625,21 @@ def training_queue():
     print('--> End of feeding thread.')
 
 
+def gpu_status():
+    """Print GPU status information."""
+    while True:
+        # Print nvidia GPU status information:
+        !nvidia-smi
+        # Sleep some time before next status message:
+        time.sleep(600)
+
+
 # -----------------------------------------------------------------------------
 # *** Fill queue
 
 # Buffer size (number of samples to put on queue before starting
 # execution of graph):
-varBuff = 3
+varBuff = (varCapQ - 1)
 
 # Define & run extra thread with graph that places data on queue:
 objThrd = threading.Thread(target=training_queue)
@@ -485,6 +651,14 @@ objThrd.start()
 varTmpSzeQ = 0
 while varTmpSzeQ < varBuff:
     varTmpSzeQ = objSess.run(objSzeQ)
+
+
+# -----------------------------------------------------------------------------
+# Additional thread for GPU status information:
+if lgcGpu:
+    objThrdGpuStt = threading.Thread(target=gpu_status)
+    objThrdGpuStt.setDaemon(True)
+    objThrdGpuStt.start()
 
 
 # -----------------------------------------------------------------------------
@@ -534,22 +708,10 @@ for idxOpt in range(varNumOpt):
                + '%'))
 
         # Avoid beginning of text (not enough preceding context words):
-        if varTmpWrd > 5:
+        if varTmpWrd > 15:
 
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
-
-            # # +++
-            # varLenStt = 50
-            # # Get integer codes of context word(s) for new state:
-            # vecSttCtxt = vecC[(varTmpWrd - varLenStt):varTmpWrd]
-            # # Get embedding vectors for context word(s):
-            # arySttCtxt = np.array(aryEmb[vecSttCtxt, :]
-            #                       ).reshape(1, varLenStt, varSzeEmb)
-            # # TODO only works with varNumIn = 1
-            # for idxStt in range(varLenStt):
-            #     _ = objTstMdl.predict_on_batch(arySttCtxt[:, idxStt, :].reshape(1, 1, varSzeEmb))
-            # # +++
 
             # Get integer code of context word:
             varTstCtxt = vecC[(varTmpWrd - 1)]
@@ -661,9 +823,10 @@ for idxOpt in range(varNumOpt):
             print('New text:')
             print(strNew)
 
-            # Reset model states:
-            # objMdl.reset_states()
-            # objTstMdl.reset_states()
+        # Reset model states:
+        print('Resetting model states.')
+        objMdl.reset_states()
+        objTstMdl.reset_states()
 
 print('--> End of training.')
 
@@ -675,97 +838,24 @@ lstWghts = objMdl.get_weights()
 # print('len(lstWghts)')
 # print(len(lstWghts))
 
-# Save model weights and training parameters to disk:
-np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
-         varLrnRte=varLrnRte,
-         varNumItr=varNumItr,
-         varNumIn=varNumIn,
-         varNrn01=varNrn01,
-         varSzeEmb=varSzeEmb,
-         varSzeBtch=varSzeBtch,
-         varInDrp=varInDrp,
-         varStDrp=varStDrp,
-         lstWghts=lstWghts,
-         )
-
 # Save model to disk:
 tf.keras.models.save_model(objMdl,
                            os.path.join(strPthLogSes, 'lstm_training_model'))
 tf.keras.models.save_model(objTstMdl,
                            os.path.join(strPthLogSes, 'lstm_test_model'))
 
-
-# -----------------------------------------------------------------------------
-# *** Validation - generate new text
-
-## TODO: Does running data through model with model.predict_on_batch actually
-## change the state of the LSTM?
-#
-## Load text to base new predictions on:
-#lstBase = read_text(strPthBse)
-#
-## Base text to code:
-#varLenBse = len(lstBase)
-#vecBase = np.zeros(varLenBse, dtype=np.int32)
-#
-## Loop through base text:
-#for idxWrd in range(varLenBse):
-#
-#    # Try to look up words in dictionary. If there is an unkown words, replace
-#    # with unknown token.
-#    try:
-#        varTmp = dicWdCnOdr[lstBase[idxWrd].lower()]
-#    except KeyError:
-#        varTmp = 0
-#    vecBase[idxWrd] = varTmp
-#
-#
-## Get embedding vectors for words:
-#aryBase = np.array(aryEmb[vecBase, :])
-#
-#for idxWrd in range(varLenBse):
-#
-#    # Get prediction for current word:
-#    vecWrd = objMdl.predict_on_batch(aryBase[idxWrd, :].reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
-#
-## Vector for new text (coded):
-#vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
-#
-## Generate new text:
-#for idxNew in range(varLenNewTxt):
-#
-#    # Get prediction for current word:
-#    vecWrd = objMdl.predict_on_batch(vecWrd.reshape(1, 1, varSzeEmb))  # TODO: only works with input size one
-#
-#    # Minimum squared deviation between prediciton and embedding
-#    # vectors:
-#    vecDiff = np.sum(
-#                     np.square(
-#                               np.subtract(
-#                                           aryEmb,
-#                                           vecWrd[None, :]
-#                                           )
-#                               ),
-#                     axis=1
-#                     )
-#
-#    # Get code of closest word vector:
-#    varTmp = int(np.argmin(vecDiff))
-#
-#    # Save code of predicted word:
-#    vecNew[idxNew] = varTmp
-#
-## Decode newly generated words:
-#lstNew = [dictRvrs[x] for x in vecNew]
-#
-## List to string:
-#strBase = ' '.join(lstBase)
-#strNew = ' '.join(lstNew)
-#
-#print('---')
-#print('Base text:')
-#print(strBase)
-#print('---')
-#print('New text:')
-#print(strNew)
-#print('---')
+# Save model weights and training parameters to disk:
+np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
+         varLrnRte=varLrnRte,
+         varNumIn=varNumIn,
+         varNrn01=varNrn01,
+         varNrn02=varNrn02,
+         varNrn03=varNrn03,
+         varNrn04=varNrn04,
+         varNrn05=varNrn05,
+         varSzeEmb=varSzeEmb,
+         varSzeBtch=varSzeBtch,
+         varInDrp=varInDrp,
+         varIniTrainWin=varIniTrainWin,
+         lstWghts=lstWghts,
+         )
