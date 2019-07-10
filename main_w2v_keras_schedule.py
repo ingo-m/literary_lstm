@@ -20,7 +20,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = None
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20190710_022051'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
@@ -29,11 +29,11 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.0001
 
 # Number of optimisation steps:
-varNumOpt = 1000000
+varNumOpt = 2000000
 
 # Initial length of text segment to train on (training window will be
 # increased iteratively during training):
-varIniTrainWin = 100
+varIniTrainWin = 1900
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -60,13 +60,13 @@ varNrn05 = 500
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 32
+varSzeBtch = 1
 
 # Input dropout:
 varInDrp = 0.5
 
 # Recurrent state dropout:
-varStDrp = 0.2
+varStDrp = 0.4
 
 # Standard deviation of noise added to latent vector:
 varNoiseSd = 0.01
