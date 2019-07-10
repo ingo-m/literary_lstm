@@ -715,11 +715,33 @@ for idxOpt in range(varNumOpt):
                      ).split('.')[0]
                + '%'))
 
+        # Length of context to use to initialise the state of the prediction
+        # model:
+        varLenCntx = 50
+
         # Avoid beginning of text (not enough preceding context words):
-        if varTmpWrd > 15:
+        if varTmpWrd > varLenCntx:
 
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
+
+            # If the training model is stateless, initialise state of the
+            # (statefull) prediction model with context. This assumes that
+            # the model can be stateful during prediction (which is should be
+            # according to the documentation).
+            if not lgcState:
+                objTstMdl.reset_states()
+                # Loop through context window:
+                for idxCntx in range(1, varLenCntx):
+                    # Get integer code of context word (the '- 1' is so as not
+                    # to predict twice on the word right before the target
+                    # word, see below):
+                    varCtxt = vecC[(varTmpWrd - 1 - varLenCntx + idxCntx)]
+                    # Get embedding vectors for context word(s):
+                    aryCtxt = np.array(aryEmb[varCtxt, :]
+                                       ).reshape(1, varNumIn, varSzeEmb)
+                    # Predict on current context word:
+                    vecWrd = objTstMdl.predict_on_batch(aryCtxt)
 
             # Get integer code of context word:
             varTstCtxt = vecC[(varTmpWrd - 1)]
