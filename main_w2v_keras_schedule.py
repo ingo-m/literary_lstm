@@ -36,7 +36,7 @@ varNumOpt = 2000000
 varIniTrainWin = 107
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 10000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -69,7 +69,7 @@ varInDrp = 0.5
 varStDrp = 0.3
 
 # Standard deviation of noise added to latent vector:
-varNoiseSd = 0.01
+# varNoiseSd = 0.01
 
 
 # -----------------------------------------------------------------------------
@@ -319,9 +319,9 @@ if strPthMdl is None:
                                     )(aryOut02)
 
     # Add random normal noise:
-    aryOut03R = tf.keras.layers.GaussianNoise(stddev=varNoiseSd,
-                                              name='RandomNormal',
-                                              )(aryOut03)
+    # aryOut03R = tf.keras.layers.GaussianNoise(stddev=varNoiseSd,
+    #                                           name='RandomNormal',
+    #                                           )(aryOut03)
 
     # Fourth LSTM layer:
     aryOut04 = tf.keras.layers.LSTM(varNrn04,
@@ -339,7 +339,7 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='LSTMlayer04'
-                                    )(aryOut03R)
+                                    )(aryOut03)
 
     # Fifth LSTM layer:
     aryOut05 = tf.keras.layers.LSTM(varNrn05,
@@ -367,7 +367,8 @@ if strPthMdl is None:
                                      )(aryOut05)
 
     # Initialise the model:
-    objMdl = tf.keras.models.Model(inputs=objTrnCtxtA, outputs=[aryOut06, aryOut06])
+    objMdl = tf.keras.models.Model(inputs=objTrnCtxtA,
+                                   outputs=[aryOut06, aryOut06])
 
     # An almost idential version of the model used for testing, without dropout
     # and possibly different input size (fixed batch size of one).
@@ -468,7 +469,7 @@ def prediction_loss(objTrgt, aryOut06):
     return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
 
 def repetition_loss(objTrnCtxtB, aryOut06):
-    return tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06)))
+    return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
@@ -540,6 +541,8 @@ def training_queue():
     # Array for new batch of sample weights:
     # aryWght = np.zeros((varSzeBtch, varNumIn), dtype=np.float32)
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
+
+    aryOnes = np.ones((varSzeBtch), dtype=np.float32)
 
     # Sample weighting.
     # In order to reduce the impact of very frequent words (e.g. 'the'), sample
@@ -643,7 +646,7 @@ def training_queue():
         aryTmp03 = aryWght
         dicIn03A = {objPlcHld03A: aryTmp03}
         aryTmp03 = aryWght
-        dicIn03B = {objPlcHld03B: aryTmp03}
+        dicIn03B = {objPlcHld03B: aryOnes}
         aryTmp04 = aryCntxt[:, 0, :]
         dicIn04 = {objPlcHld04: aryTmp04}
 
@@ -721,8 +724,8 @@ for idxOpt in range(varNumOpt):
     #            verbose=0)
     #          callbacks=[objCallback])
     lstLoss = objMdl.train_on_batch(objTrnCtxtA,  # run on single batch
-                                      y=[objTrgt, objTrnCtxtB],
-                                      sample_weight=[objWghtA, objWghtB])
+                                    y=[objTrgt, objTrnCtxtB],
+                                    sample_weight=[objWghtA, objWghtB])
 
     # Take target word index from queue:
     varTmpWrd = objIdxQ.get()
@@ -810,7 +813,7 @@ for idxOpt in range(varNumOpt):
                                          )
                                )
 
-            print(('Loss auto:   ' + str(varLoss01)))
+            print(('Loss auto:   ' + str(lstLoss[0])))
             print(('Loss manual: ' + str(varLoss02)))
 
             # Context:
@@ -917,6 +920,9 @@ np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varNumIn=varNumIn,
          varNrn01=varNrn01,
          varNrn02=varNrn02,
+         varNrn03=varNrn03,
+         varNrn04=varNrn04,
+         varNrn05=varNrn05,
          varSzeEmb=varSzeEmb,
          varSzeBtch=varSzeBtch,
          varInDrp=varInDrp,
