@@ -29,7 +29,7 @@ strPthLog = 'drive/My Drive/lstm_log'
 varLrnRte = 0.0001
 
 # Number of optimisation steps:
-varNumOpt = 2000000
+varNumOpt = 1000000
 
 # Initial length of text segment to train on (training window will be
 # increased iteratively during training):
@@ -267,7 +267,7 @@ if strPthMdl is None:
                                          go_backwards=False,
                                          stateful=lgcState,
                                          name='LSTM01'
-                                         )(objTrnCtxt)
+                                         )(objTrnCtxtA)
     aryOut01D = tf.keras.layers.Dropout(varInDrp)(aryOut01)
 
     # Second LSTM layer:
@@ -346,7 +346,8 @@ if strPthMdl is None:
                                      )(aryOut05D)
 
     # Initialise the model:
-    objMdl = tf.keras.models.Model(inputs=objTrnCtxt, outputs=aryOut06)
+    objMdl = tf.keras.models.Model(inputs=objTrnCtxtA,
+                                   outputs=[aryOut06, aryOut06])
 
     # An almost idential version of the model used for testing, without dropout
     # and possibly different input size (fixed batch size of one).
