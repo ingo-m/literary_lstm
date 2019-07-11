@@ -634,7 +634,7 @@ def training_queue():
         aryTmp02 = aryTrgt
         dicIn02 = {objPlcHld02: aryTmp02}
         aryTmp03 = aryWght
-        dicIn03 = {objPlcHld03: aryWght}
+        dicIn03 = {objPlcHld03: aryTmp03}
         aryTmp04 = aryCntxt[:, 0, :]
         dicIn04 = {objPlcHld04: aryTmp04}
 
