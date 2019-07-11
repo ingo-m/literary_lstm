@@ -42,19 +42,19 @@ varDspStp = 10000
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 500
+varNrn01 = 300
 
 # Number of neurons in second hidden layer:
-varNrn02 = 200
+varNrn02 = 150
 
 # Number of neurons in third hidden layer:
 varNrn03 = 50
 
 # Number of neurons in fourth hidden layer:
-varNrn04 = 200
+varNrn04 = 150
 
 # Number of neurons in fifth hidden layer:
-varNrn05 = 500
+varNrn05 = 300
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -63,13 +63,13 @@ varLenNewTxt = 100
 varSzeBtch = 1
 
 # Input dropout:
-varInDrp = 0.5
+varInDrp = 0.3
 
 # Recurrent state dropout:
 # varStDrp = 0.3
 
 # Standard deviation of noise added to latent vector:
-# varNoiseSd = 0.01
+varNoiseSd = 0.01
 
 
 # -----------------------------------------------------------------------------
@@ -311,9 +311,9 @@ if strPthMdl is None:
     aryOut03D = tf.keras.layers.Dropout(varInDrp)(aryOut03)
 
     # Add random normal noise:
-    # aryOut03R = tf.keras.layers.GaussianNoise(stddev=varNoiseSd,
-    #                                           name='RandomNormal',
-    #                                           )(aryOut03D)
+    aryOut03R = tf.keras.layers.GaussianNoise(stddev=varNoiseSd,
+                                              name='RandomNormal',
+                                              )(aryOut03D)
 
     # Fourth LSTM layer:
     aryOut04 = tf.keras.layers.CuDNNLSTM(varNrn04,
@@ -328,7 +328,7 @@ if strPthMdl is None:
                                          go_backwards=False,
                                          stateful=lgcState,
                                          name='LSTM04'
-                                         )(aryOut03D)
+                                         )(aryOut03R)
     aryOut04D = tf.keras.layers.Dropout(varInDrp)(aryOut04)
 
     # Fifth LSTM layer:
