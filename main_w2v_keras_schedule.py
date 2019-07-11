@@ -473,7 +473,8 @@ def repetition_loss(objTrnCtxtB, aryOut06):
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
-               loss=[prediction_loss, repetition_loss])  # Also try tf.keras.losses.CosineSimilarity
+               loss=[prediction_loss, repetition_loss],
+               loss_weights=[1.0, 1.0])  # Also try tf.keras.losses.CosineSimilarity
 
 
 # -----------------------------------------------------------------------------
