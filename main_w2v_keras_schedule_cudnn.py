@@ -60,7 +60,7 @@ varNrn05 = 500
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 256
+varSzeBtch = 1
 
 # Input dropout:
 varInDrp = 0.5
@@ -347,7 +347,8 @@ if strPthMdl is None:
 
     # Initialise the model:
     objMdl = tf.keras.models.Model(inputs=objTrnCtxtA,
-                                   outputs=[aryOut06, aryOut06])
+                                   outputs={'prediction': aryOut06,
+                                            'repetition': aryOut06})
 
     # An almost idential version of the model used for testing, without dropout
     # and possibly different input size (fixed batch size of one).
@@ -457,7 +458,11 @@ def repetition_loss(objTrnCtxtB, aryOut06):
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
-               loss=[prediction_loss, repetition_loss])  # Also try tf.keras.losses.CosineSimilarity
+               loss={'Dense_FF': prediction_loss,     # 'prediction'
+                     'Dense_FF_1': repetition_loss})  # 'repetition'
+#               loss_weights={'Dense_FF': 1.0,     # 'prediction'
+#                             'Dense_FF_1': 0.7})  # 'repetition'
+
 
 
 # -----------------------------------------------------------------------------
@@ -704,8 +709,8 @@ for idxOpt in range(varNumOpt):
     #          callbacks=[objCallback])
     lstLoss = objMdl.train_on_batch(objTrnCtxtA,  # run on single batch
                                     y=[objTrgt, objTrnCtxtB],
-                                    sample_weight={objTrgt: objWght,
-                                                   objTrnCtxtB: None})
+                                    sample_weight={'Dense_FF': objWght,  # 'prediction'
+                                                   'Dense_FF_1': None})  # 'repetition'
 
     # Take target word index from queue:
     varTmpWrd = objIdxQ.get()
