@@ -465,15 +465,23 @@ objMdl.summary()
 print('Testing model:')
 objTstMdl.summary()
 
-def prediction_loss(objTrgt, aryOut06):
+#def prediction_loss(objTrgt, aryOut06):
+#    return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
+#
+#def repetition_loss(objTrnCtxtB, aryOut06):
+#    return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
+
+class prediction_loss(tf.keras.losses.Loss):
+  def call(self, objTrgt, aryOut06):
     return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
 
-def repetition_loss(objTrnCtxtB, aryOut06):
+class repetition_loss(tf.keras.losses.Loss):
+  def call(self, objTrnCtxtB, aryOut06):
     return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
-               loss=[prediction_loss, repetition_loss],
+               loss=[prediction_loss(reduction=tf.losses.Reduction.NONE), repetition_loss(reduction=tf.losses.Reduction.NONE)],
                loss_weights=[2.0, 1.0])  # Also try tf.keras.losses.CosineSimilarity
 
 
