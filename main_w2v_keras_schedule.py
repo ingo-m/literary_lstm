@@ -66,7 +66,7 @@ varSzeBtch = 1
 varInDrp = 0.5
 
 # Recurrent state dropout:
-varStDrp = 0.3
+varStDrp = 0.5
 
 # Standard deviation of noise added to latent vector:
 # varNoiseSd = 0.01
@@ -474,7 +474,7 @@ def repetition_loss(objTrnCtxtB, aryOut06):
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
                loss=[prediction_loss, repetition_loss],
-               loss_weights=[1.0, 1.0])  # Also try tf.keras.losses.CosineSimilarity
+               loss_weights=[2.0, 1.0])  # Also try tf.keras.losses.CosineSimilarity
 
 
 # -----------------------------------------------------------------------------
