@@ -262,6 +262,14 @@ if False:  # tf 1.14.0
       def call(self, objTrnCtxtB, aryOut06):
         return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
 
+# Adjust model's statefullness according to batch size:
+if varSzeBtch == 1:
+    print('Stateful training model.')
+    lgcState = True
+else:
+    print('Stateless training model.')
+    lgcState = False
+
 # Load pre-trained model, or create new one:
 if strPthMdl is None:
 
@@ -270,14 +278,6 @@ if strPthMdl is None:
     # Regularisation:
     # objRegL2 = tf.keras.regularizers.l2(l=0.005)
     objRegL2 = None
-
-    # Adjust model's statefullness according to batch size:
-    if varSzeBtch == 1:
-        print('Stateful training model.')
-        lgcState = True
-    else:
-        print('Stateless training model.')
-        lgcState = False
 
     # The actual LSTM layers.
     # Note that this cell is not optimized for performance on GPU.
