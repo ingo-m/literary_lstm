@@ -20,7 +20,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = None
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20190718_225933'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
@@ -29,11 +29,11 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.0001
 
 # Number of optimisation steps:
-varNumOpt = 2000000
+varNumOpt = 3000000
 
 # Initial length of text segment to train on (training window will be
 # increased iteratively during training):
-varIniTrainWin = 107
+varIniTrainWin = 2500
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -245,6 +245,23 @@ objWghtB = objQ03B.dequeue()
 # -----------------------------------------------------------------------------
 # *** Build the network
 
+if True:  # tf 1.13.1
+    def prediction_loss(objTrgt, aryOut06):
+        return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
+
+    def repetition_loss(objTrnCtxtB, aryOut06):
+        return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
+
+if False:  # tf 1.14.0
+
+    class prediction_loss(tf.keras.losses.Loss):
+      def call(self, objTrgt, aryOut06):
+        return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
+
+    class repetition_loss(tf.keras.losses.Loss):
+      def call(self, objTrnCtxtB, aryOut06):
+        return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
+
 # Load pre-trained model, or create new one:
 if strPthMdl is None:
 
@@ -455,9 +472,13 @@ else:
 
     # Load pre-trained model from disk:
     objMdl = tf.keras.models.load_model(os.path.join(strPthMdl,
-                                                     'lstm_training_model'))
+                                                     'lstm_training_model'),
+                                        custom_objects={'prediction_loss': prediction_loss,
+                                                        'repetition_loss': repetition_loss})
     objTstMdl = tf.keras.models.load_model(os.path.join(strPthMdl,
-                                                        'lstm_test_model'))
+                                                        'lstm_test_model'),
+                                           custom_objects={'prediction_loss': prediction_loss,
+                                                           'repetition_loss': repetition_loss})
 
 # Print model summary:
 print('Training model:')
@@ -466,11 +487,6 @@ print('Testing model:')
 objTstMdl.summary()
 
 if True:  # tf 1.13.1
-    def prediction_loss(objTrgt, aryOut06):
-        return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
-
-    def repetition_loss(objTrnCtxtB, aryOut06):
-        return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
 
     # Define the optimiser and loss function:
     objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
@@ -478,14 +494,6 @@ if True:  # tf 1.13.1
                    loss_weights=[2.0, 1.0])  # Also try tf.keras.losses.CosineSimilarity
 
 if False:  # tf 1.14.0
-
-    class prediction_loss(tf.keras.losses.Loss):
-      def call(self, objTrgt, aryOut06):
-        return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
-
-    class repetition_loss(tf.keras.losses.Loss):
-      def call(self, objTrnCtxtB, aryOut06):
-        return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
 
     # Define the optimiser and loss function:
     objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
@@ -637,7 +645,7 @@ def training_queue():
 
                 # Do not increment training window at the very beginning of
                 # training:
-                if idxOpt > 200000:
+                if idxOpt > 100:
                     # Only increase length of training window if the end of the
                     # text has not been reached yet:
                     if varLenTxt > varTrainWin:
