@@ -11,13 +11,13 @@ import tensorflow as tf
 # *** Define parameters
 
 # Learning rate:
-varLrnRte = 0.0001
+varLrnRte = 0.01
 
 # Number of optimisation steps:
-varNumOpt = 1000
+varNumOpt = 100000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 100
+varDspStp = 1000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -50,6 +50,10 @@ varLenS = vecS.shape[0]
 objTrnCtxtA = tf.keras.Input(shape=(varNumIn, 1),
                              batch_size=varSzeBtch,
                              # tensor=objQ01.dequeue(),
+                             dtype=tf.float32)
+objTrnCtxtB = tf.keras.Input(shape=(varSzeBtch, 1),
+                             batch_size=varSzeBtch,
+                             # tensor=objQ04.dequeue(),
                              dtype=tf.float32)
 
 objTstCtxt = tf.keras.Input(shape=(varNumIn, 1),
@@ -89,7 +93,7 @@ aryOut02 = tf.keras.layers.Dense(1,
 
 # Initialise the model:
 objMdl = tf.keras.models.Model(inputs=objTrnCtxtA,
-                               outputs=aryOut02)
+                               outputs=[aryOut02])
 
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
@@ -120,12 +124,12 @@ objTstMdl.summary()
 # def prediction_loss(objTrgt, aryOut06):
 #     return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
 
-def repetition_loss(objTrnCtxtB, aryOut06):
-    return tf.math.add(objTrnCtxtA, aryOut02)
+def repetition_loss(objTrnCtxtB, aryOut02):
+    return tf.math.add(objTrnCtxtB, aryOut02)
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
-               loss=repetition_loss)  # [prediction_loss, repetition_loss])
+               loss=[repetition_loss])  # [prediction_loss, repetition_loss])
 # loss_weights=[1.0, 0.7]
 
 
@@ -144,8 +148,8 @@ for idxOpt in range(varNumOpt):
     aryOut = vecS[idxSmp].reshape(varSzeBtch, varNumIn, 1)
 
     varLoss = objMdl.train_on_batch(aryIn,
-                                    y=aryOut)
-                                    # sample_weight=vecSmpWgt)
+                                    y=[aryIn.reshape(1, 1)])
+                                    # sample_weight=[objWghtA, objWghtB])
 
     idxSmp += 1
 
@@ -215,11 +219,11 @@ for idxOpt in range(varNumOpt):
 
             print(('Target: ' + str(varTrgt)))
 
-            print(('Prediction: ' + str(vecPrd)))
+            print(('Prediction: ' + str(vecPrd[0][0])))
 
             # ** Generate new text
 
-            vecNew = np.zeros(varLenNew, dtype=np.int32)
+            vecNew = np.zeros(varLenNew, dtype=np.float32)
 
             # Generate new text:
             for idxNew in range(varLenNew):
@@ -237,7 +241,7 @@ for idxOpt in range(varNumOpt):
                 vecPrd = objTstMdl.predict_on_batch(aryTstCtxt)
 
                 # Save code of predicted word:
-                vecNew[idxNew] = vecPrd[0]
+                vecNew[idxNew] = vecPrd[0][0]
 
             # Newly generated numbers to list:
             lstNew = [str(x) for x in vecNew]
