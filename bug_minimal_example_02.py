@@ -14,7 +14,7 @@ import tensorflow as tf
 varLrnRte = 0.01
 
 # Number of optimisation steps:
-varNumOpt = 100000
+varNumOpt = 10000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -23,7 +23,7 @@ varDspStp = 1000
 varNumIn = 1
 
 # Number of neurons in first hidden layer:
-varNrn01 = 10
+varNrn01 = 1
 
 # Length of new text to generate:
 varLenNew = 100
@@ -125,7 +125,7 @@ objTstMdl.summary()
 #     return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
 
 def repetition_loss(objTrnCtxtB, aryOut02):
-    return tf.math.add(objTrnCtxtB, aryOut02)
+    return tf.math.abs(tf.math.add(objTrnCtxtB, aryOut02))
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
