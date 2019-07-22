@@ -19,9 +19,6 @@ varNumOpt = 10000
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
 
-# Number of input words from which to predict next word:
-varNumIn = 1
-
 # Number of neurons in first hidden layer:
 varNrn01 = 1
 
@@ -47,7 +44,7 @@ vecS = np.array([-1.0, 1.0] * 100, dtype=np.float32)
 # Length of sequence:
 varLenS = vecS.shape[0]
 
-objTrnCtxtA = tf.keras.Input(shape=(varNumIn, 1),
+objTrnCtxtA = tf.keras.Input(shape=(1, 1),
                              batch_size=varSzeBtch,
                              # tensor=objQ01.dequeue(),
                              dtype=tf.float32)
@@ -56,8 +53,8 @@ objTrnCtxtB = tf.keras.Input(shape=(varSzeBtch, 1),
                              # tensor=objQ04.dequeue(),
                              dtype=tf.float32)
 
-objTstCtxt = tf.keras.Input(shape=(varNumIn, 1),
-                            batch_size=varSzeBtch,
+objTstCtxt = tf.keras.Input(shape=(1, 1),
+                            batch_size=1,
                             # tensor=objQ01.dequeue(),
                             dtype=tf.float32)
 
@@ -141,20 +138,27 @@ print('--> Beginning of training.')
 # Sample index (refering to target):
 idxSmp = 1
 
+varLenS = 117
+
 # Loop through optimisation steps:
 for idxOpt in range(varNumOpt):
 
-    aryIn = vecS[(idxSmp - 1)].reshape(varSzeBtch, varNumIn, 1)
-    # aryOut = vecS[idxSmp].reshape(varSzeBtch, varNumIn, 1)
+    # Create batch:
+    aryIn = np.zeros((varSzeBtch, 1, 1), dtype=np.float32)
+    for idxBtch in range(varSzeBtch):
+
+        # print((idxSmp - 1))
+        aryIn[idxBtch, 0, 0] = vecS[(idxSmp - 1)]
+        # aryOut = ...
+
+        # Increment / reset sample coutner:
+        idxSmp += 1
+        if idxSmp >= varLenS:
+            idxSmp = 1
 
     varLoss = objMdl.train_on_batch(aryIn,
-                                    y=[aryIn.reshape(1, 1)])
+                                    y=[aryIn.reshape(varSzeBtch, 1)])
                                     # sample_weight=[objWghtA, objWghtB])
-
-    # Increment / reset sample coutner:
-    idxSmp += 1
-    if idxSmp >= varLenS:
-        idxSmp = 1
 
     # Give status feedback:
     if (idxOpt % varDspStp == 0):
@@ -193,13 +197,13 @@ for idxOpt in range(varNumOpt):
                     # the sample right before the target  word, see below):
                     varCtxt = vecS[(idxSmp - 1 - varLenCntx + idxCntx)]
                     # Get embedding vectors for context word(s):
-                    aryCtxt = np.array(varCtxt).reshape(1, varNumIn, 1)
+                    aryCtxt = np.array(varCtxt).reshape(1, 1, 1)
                     # Predict on current context word:
                     vecPrd = objTstMdl.predict_on_batch(aryCtxt)
 
             # Context for validation prediction:
             varCtxt = vecS[(idxSmp - 1)]
-            aryTstCtxt = np.array(varCtxt).reshape(1, varNumIn, 1)
+            aryTstCtxt = np.array(varCtxt).reshape(1, 1, 1)
 
             # Get test prediction for current context:
             vecPrd = objTstMdl.predict_on_batch(aryTstCtxt)
@@ -230,12 +234,7 @@ for idxOpt in range(varNumOpt):
 
                 # Update context (leave out first - i.e. oldest - word in
                 # context, and append newly predicted word):
-                if varNumIn > 1:
-                    aryTstCtxt = np.concatenate((aryTstCtxt[:, 1:, :],
-                                                 vecPrd.reshape(1, 1, 1)
-                                                 ), axis=1)
-                else:
-                    aryTstCtxt = vecPrd.reshape(1, 1, 1)
+                aryTstCtxt = vecPrd.reshape(1, 1, 1)
 
                 # Get test prediction for current context word(s):
                 vecPrd = objTstMdl.predict_on_batch(aryTstCtxt)
