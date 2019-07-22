@@ -145,14 +145,14 @@ idxSmp = 1
 for idxOpt in range(varNumOpt):
 
     aryIn = vecS[(idxSmp - 1)].reshape(varSzeBtch, varNumIn, 1)
-    aryOut = vecS[idxSmp].reshape(varSzeBtch, varNumIn, 1)
+    # aryOut = vecS[idxSmp].reshape(varSzeBtch, varNumIn, 1)
 
     varLoss = objMdl.train_on_batch(aryIn,
                                     y=[aryIn.reshape(1, 1)])
                                     # sample_weight=[objWghtA, objWghtB])
 
+    # Increment / reset sample coutner:
     idxSmp += 1
-
     if idxSmp >= varLenS:
         idxSmp = 1
 
@@ -197,10 +197,9 @@ for idxOpt in range(varNumOpt):
                     # Predict on current context word:
                     vecPrd = objTstMdl.predict_on_batch(aryCtxt)
 
-            # Sample to predict (target):
-            varTrgt = vecS[idxSmp]
-
-            aryTstCtxt = np.array(varTrgt).reshape(1, varNumIn, 1)
+            # Context for validation prediction:
+            varCtxt = vecS[(idxSmp - 1)]
+            aryTstCtxt = np.array(varCtxt).reshape(1, varNumIn, 1)
 
             # Get test prediction for current context:
             vecPrd = objTstMdl.predict_on_batch(aryTstCtxt)
@@ -214,9 +213,10 @@ for idxOpt in range(varNumOpt):
             # Context:
             lstCtxt = [str(x) for x in vecS[(idxSmp - 15):idxSmp]]
             strCtxt = ' '.join(lstCtxt)
-
             print(('Context: ' + strCtxt))
 
+            # Sample to predict (target):
+            varTrgt = vecS[idxSmp]
             print(('Target: ' + str(varTrgt)))
 
             print(('Prediction: ' + str(vecPrd[0][0])))
