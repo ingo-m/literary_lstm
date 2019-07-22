@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""LSTM function using word2vec embedding."""
+"""Minimal example re custom loss function bug."""
 
-import os
-import random
-import datetime
-import threading
-import queue
+
 import numpy as np
 import tensorflow as tf
-import time
 
 
 # -----------------------------------------------------------------------------
@@ -19,7 +14,7 @@ import time
 varLrnRte = 0.0001
 
 # Number of optimisation steps:
-varNumOpt = 10000
+varNumOpt = 1000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 100
@@ -31,16 +26,10 @@ varNumIn = 1
 varNrn01 = 10
 
 # Length of new text to generate:
-varLenNewTxt = 100
+varLenNew = 100
 
 # Batch size:
 varSzeBtch = 1
-
-# Input dropout:
-# varInDrp = 0.3
-
-# Recurrent state dropout:
-# varStDrp = 0.3
 
 
 # -----------------------------------------------------------------------------
@@ -83,25 +72,14 @@ else:
     print('Stateless training model.')
     lgcState = False
 
-# Regularisation:
-objRegL2 = None
-
 # The actual LSTM layers.
-# aryOut01 = tf.keras.layers.CuDNNLSTM(varNrn01,
 aryOut01 = tf.keras.layers.LSTM(varNrn01,
-                                # activation='tanh',
-                                # recurrent_activation='hard_sigmoid',
-                                kernel_regularizer=objRegL2,
-                                recurrent_regularizer=objRegL2,
-                                bias_regularizer=objRegL2,
-                                activity_regularizer=objRegL2,
                                 return_sequences=False,
                                 return_state=False,
                                 go_backwards=False,
                                 stateful=lgcState,
                                 name='LSTM01'
                                 )(objTrnCtxtA)
-# aryOut01D = tf.keras.layers.Dropout(varInDrp)(aryOut01)
 
 # Dense feedforward layer:
 aryOut02 = tf.keras.layers.Dense(1,
@@ -111,29 +89,23 @@ aryOut02 = tf.keras.layers.Dense(1,
 
 # Initialise the model:
 objMdl = tf.keras.models.Model(inputs=objTrnCtxtA,
-                               outputs=aryOut02)  # [aryOut06, aryOut06])
+                               outputs=aryOut02)
 
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
+# The actual LSTM layers.
 aryOut01T = tf.keras.layers.LSTM(varNrn01,
-                                # activation='tanh',
-                                # recurrent_activation='hard_sigmoid',
-                                kernel_regularizer=objRegL2,
-                                recurrent_regularizer=objRegL2,
-                                bias_regularizer=objRegL2,
-                                activity_regularizer=objRegL2,
-                                return_sequences=False,
-                                return_state=False,
-                                go_backwards=False,
-                                stateful=True,
-                                name='TestLSTM01'
-                                )(objTstCtxt)
-# aryOut01D = tf.keras.layers.Dropout(varInDrp)(aryOut01)
+                                 return_sequences=False,
+                                 return_state=False,
+                                 go_backwards=False,
+                                 stateful=lgcState,
+                                 name='LSTM01'
+                                 )(objTstCtxt)
 
 # Dense feedforward layer:
 aryOut02T = tf.keras.layers.Dense(1,
                                   activation=tf.keras.activations.tanh,
-                                  name='TestDense_FF'
+                                  name='Dense_FF'
                                   )(aryOut01T)
 
 # Initialise the model:
@@ -145,14 +117,14 @@ objMdl.summary()
 print('Testing model:')
 objTstMdl.summary()
 
-#def prediction_loss(objTrgt, aryOut06):
-#    return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
+# def prediction_loss(objTrgt, aryOut06):
+#     return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
 
 def repetition_loss(objTrnCtxtB, aryOut06):
-    return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtA, aryOut02))), 1.0))
+    return tf.math.add(objTrnCtxtA, aryOut02)
 
 # Define the optimiser and loss function:
-objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
+objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
                loss=repetition_loss)  # [prediction_loss, repetition_loss])
 # loss_weights=[1.0, 0.7]
 
@@ -162,24 +134,23 @@ objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSpr
 
 print('--> Beginning of training.')
 
-# Sample index:
-idxSmp = 0
+# Sample index (refering to target):
+idxSmp = 1
 
-# Loop through optimisation steps (one batch per optimisation step):
+# Loop through optimisation steps:
 for idxOpt in range(varNumOpt):
 
-    aryIn = vecS[idxSmp].reshape(varSzeBtch, varNumIn, 1)
-    aryOut = vecS[(idxSmp + 1)].reshape(varSzeBtch, varNumIn, 1)
-    
-    varLoss = objMdl.train_on_batch(aryIn,  # run on single batch
-                                    y=aryOut,
-                                    sample_weight=vecSmpWgt)
+    aryIn = vecS[(idxSmp - 1)].reshape(varSzeBtch, varNumIn, 1)
+    aryOut = vecS[idxSmp].reshape(varSzeBtch, varNumIn, 1)
 
-    if varLenS > (idxSmp + 1):
-        idxSmp += 1
-    else:
-        idxSmp = 0
+    varLoss = objMdl.train_on_batch(aryIn,
+                                    y=aryOut)
+                                    # sample_weight=vecSmpWgt)
 
+    idxSmp += 1
+
+    if idxSmp >= varLenS:
+        idxSmp = 1
 
     # Give status feedback:
     if (idxOpt % varDspStp == 0):
@@ -214,25 +185,21 @@ for idxOpt in range(varNumOpt):
                 objTstMdl.reset_states()
                 # Loop through context window:
                 for idxCntx in range(1, varLenCntx):
-                    # Get integer code of context word (the '- 1' is so as not
-                    # to predict twice on the word right before the target
-                    # word, see below):
+                    # Get context (the '- 1' is so as not to predict twice on
+                    # the sample right before the target  word, see below):
                     varCtxt = vecS[(idxSmp - 1 - varLenCntx + idxCntx)]
                     # Get embedding vectors for context word(s):
-                    aryCtxt = np.array(vecS[varCtxt]
-                                       ).reshape(1, varNumIn, 1)
+                    aryCtxt = np.array(varCtxt).reshape(1, varNumIn, 1)
                     # Predict on current context word:
-                    vecWrd = objTstMdl.predict_on_batch(aryCtxt)
+                    vecPrd = objTstMdl.predict_on_batch(aryCtxt)
 
-            # Word to predict (target):
-            varTrgt = vecS[(idxSmp + 1)]
+            # Sample to predict (target):
+            varTrgt = vecS[idxSmp]
 
-            # Get embedding vectors for context word(s):
-            aryTstCtxt = np.array(vecS[(idxSmp)]
-                                  ).reshape(1, varNumIn, 1)
+            aryTstCtxt = np.array(varTrgt).reshape(1, varNumIn, 1)
 
-            # Get test prediction for current context word(s):
-            vecWrd = objTstMdl.predict_on_batch(aryTstCtxt)
+            # Get test prediction for current context:
+            vecPrd = objTstMdl.predict_on_batch(aryTstCtxt)
 
             #objSmry = objSess.run(objMrgSmry,
             #                      feed_dict={objPlcPredWrd: vecWrd.flatten()})
@@ -240,73 +207,40 @@ for idxOpt in range(varNumOpt):
 
             print(('Loss auto:   ' + str(varLoss)))
 
+            # Context:
+            lstCtxt = [str(x) for x in vecS[(idxSmp - 15):idxSmp]]
+            strCtxt = ' '.join(lstCtxt)
+
             print(('Context: ' + strCtxt))
 
-            print(('Target: ' + dictRvrs[vecC[varTmpWrd]]))
+            print(('Target: ' + str(varTrgt)))
 
-            # Minimum squared deviation between prediciton and embedding
-            # vectors:
-            vecDiff = np.sum(
-                             np.square(
-                                       np.subtract(
-                                                   aryEmb,
-                                                   vecWrd[0, :]
-                                                   )
-                                       ),
-                             axis=1
-                             )
-
-            # Get code of closest word vector:
-            varTmp = int(np.argmin(vecDiff))
-
-            # Look up predicted word in dictionary:
-            strWrdPrd = dictRvrs[varTmp]
-
-            print(('Prediction: ' + strWrdPrd))
+            print(('Prediction: ' + str(vecPrd)))
 
             # ** Generate new text
 
-            # Vector for next text (coded):
-            vecNew = np.zeros(varLenNewTxt, dtype=np.int32)
+            vecNew = np.zeros(varLenNew, dtype=np.int32)
 
             # Generate new text:
-            for idxNew in range(varLenNewTxt):
-
-                # Place testing context word(s) on queue:
-                # testing_queue(aryTstCtxt)
+            for idxNew in range(varLenNew):
 
                 # Update context (leave out first - i.e. oldest - word in
                 # context, and append newly predicted word):
                 if varNumIn > 1:
                     aryTstCtxt = np.concatenate((aryTstCtxt[:, 1:, :],
-                                                 vecWrd.reshape(1, 1, varSzeEmb)
+                                                 vecPrd.reshape(1, 1, 1)
                                                  ), axis=1)
                 else:
-                    aryTstCtxt = vecWrd.reshape(1, 1, varSzeEmb)
+                    aryTstCtxt = vecPrd.reshape(1, 1, 1)
 
                 # Get test prediction for current context word(s):
-                vecWrd = objTstMdl.predict_on_batch(aryTstCtxt)
-
-                # Minimum squared deviation between prediciton and embedding
-                # vectors:
-                vecDiff = np.sum(
-                                 np.square(
-                                           np.subtract(
-                                                       aryEmb,
-                                                       vecWrd[0, :]
-                                                       )
-                                           ),
-                                 axis=1
-                                 )
-
-                # Get code of closest word vector:
-                varTmp = int(np.argmin(vecDiff))
+                vecPrd = objTstMdl.predict_on_batch(aryTstCtxt)
 
                 # Save code of predicted word:
-                vecNew[idxNew] = varTmp
+                vecNew[idxNew] = vecPrd[0]
 
-            # Decode newly generated words:
-            lstNew = [dictRvrs[x] for x in vecNew]
+            # Newly generated numbers to list:
+            lstNew = [str(x) for x in vecNew]
 
             # List to string:
             strNew = ' '.join(lstNew)
