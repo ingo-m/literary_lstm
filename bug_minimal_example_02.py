@@ -81,42 +81,58 @@ else:
 
 # The actual LSTM layers.
 aryOut01 = tf.keras.layers.LSTM(varNrn01,
-                                return_sequences=False,
+                                return_sequences=True,
                                 return_state=False,
                                 go_backwards=False,
                                 stateful=lgcState,
                                 name='LSTM01'
                                 )(objTrnCtxtA)
 
+aryOut02 = tf.keras.layers.LSTM(varNrn01,
+                                return_sequences=False,
+                                return_state=False,
+                                go_backwards=False,
+                                stateful=lgcState,
+                                name='LSTM02'
+                                )(aryOut01)
+
 # Dense feedforward layer:
-aryOut02 = tf.keras.layers.Dense(1,
+aryOut03 = tf.keras.layers.Dense(1,
                                  activation=tf.keras.activations.tanh,
                                  name='Dense_FF'
-                                 )(aryOut01)
+                                 )(aryOut02)
 
 # Initialise the model:
 objMdl = tf.keras.models.Model(inputs=objTrnCtxtA,
-                               outputs=[aryOut02])
+                               outputs=[aryOut03])
 
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
 # The actual LSTM layers.
 aryOut01T = tf.keras.layers.LSTM(varNrn01,
+                                 return_sequences=True,
+                                 return_state=False,
+                                 go_backwards=False,
+                                 stateful=True,
+                                 name='Test_LSTM01'
+                                 )(objTstCtxt)
+
+aryOut02T = tf.keras.layers.LSTM(varNrn01,
                                  return_sequences=False,
                                  return_state=False,
                                  go_backwards=False,
-                                 stateful=lgcState,
-                                 name='LSTM01'
-                                 )(objTstCtxt)
+                                 stateful=True,
+                                 name='Test_LSTM02'
+                                 )(aryOut01T)
 
 # Dense feedforward layer:
-aryOut02T = tf.keras.layers.Dense(1,
+aryOut03T = tf.keras.layers.Dense(1,
                                   activation=tf.keras.activations.tanh,
-                                  name='Dense_FF'
-                                  )(aryOut01T)
+                                  name='Test_Dense_FF'
+                                  )(aryOut02T)
 
 # Initialise the model:
-objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut02T)
+objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut03T)
 
 # Print model summary:
 print('Training model:')
@@ -127,8 +143,8 @@ objTstMdl.summary()
 # def prediction_loss(objTrgt, aryOut06):
 #     return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
 
-def repetition_loss(objTrnCtxtB, aryOut02):
-    return tf.math.abs(tf.math.add(objTrnCtxtB, aryOut02))
+def repetition_loss(objTrnCtxtB, aryOut03):
+    return tf.math.abs(tf.math.add(objTrnCtxtB, aryOut03))
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
