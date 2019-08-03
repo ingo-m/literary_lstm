@@ -32,7 +32,7 @@ varNrn01 = 1
 varLenNew = 100
 
 # Batch size:
-varSzeBtch = 250
+varSzeBtch = 1
 
 
 # -----------------------------------------------------------------------------
@@ -104,7 +104,7 @@ aryOut03 = tf.keras.layers.Dense(1,
 
 # Initialise the model:
 objMdl = tf.keras.models.Model(inputs=objTrnCtxtA,
-                               outputs=[aryOut03])
+                               outputs=[aryOut03, aryOut03])
 
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
@@ -140,15 +140,15 @@ objMdl.summary()
 print('Testing model:')
 objTstMdl.summary()
 
-# def prediction_loss(objTrgt, aryOut06):
-#     return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
+def prediction_loss(objTrgt, aryOut03):
+    return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut03))
 
 def repetition_loss(objTrnCtxtB, aryOut03):
     return tf.math.abs(tf.math.add(objTrnCtxtB, aryOut03))
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
-               loss=[repetition_loss])  # [prediction_loss, repetition_loss])
+               loss=[prediction_loss, repetition_loss])  # [prediction_loss, repetition_loss])
 # loss_weights=[1.0, 0.7]
 
 
@@ -169,11 +169,12 @@ for idxOpt in range(varNumOpt):
 
     # Create batch:
     aryIn = np.zeros((varSzeBtch, 1, 1), dtype=np.float32)
+    aryOut = np.zeros((varSzeBtch, 1, 1), dtype=np.float32)
     for idxBtch in range(varSzeBtch):
 
         # print((idxSmp - 1))
         aryIn[idxBtch, 0, 0] = vecS[(idxSmp - 1)]
-        # aryOut = ...
+        aryOut[idxBtch, 0, 0] = vecS[idxSmp]
 
         # Increment / reset sample coutner:
         idxSmp += 1
@@ -181,8 +182,9 @@ for idxOpt in range(varNumOpt):
             idxSmp = 1
 
     varLoss = objMdl.train_on_batch(aryIn,
-                                    y=[aryIn.reshape(varSzeBtch, 1)],
-                                    sample_weight=vecWght)
+                                    y=[aryOut.reshape(varSzeBtch, 1),
+                                       aryIn.reshape(varSzeBtch, 1)],
+                                    sample_weight=[vecWght, vecWght])
 
     # Give status feedback:
     if (idxOpt % varDspStp == 0):
