@@ -27,19 +27,13 @@ model = tf.keras.models.Model(inputs=train_input, outputs=dense_layer)
 
 model.summary()
 
-#y_true = tf.placeholder(tf.float32, shape=(batch_size, embedding_size))
-#y_pred = tf.placeholder(tf.float32, shape=(batch_size, embedding_size))
-
 class custom_loss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         return tf.reduce_mean(tf.math.squared_difference(y_true, y_pred))
-
-#def custom_loss(y_true, y_pred):
-#    return tf.reduce_mean(tf.math.squared_difference(y_true, y_pred))
 
 model.compile(optimizer=tf.keras.optimizers.RMSprop(lr=0.001),
               loss=custom_loss())
 
 loss = model.train_on_batch(x_train,
-                            y=y_train)
-#                            sample_weight=sample_weight)
+                            y=y_train,
+                            sample_weight=sample_weight)
