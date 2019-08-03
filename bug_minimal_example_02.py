@@ -146,6 +146,8 @@ idxSmp = 1
 
 varLenS = 117
 
+vecWght = np.ones(varSzeBtch, dtype=np.float32)
+
 # Loop through optimisation steps:
 for idxOpt in range(varNumOpt):
 
@@ -163,8 +165,8 @@ for idxOpt in range(varNumOpt):
             idxSmp = 1
 
     varLoss = objMdl.train_on_batch(aryIn,
-                                    y=[aryIn.reshape(varSzeBtch, 1)])
-                                    # sample_weight=[objWghtA, objWghtB])
+                                    y=[aryIn.reshape(varSzeBtch, 1)],
+                                    sample_weight=vecWght)
 
     # Give status feedback:
     if (idxOpt % varDspStp == 0):
