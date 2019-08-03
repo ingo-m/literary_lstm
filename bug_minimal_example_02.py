@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Minimal example re custom loss function bug."""
+"""
+Minimal example re custom loss function bug.
+
+Update: I initially assumed that something using a custom loss function did not
+        work in 1.14.0 (but in 1.13.1). However, this suspicion was wrong; the
+        below model does converge in both tf versions.
+"""
 
 
 import numpy as np
