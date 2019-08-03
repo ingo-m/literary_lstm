@@ -26,13 +26,13 @@ strPthMdl = None
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
-varLrnRte = 0.0001
+varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 3
+varNumItr = 500
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 1000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -50,10 +50,10 @@ varLenNewTxt = 100
 varSzeBtch = 1
 
 # Input dropout:
-varInDrp = 0.5
+varInDrp = 0.4
 
 # Recurrent state dropout:
-varStDrp = 0.5
+varStDrp = 0.4
 
 
 # -----------------------------------------------------------------------------
@@ -88,6 +88,8 @@ objNpz.allow_pickle = True
 
 # Coded text:
 vecC = objNpz['vecC']
+vecFullC = np.copy(vecC)
+vecC = vecC[15:147]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -233,21 +235,21 @@ objWghtB = objQ03B.dequeue()
 # *** Build the network
 
 if True:  # tf 1.13.1
-    def prediction_loss(objTrgt, aryOut06):
-        return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
+    def prediction_loss(objTrgt, aryOut03):
+        return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut03))
 
-    def repetition_loss(objTrnCtxtB, aryOut06):
-        return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
+    def repetition_loss(objTrnCtxtB, aryOut03):
+        return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut03))), 1.0))
 
 if False:  # tf 1.14.0
 
     class prediction_loss(tf.keras.losses.Loss):
-      def call(self, objTrgt, aryOut06):
-        return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
+      def call(self, objTrgt, aryOut03):
+        return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut03))
 
     class repetition_loss(tf.keras.losses.Loss):
-      def call(self, objTrnCtxtB, aryOut06):
-        return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
+      def call(self, objTrnCtxtB, aryOut03):
+        return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut03))), 1.0))
 
 # Adjust model's statefullness according to batch size:
 if varSzeBtch == 1:
@@ -377,14 +379,14 @@ if True:  # tf 1.13.1
     # Define the optimiser and loss function:
     objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
                    loss=[prediction_loss, repetition_loss],
-                   loss_weights=[2.0, 1.0])
+                   loss_weights=[2.0, 0.5])
 
 if False:  # tf 1.14.0
 
     # Define the optimiser and loss function:
     objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
                    loss=[prediction_loss(reduction=tf.losses.Reduction.NONE), repetition_loss(reduction=tf.losses.Reduction.NONE)],
-                   loss_weights=[2.0, 1.0])
+                   loss_weights=[2.0, 0.5])
 
 
 # -----------------------------------------------------------------------------
@@ -471,7 +473,7 @@ def training_queue():
 
     # Vector with word count in corpus (returns vector with unique values,
     # which  is identical to word codes, and corresponding word counts):
-    _, vecCnt = np.unique(vecC, return_counts=True)
+    _, vecCnt = np.unique(vecFullC, return_counts=True)
 
     # Minimum number of occurences:
     vecCntMin = np.min(vecCnt)
