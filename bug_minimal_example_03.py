@@ -27,12 +27,15 @@ model = tf.keras.models.Model(inputs=train_input, outputs=dense_layer)
 
 model.summary()
 
-class custom_loss(tf.keras.losses.Loss):
+# Custom loss functions. This function could of course be replaced with
+# tf.keras.losses.mean_squared_error, but I have a use case where I need a
+# custom loss function.
+class customLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         return tf.reduce_mean(tf.math.squared_difference(y_true, y_pred))
 
 model.compile(optimizer=tf.keras.optimizers.RMSprop(lr=0.001),
-              loss=custom_loss())
+              loss=customLoss())
 
 loss = model.train_on_batch(x_train,
                             y=y_train,
