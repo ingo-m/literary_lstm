@@ -5,13 +5,13 @@
 import numpy as np
 import tensorflow as tf
 
-batch_size = 32
+batch_size = 32  # no problem is this is 1
 sequence_len = 1
 embedding_size = 100
 
 x_train = np.random.randn(batch_size, sequence_len, embedding_size)
 y_train = np.random.randn(batch_size, embedding_size)
-sample_weight = np.random.randn(batch_size)
+sample_weight = np.random.randn(batch_size)  # no problem if this is None
 
 train_input = tf.keras.Input(shape=(sequence_len, embedding_size),
                              batch_size=batch_size)
