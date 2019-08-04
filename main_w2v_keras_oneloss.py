@@ -146,7 +146,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 10
+varCapQ = 100
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -206,9 +206,9 @@ tf.train.add_queue_runner(objRunQ04)
 # placeholders for the data in the queue when defining the graph.
 # Training context placebolder (input):
 objTrnCtxt = tf.keras.Input(shape=(varSzeBtch, varNumIn, varSzeEmb),
-                             batch_size=varSzeBtch,
-                             tensor=objQ01.dequeue(),
-                             dtype=tf.float32)
+                            batch_size=varSzeBtch,
+                            tensor=objQ01.dequeue(),
+                            dtype=tf.float32)
 # Training target placeholder:
 objTrgt = objQ02.dequeue()
 # Testing context placeholder:
@@ -268,7 +268,7 @@ if strPthMdl is None:
                                     activity_regularizer=objRegL2,
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
-                                    return_sequences=True,
+                                    return_sequences=False,
                                     return_state=False,
                                     go_backwards=False,
                                     stateful=lgcState,
@@ -308,7 +308,7 @@ if strPthMdl is None:
                                      recurrent_activation='hard_sigmoid',
                                      dropout=0.0,
                                      recurrent_dropout=0.0,
-                                     return_sequences=True,
+                                     return_sequences=False,
                                      return_state=False,
                                      go_backwards=False,
                                      stateful=True,
@@ -344,7 +344,7 @@ if False:  # tf 1.13.1
 
     # Define the optimiser and loss function:
     objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
-                   loss=ttf.keras.losses.MeanSquaredError())
+                   loss=tf.keras.losses.MeanSquaredError())
 
 
 if True:  # tf 1.14.0
