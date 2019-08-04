@@ -331,17 +331,19 @@ objMdl.summary()
 print('Testing model:')
 objTstMdl.summary()
 
-class customLoss(tf.keras.losses.Loss):
-    # Problem: 'ReductionV2' has no attribute 'MEAN'
-    def __init__(self, reduction=tf.compat.v2.losses.Reduction.NONE):
-        super(customLoss, self).__init__(reduction=reduction)
-
-    def call(self, y_true, y_pred):
-        return tf.reduce_mean(tf.math.squared_difference(y_true, y_pred))
+#class customLoss(tf.keras.losses.Loss):
+#    # Problem: 'ReductionV2' has no attribute 'MEAN'
+#    # def __init__(self, reduction=tf.compat.v2.losses.Reduction.NONE):
+#    #     super(customLoss, self).__init__(reduction=reduction)
+#    def call(self, y_true, y_pred):
+#        return tf.reduce_mean(tf.math.squared_difference(y_true, y_pred))
 
 # Define the optimiser and loss function:
-objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
-               loss=customLoss())
+objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
+               # loss=customLoss)
+               # loss=tf.keras.losses.MeanSquaredError())  # does not converge in 1.13.1 and 1.14.0
+               loss=tf.keras.losses.mean_squared_error)  # does converge with batch size 1 in 1.13.1 (a bit slower), not in 1.14.0
+               #loss=tf.losses.mean_squared_error)  # does converge with batch size 1 in 1.13.1, but not in 1.14.0
 
 
 # -----------------------------------------------------------------------------
