@@ -16,38 +16,38 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+#strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = 'drive/My Drive/lstm_log'
+#strPthLog = 'drive/My Drive/lstm_log'
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 100000
+varNumItr = 100
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 1000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
 
-# Number of neurons in first hidden layer:
+# Number of neurons:
 varNrn01 = 500
-
-# Number of neurons in second hidden layer:
 varNrn02 = 500
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 64
+varSzeBtch = 1
 
 # Input dropout:
 varInDrp = 0.4
@@ -88,6 +88,8 @@ objNpz.allow_pickle = True
 
 # Coded text:
 vecC = objNpz['vecC']
+
+# Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
 vecC = vecC[15:147]
 
@@ -161,14 +163,9 @@ objQ02 = tf.FIFOQueue(capacity=varCapQ,
 # Queue for training weights (weights are applied to outputs, therefore the
 # shape is independent of number of input words to make prediction; the model
 # predicts one word at a time):
-objQ03A = tf.FIFOQueue(capacity=varCapQ,
-                       dtypes=[tf.float32],
-                       shapes=[(varSzeBtch)])
-
-# Queue for training batches of context words:
-objQ04 = tf.FIFOQueue(capacity=varCapQ,
+objQ03 = tf.FIFOQueue(capacity=varCapQ,
                       dtypes=[tf.float32],
-                      shapes=[(varSzeBtch, varSzeEmb)])
+                      shapes=[(varSzeBtch)])
 
 # Method for getting queue size:
 objSzeQ = objQ01.size()
@@ -178,16 +175,13 @@ objPlcHld01 = tf.placeholder(tf.float32,
                              shape=[varSzeBtch, varNumIn, varSzeEmb])
 objPlcHld02 = tf.placeholder(tf.float32,
                              shape=[varSzeBtch, varSzeEmb])
-objPlcHld03A = tf.placeholder(tf.float32,
-                              shape=[varSzeBtch])
-objPlcHld04 = tf.placeholder(tf.float32,
-                             shape=[varSzeBtch, varSzeEmb])
+objPlcHld03 = tf.placeholder(tf.float32,
+                             shape=[varSzeBtch])
 
 # The enqueue operation that puts data on the graph.
 objEnQ01 = objQ01.enqueue([objPlcHld01])
 objEnQ02 = objQ02.enqueue([objPlcHld02])
-objEnQ03A = objQ03A.enqueue([objPlcHld03A])
-objEnQ04 = objQ04.enqueue([objPlcHld04])
+objEnQ03 = objQ03.enqueue([objPlcHld03])
 
 # Number of threads that will be created per queue:
 varNumThrd = 1
@@ -197,10 +191,8 @@ objRunQ01 = tf.train.QueueRunner(objQ01, [objEnQ01] * varNumThrd)
 tf.train.add_queue_runner(objRunQ01)
 objRunQ02 = tf.train.QueueRunner(objQ02, [objEnQ02] * varNumThrd)
 tf.train.add_queue_runner(objRunQ02)
-objRunQ03A = tf.train.QueueRunner(objQ03A, [objEnQ03A] * varNumThrd)
-tf.train.add_queue_runner(objRunQ03A)
-objRunQ04 = tf.train.QueueRunner(objQ04, [objEnQ04] * varNumThrd)
-tf.train.add_queue_runner(objRunQ04)
+objRunQ03 = tf.train.QueueRunner(objQ03, [objEnQ03] * varNumThrd)
+tf.train.add_queue_runner(objRunQ03)
 
 # The tensor object that is retrieved from the queue. Functions like
 # placeholders for the data in the queue when defining the graph.
@@ -215,19 +207,11 @@ objTrgt = objQ02.dequeue()
 objTstCtxt = tf.keras.Input(shape=(varNumIn, varSzeEmb),
                             batch_size=1,
                             dtype=tf.float32)
-objWghtA = objQ03A.dequeue()
+objWght = objQ03.dequeue()
 
 
 # -----------------------------------------------------------------------------
 # *** Build the network
-
-# Adjust model's statefullness according to batch size:
-if varSzeBtch == 1:
-    print('Stateful training model.')
-    lgcState = True
-else:
-    print('Stateless training model.')
-    lgcState = False
 
 # Load pre-trained model, or create new one:
 if strPthMdl is None:
@@ -237,6 +221,14 @@ if strPthMdl is None:
     # Regularisation:
     # objRegL2 = tf.keras.regularizers.l2(l=0.005)
     objRegL2 = None
+
+    # Adjust model's statefullness according to batch size:
+    if varSzeBtch == 1:
+        print('Stateful training model.')
+        lgcState = True
+    else:
+        print('Stateless training model.')
+        lgcState = False
 
     # The actual LSTM layers.
     # Note that this cell is not optimized for performance on GPU.
@@ -259,7 +251,7 @@ if strPthMdl is None:
                                     )(objTrnCtxt)
 
     # Second LSTM layer:
-    aryOut02 = tf.keras.layers.LSTM(varNrn02,
+    aryOut05 = tf.keras.layers.LSTM(varNrn02,
                                     activation='tanh',
                                     recurrent_activation='hard_sigmoid',
                                     kernel_regularizer=objRegL2,
@@ -278,14 +270,13 @@ if strPthMdl is None:
 
     # Dense feedforward layer:
     # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
-    aryOut03 = tf.keras.layers.Dense(varSzeEmb,
+    aryOut06 = tf.keras.layers.Dense(varSzeEmb,
                                      activation=tf.keras.activations.tanh,
                                      name='Dense_FF'
-                                     )(aryOut02)
+                                     )(aryOut05)
 
     # Initialise the model:
-    objMdl = tf.keras.models.Model(inputs=objTrnCtxt,
-                                   outputs=aryOut03)
+    objMdl = tf.keras.models.Model(inputs=objTrnCtxt, outputs=aryOut06)
 
     # An almost idential version of the model used for testing, without dropout
     # and possibly different input size (fixed batch size of one).
@@ -303,7 +294,7 @@ if strPthMdl is None:
                                      )(objTstCtxt)
 
     # Second LSTM layer:
-    aryOut02T = tf.keras.layers.LSTM(varNrn02,
+    aryOut05T = tf.keras.layers.LSTM(varNrn02,
                                      activation='tanh',
                                      recurrent_activation='hard_sigmoid',
                                      dropout=0.0,
@@ -318,12 +309,12 @@ if strPthMdl is None:
 
     # Dense feedforward layer:
     # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
-    aryOut03T = tf.keras.layers.Dense(varSzeEmb,
+    aryOut06T = tf.keras.layers.Dense(varSzeEmb,
                                       activation=tf.keras.activations.tanh,
                                       name='Testing_Dense_FF'
-                                      )(aryOut02T)
+                                      )(aryOut05T)
     # Initialise the model:
-    objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut03T)
+    objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryOut06T)
 
 else:
     print('Loading pre-trained model from disk.')
@@ -340,18 +331,17 @@ objMdl.summary()
 print('Testing model:')
 objTstMdl.summary()
 
-if False:  # tf 1.13.1
+class customLoss(tf.keras.losses.Loss):
+    # Problem: 'ReductionV2' has no attribute 'MEAN'
+    def __init__(self, reduction=tf.compat.v2.losses.Reduction.NONE):
+        super(customLoss, self).__init__(reduction=reduction)
 
-    # Define the optimiser and loss function:
-    objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
-                   loss=tf.keras.losses.MeanSquaredError())
+    def call(self, y_true, y_pred):
+        return tf.reduce_mean(tf.math.squared_difference(y_true, y_pred))
 
-
-if True:  # tf 1.14.0
-
-    # Define the optimiser and loss function:
-    objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
-                   loss=tf.keras.losses.MeanSquaredError())
+# Define the optimiser and loss function:
+objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
+               loss=customLoss())
 
 
 # -----------------------------------------------------------------------------
@@ -416,8 +406,6 @@ def training_queue():
     # Array for new batch of sample weights:
     # aryWght = np.zeros((varSzeBtch, varNumIn), dtype=np.float32)
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
-
-    # aryOnes = np.ones((varSzeBtch), dtype=np.float32)
 
     # Sample weighting.
     # In order to reduce the impact of very frequent words (e.g. 'the'), sample
@@ -488,9 +476,6 @@ def training_queue():
             # Increment word index:
             varIdxWrd = varIdxWrd + 1
             if varIdxWrd >= varLenTxt:
-
-                # Reset word index to beginning of text if end of text has been
-                # reached:
                 varIdxWrd = varNumIn
 
         # Put index of next target word on the queue (target word after current
@@ -504,15 +489,12 @@ def training_queue():
         aryTmp02 = aryTrgt
         dicIn02 = {objPlcHld02: aryTmp02}
         aryTmp03 = aryWght
-        dicIn03A = {objPlcHld03A: aryTmp03}
-        aryTmp04 = aryCntxt[:, 0, :]
-        dicIn04 = {objPlcHld04: aryTmp04}
+        dicIn03 = {objPlcHld03: aryTmp03}
 
         # Batch is complete, push to the queue:
         objSess.run(objEnQ01, feed_dict=dicIn01)
         objSess.run(objEnQ02, feed_dict=dicIn02)
-        objSess.run(objEnQ03A, feed_dict=dicIn03A)
-        objSess.run(objEnQ04, feed_dict=dicIn04)
+        objSess.run(objEnQ03, feed_dict=dicIn03)
 
         # Array for new batch of context words:
         aryCntxt = np.zeros((varSzeBtch, varNumIn, varSzeEmb),
@@ -532,9 +514,9 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        !nvidia-smi
+        #!nvidia-smi
         # Sleep some time before next status message:
-        time.sleep(600)
+        time.sleep(60)
 
 
 # -----------------------------------------------------------------------------
@@ -582,7 +564,7 @@ for idxOpt in range(varNumOpt):
     #          callbacks=[objCallback])
     varLoss01 = objMdl.train_on_batch(objTrnCtxt,  # run on single batch
                                       y=objTrgt,
-                                      sample_weight=objWghtA)
+                                      sample_weight=objWght)
 
     # Take target word index from queue:
     varTmpWrd = objIdxQ.get()
@@ -591,8 +573,8 @@ for idxOpt in range(varNumOpt):
     if (idxOpt % 50 == 0):
         # Use old (tf 1.13) implementation for writing loss to tensorboard
         # summary.
-        objSmry = tf.Summary(
-            value=[tf.Summary.Value(tag="Loss_01", simple_value=varLoss01)])
+        objSmry = tf.Summary(value=[tf.Summary.Value(tag="loss",
+            simple_value=varLoss01), ])
         objLogWrt.add_summary(objSmry, global_step=idxOpt)
 
     # Give status feedback:
@@ -772,6 +754,7 @@ tf.keras.models.save_model(objTstMdl,
 # Save model weights and training parameters to disk:
 np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varLrnRte=varLrnRte,
+         varNumItr=varNumItr,
          varNumIn=varNumIn,
          varNrn01=varNrn01,
          varNrn02=varNrn02,
