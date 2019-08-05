@@ -245,6 +245,14 @@ objWghtB = objQ03B.dequeue()
 # -----------------------------------------------------------------------------
 # *** Build the network
 
+# Adjust model's statefullness according to batch size:
+if varSzeBtch == 1:
+    print('Stateful training model.')
+    lgcState = True
+else:
+    print('Stateless training model.')
+    lgcState = False
+
 # Load pre-trained model, or create new one:
 if strPthMdl is None:
 
@@ -253,14 +261,6 @@ if strPthMdl is None:
     # Regularisation:
     # objRegL2 = tf.keras.regularizers.l2(l=0.005)
     objRegL2 = None
-
-    # Adjust model's statefullness according to batch size:
-    if varSzeBtch == 1:
-        print('Stateful training model.')
-        lgcState = True
-    else:
-        print('Stateless training model.')
-        lgcState = False
 
     # The actual LSTM layers.
     aryOut01 = tf.keras.layers.CuDNNLSTM(varNrn01,
