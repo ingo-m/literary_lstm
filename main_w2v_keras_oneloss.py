@@ -28,10 +28,10 @@ strPthMdl = None
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.01
 
 # Number of training iterations over the input text:
-varNumItr = 100
+varNumItr = 100 * 128 * 5
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -47,7 +47,7 @@ varNrn02 = 500
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 1
+varSzeBtch = 128  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
 
 # Input dropout:
 varInDrp = 0.4
@@ -91,7 +91,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[15:147]
+vecC = vecC[15:247]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -148,7 +148,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 100
+varCapQ = 10
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -331,7 +331,7 @@ objMdl.summary()
 print('Testing model:')
 objTstMdl.summary()
 
-#class customLoss(tf.keras.losses.Loss):
+#class customLoss(tf.keras.losses.Loss):  # not possible in 1.13.1
 #    # Problem: 'ReductionV2' has no attribute 'MEAN'
 #    # def __init__(self, reduction=tf.compat.v2.losses.Reduction.NONE):
 #    #     super(customLoss, self).__init__(reduction=reduction)
@@ -340,9 +340,9 @@ objTstMdl.summary()
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
-               # loss=customLoss)
-               # loss=tf.keras.losses.MeanSquaredError())  # does not converge in 1.13.1 and 1.14.0
-               loss=tf.keras.losses.mean_squared_error)  # does converge with batch size 1 in 1.13.1 (a bit slower), not in 1.14.0
+               #loss=customLoss)
+               #loss=tf.keras.losses.MeanSquaredError())  # does not converge in 1.13.1 and 1.14.0; in 1.13.1 behaviour is like in 1.14.0
+               loss=tf.keras.losses.mean_squared_error)  # does converge with batch size 1 in 1.13.1 (a bit slower), not in 1.14.0. in 1.13.1, with batch size 128, next word is predicted (somewhat), but sequence breaks down
                #loss=tf.losses.mean_squared_error)  # does converge with batch size 1 in 1.13.1, but not in 1.14.0
 
 
