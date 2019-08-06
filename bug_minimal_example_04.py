@@ -13,17 +13,24 @@ iterations = 100000
 train_seq = np.array([1.0, 1.0, 1.0,
                       0.0, 0.0, 0.0], dtype=np.float32)
 
-sample_weight = np.ones(1, dtype=np.float32)
+sample_weight = None  # np.array([0.99], dtype=np.float32)
 
 train_input = tf.keras.Input(shape=(1, 1),
                              batch_size=batch_size)
 
+train_tinput = tf.keras.Input(shape=(1, 1),
+                              batch_size=batch_size)
+
 lstm_01 = tf.keras.layers.LSTM(10,
+                               #dropout=0.0,
+                               #recurrent_dropout=0.0,
                                return_sequences=True,
                                stateful=True,
                                )(train_input)
 
 lstm_02 = tf.keras.layers.LSTM(10,
+                               #dropout=0.0,
+                               #recurrent_dropout=0.0,
                                return_sequences=False,
                                stateful=True,
                                )(lstm_01)
@@ -36,11 +43,32 @@ model = tf.keras.models.Model(inputs=train_input, outputs=dense_layer)
 model.summary()
 
 model.compile(optimizer=tf.keras.optimizers.Adam(lr=0.001),
-              loss=tf.keras.losses.MeanSquaredError())
-              #loss=tf.keras.losses.mean_squared_error)
+              #loss=tf.keras.losses.MeanSquaredError())
+              loss=tf.keras.losses.mean_squared_error)
               #loss=tf.losses.mean_squared_error)
 
 # Validation model:
+lstm_t1 = tf.keras.layers.LSTM(10,
+                               #dropout=0.0,
+                               #recurrent_dropout=0.0,
+                               return_sequences=True,
+                               stateful=True,
+                               )(train_input)
+
+lstm_t2 = tf.keras.layers.LSTM(10,
+                               #dropout=0.0,
+                               #recurrent_dropout=0.0,
+                               return_sequences=False,
+                               stateful=True,
+                               )(lstm_t1)
+
+dense_tlayer = tf.keras.layers.Dense(1,
+                                    )(lstm_t2)
+
+# Whether or not a separate validation model is defined influences generation
+# performance.
+
+#val_model = tf.keras.models.Model(inputs=train_tinput, outputs=dense_tlayer)
 val_model = tf.keras.models.Model(inputs=train_input, outputs=dense_layer)
 
 seq_len = train_seq.shape[0]
@@ -52,7 +80,7 @@ for idx_itr in range(iterations):
 
     loss = model.train_on_batch(train_seq[idx_x].reshape(1, 1, 1),
                                 y=train_seq[idx_y].reshape(1, 1),
-                                sample_weight=sample_weight)
+                                sample_weight=sample_weight)  #np.random.rand(1).astype(np.float32))
 
     # Increment / reset training index:
     idx_x += 1
