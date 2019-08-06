@@ -21,7 +21,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20190805_152357'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20190805_162804'
 
 # Log directory (parent directory, new session directory will be created):
 #strPthLog = 'drive/My Drive/lstm_log'
@@ -31,7 +31,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 50
+varNumItr = 100
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
