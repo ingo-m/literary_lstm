@@ -18,13 +18,18 @@ sample_weight = np.ones(1, dtype=np.float32)
 train_input = tf.keras.Input(shape=(1, 1),
                              batch_size=batch_size)
 
-lstm_layer = tf.keras.layers.LSTM(10,
-                                  return_sequences=False,
-                                  stateful=True,
-                                  )(train_input)
+lstm_01 = tf.keras.layers.LSTM(10,
+                               return_sequences=True,
+                               stateful=True,
+                               )(train_input)
+
+lstm_02 = tf.keras.layers.LSTM(10,
+                               return_sequences=False,
+                               stateful=True,
+                               )(lstm_01)
 
 dense_layer = tf.keras.layers.Dense(1,
-                                    )(lstm_layer)
+                                    )(lstm_02)
 
 model = tf.keras.models.Model(inputs=train_input, outputs=dense_layer)
 
