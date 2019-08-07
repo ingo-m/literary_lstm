@@ -16,22 +16,22 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-#strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+#strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = None
+strPthMdl = 'drive/My Drive/lstm_log/20190807_110410'
 
 # Log directory (parent directory, new session directory will be created):
-#strPthLog = 'drive/My Drive/lstm_log'
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = 'drive/My Drive/lstm_log'
+#strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 10000
+varNumItr = 1800
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -47,7 +47,7 @@ varNrn02 = 500
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 512  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
+varSzeBtch = 2048  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
 
 # Input dropout:
 varInDrp = 0.2
@@ -91,7 +91,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[15:3471]
+#vecC = vecC[15:3471]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -108,7 +108,6 @@ aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
-
 
 # -----------------------------------------------------------------------------
 # *** Preparations
@@ -148,7 +147,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 10
+varCapQ = 100
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -516,9 +515,9 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        #!nvidia-smi
+        !nvidia-smi
         # Sleep some time before next status message:
-        time.sleep(60)
+        time.sleep(600)
 
 
 # -----------------------------------------------------------------------------
