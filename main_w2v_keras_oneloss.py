@@ -28,13 +28,13 @@ strPthLog = 'drive/My Drive/lstm_log'
 #strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
-varLrnRte = 0.0001
+varLrnRte = 0.05  # 0.05 showing some signs of conversion
 
 # Number of training iterations over the input text:
-varNumItr = 10000
+varNumItr = 1000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 1000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -50,13 +50,13 @@ varNrn05 = 400
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 65536  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
+varSzeBtch = 8192  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
 
 # Input dropout:
-varInDrp = 0.2
+varInDrp = 0.4
 
 # Recurrent state dropout:
-varStDrp = 0.2
+varStDrp = 0.4
 
 
 # -----------------------------------------------------------------------------
@@ -151,7 +151,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 100
+varCapQ = 32
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -532,10 +532,10 @@ def training_queue():
     # number of occurences could be used.
 
     # Minimum weight to use (for most frequent word):
-    varWghtMin = 0.002
+    varWghtMin = 0.1
 
     # Maximum weight to use (for least frequent word):
-    varWghtMax = 2.0
+    varWghtMax = 1.0
 
     # Vector with word count in corpus (returns vector with unique values,
     # which  is identical to word codes, and corresponding word counts):
@@ -707,7 +707,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = varSzeBtch
+        varLenCntx = 1000  # varSzeBtch
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
