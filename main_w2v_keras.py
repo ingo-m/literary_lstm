@@ -163,16 +163,6 @@ objQ02 = tf.FIFOQueue(capacity=varCapQ,
                       dtypes=[tf.float32],
                       shapes=[(varSzeBtch, varSzeEmb)])
 
-# Queue for training weights (weights are applied to outputs, therefore the
-# shape is independent of number of input words to make prediction; the model
-# predicts one word at a time):
-objQ03A = tf.FIFOQueue(capacity=varCapQ,
-                       dtypes=[tf.float32],
-                       shapes=[(varSzeBtch)])
-objQ03B = tf.FIFOQueue(capacity=varCapQ,
-                       dtypes=[tf.float32],
-                       shapes=[(varSzeBtch)])
-
 # Queue for training batches of context words:
 objQ04 = tf.FIFOQueue(capacity=varCapQ,
                       dtypes=[tf.float32],
@@ -186,18 +176,12 @@ objPlcHld01 = tf.placeholder(tf.float32,
                              shape=[varSzeBtch, varNumIn, varSzeEmb])
 objPlcHld02 = tf.placeholder(tf.float32,
                              shape=[varSzeBtch, varSzeEmb])
-objPlcHld03A = tf.placeholder(tf.float32,
-                              shape=[varSzeBtch])
-objPlcHld03B = tf.placeholder(tf.float32,
-                              shape=[varSzeBtch])
 objPlcHld04 = tf.placeholder(tf.float32,
                              shape=[varSzeBtch, varSzeEmb])
 
 # The enqueue operation that puts data on the graph.
 objEnQ01 = objQ01.enqueue([objPlcHld01])
 objEnQ02 = objQ02.enqueue([objPlcHld02])
-objEnQ03A = objQ03A.enqueue([objPlcHld03A])
-objEnQ03B = objQ03B.enqueue([objPlcHld03B])
 objEnQ04 = objQ04.enqueue([objPlcHld04])
 
 # Number of threads that will be created per queue:
@@ -208,10 +192,6 @@ objRunQ01 = tf.train.QueueRunner(objQ01, [objEnQ01] * varNumThrd)
 tf.train.add_queue_runner(objRunQ01)
 objRunQ02 = tf.train.QueueRunner(objQ02, [objEnQ02] * varNumThrd)
 tf.train.add_queue_runner(objRunQ02)
-objRunQ03A = tf.train.QueueRunner(objQ03A, [objEnQ03A] * varNumThrd)
-tf.train.add_queue_runner(objRunQ03A)
-objRunQ03B = tf.train.QueueRunner(objQ03B, [objEnQ03B] * varNumThrd)
-tf.train.add_queue_runner(objRunQ03B)
 objRunQ04 = tf.train.QueueRunner(objQ04, [objEnQ04] * varNumThrd)
 tf.train.add_queue_runner(objRunQ04)
 
@@ -232,8 +212,6 @@ objTrgt = objQ02.dequeue()
 objTstCtxt = tf.keras.Input(shape=(varNumIn, varSzeEmb),
                             batch_size=1,
                             dtype=tf.float32)
-objWghtA = objQ03A.dequeue()
-objWghtB = objQ03B.dequeue()
 
 
 # -----------------------------------------------------------------------------
@@ -561,55 +539,6 @@ def training_queue():
     # Array for new batch of target words:
     aryTrgt = np.zeros((varSzeBtch, varSzeEmb), dtype=np.float32)
 
-    # Array for new batch of sample weights:
-    # aryWght = np.zeros((varSzeBtch, varNumIn), dtype=np.float32)
-    aryWght = np.zeros((varSzeBtch), dtype=np.float32)
-
-    aryOnes = np.ones((varSzeBtch), dtype=np.float32)
-
-    # Sample weighting.
-    # In order to reduce the impact of very frequent words (e.g. 'the'), sample
-    # weights can be applied during training. There is one sample weight per
-    # output. (Thus, the size of the sample weight vector depends only on batch
-    # size, and not on the number of context words used to make a prediction,
-    # because the model predicts one word at a time.) The following
-    # implementation relies on the word dictionary, in which the order of words
-    # corresponds to their relative frequency (i.e. the order is from the most
-    # frequent word to the least frequent word). Alternatively, the actual
-    # number of occurences could be used.
-
-    # Minimum weight to use (for most frequent word):
-    varWghtMin = 0.002
-
-    # Maximum weight to use (for least frequent word):
-    varWghtMax = 2.0
-
-    # Vector with word count in corpus (returns vector with unique values,
-    # which  is identical to word codes, and corresponding word counts):
-    _, vecCnt = np.unique(vecC, return_counts=True)
-
-    # Minimum number of occurences:
-    vecCntMin = np.min(vecCnt)
-
-    # Weights that are inversely proportional to number of occurences:
-    vecWght = np.divide(vecCntMin, vecCnt)
-
-    # Scale weights to respective range:
-    vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
-    vecWght = np.add(varWghtMin, vecWght)
-
-    # Exponent (slope of weighting function, higher value gives higher relative
-    # weight to infrequent words):
-    # varPow = 3.0
-
-    # Weight vector:
-    # vecWght = np.linspace(1.0,
-    #                       0.0,
-    #                       num=varNumWrds)
-    # vecWght = np.power(vecWght, varPow)
-    # vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
-    # vecWght = np.subtract(varWghtMax, vecWght)
-
     # Loop through optimisation steps (one batch per optimisation step):
     for idxOpt in range(varNumOpt):
 
@@ -630,9 +559,6 @@ def training_queue():
             # Get embedding vector for target word:
             aryTrgt[idxBtch, :] = aryEmb[varTrgt, :]
 
-            # Get sample weight for current target word:
-            aryWght[idxBtch] = vecWght[varTrgt]
-
             # Increment word index:
             varIdxWrd = varIdxWrd + 1
             if varIdxWrd >= varLenTxt:
@@ -651,17 +577,12 @@ def training_queue():
         dicIn01 = {objPlcHld01: aryTmp01}
         aryTmp02 = aryTrgt
         dicIn02 = {objPlcHld02: aryTmp02}
-        aryTmp03 = aryWght
-        dicIn03A = {objPlcHld03A: aryTmp03}
-        dicIn03B = {objPlcHld03B: aryOnes}
         aryTmp04 = aryCntxt[:, 0, :]
         dicIn04 = {objPlcHld04: aryTmp04}
 
         # Batch is complete, push to the queue:
         objSess.run(objEnQ01, feed_dict=dicIn01)
         objSess.run(objEnQ02, feed_dict=dicIn02)
-        objSess.run(objEnQ03A, feed_dict=dicIn03A)
-        objSess.run(objEnQ03B, feed_dict=dicIn03B)
         objSess.run(objEnQ04, feed_dict=dicIn04)
 
         # Array for new batch of context words:
@@ -671,9 +592,6 @@ def training_queue():
         # Array for new batch of target words:
         aryTrgt = np.zeros((varSzeBtch, varSzeEmb),
                            dtype=np.float32)
-
-        # Array for new batch of sample weights:
-        aryWght = np.zeros((varSzeBtch), dtype=np.float32)
 
     print('--> End of feeding thread.')
 
@@ -731,8 +649,7 @@ for idxOpt in range(varNumOpt):
     #            verbose=0)
     #          callbacks=[objCallback])
     lstLoss = objMdl.train_on_batch(objTrnCtxtA,  # run on single batch
-                                    y=[objTrgt, objTrnCtxtB],
-                                    sample_weight=[objWghtA, objWghtB])
+                                    y=[objTrgt, objTrnCtxtB])
 
     # Take target word index from queue:
     varTmpWrd = objIdxQ.get()
