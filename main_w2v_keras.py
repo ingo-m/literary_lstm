@@ -16,25 +16,25 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-#strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+#strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-#strPthLog = 'drive/My Drive/lstm_log'
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+#strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.001  # 0.05 showing some signs of conversion
 
 # Number of training iterations over the input text:
-varNumItr = 500
+varNumItr = 1000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 100
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -53,10 +53,10 @@ varLenNewTxt = 100
 varSzeBtch = 8192  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
 
 # Input dropout:
-varInDrp = 0.4
+varInDrp = 0.3
 
 # Recurrent state dropout:
-varStDrp = 0.4
+varStDrp = 0.2
 
 
 # -----------------------------------------------------------------------------
@@ -94,7 +94,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-#vecC = vecC[15:2471]
+vecC = vecC[15:10000]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -470,14 +470,14 @@ if True:  # tf 1.13.1
     # Define the optimiser and loss function:
     objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
                    loss=[prediction_loss, repetition_loss],
-                   loss_weights=[1.0, 0.1])
+                   loss_weights=[10.0, 0.1])
 
 if False:  # tf 1.14.0
 
     # Define the optimiser and loss function:
     objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
                    loss=[prediction_loss(reduction=tf.losses.Reduction.NONE), repetition_loss(reduction=tf.losses.Reduction.NONE)],
-                   loss_weights=[1.0, 0.1])
+                   loss_weights=[10.0, 0.1])
 
 
 # -----------------------------------------------------------------------------
@@ -600,7 +600,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        #!nvidia-smi
+        !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
