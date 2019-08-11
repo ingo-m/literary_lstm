@@ -28,7 +28,7 @@ strPthMdl = None
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
-varLrnRte = 0.05  # 0.05 showing some signs of conversion
+varLrnRte = 0.001  # 0.05 showing some signs of conversion
 
 # Number of training iterations over the input text:
 varNumItr = 500
@@ -218,20 +218,20 @@ objTstCtxt = tf.keras.Input(shape=(varNumIn, varSzeEmb),
 # *** Build the network
 
 if True:  # tf 1.13.1
-    def prediction_loss(objTrgt, aryOut03):
+    def prediction_loss(objTrgt, aryOut06):
         return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
 
-    def repetition_loss(objTrnCtxtB, aryOut03):
+    def repetition_loss(objTrnCtxtB, aryOut06):
         return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
 
 if False:  # tf 1.14.0
 
     class prediction_loss(tf.keras.losses.Loss):
-        def call(self, objTrgt, aryOut03):
+        def call(self, objTrgt, aryOut06):
             return tf.reduce_mean(tf.math.squared_difference(objTrgt, aryOut06))
 
     class repetition_loss(tf.keras.losses.Loss):
-        def call(self, objTrnCtxtB, aryOut03):
+        def call(self, objTrnCtxtB, aryOut06):
             return tf.math.log(tf.math.add(tf.math.divide(1.0, tf.reduce_mean(tf.math.squared_difference(objTrnCtxtB, aryOut06))), 1.0))
 
 # Adjust model's statefullness according to batch size:
@@ -470,14 +470,14 @@ if True:  # tf 1.13.1
     # Define the optimiser and loss function:
     objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
                    loss=[prediction_loss, repetition_loss],
-                   loss_weights=[2.0, 0.2])
+                   loss_weights=[1.0, 0.1])
 
 if False:  # tf 1.14.0
 
     # Define the optimiser and loss function:
     objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),  # Or use RMSprop?
                    loss=[prediction_loss(reduction=tf.losses.Reduction.NONE), repetition_loss(reduction=tf.losses.Reduction.NONE)],
-                   loss_weights=[2.0, 0.2])
+                   loss_weights=[1.0, 0.1])
 
 
 # -----------------------------------------------------------------------------
@@ -681,7 +681,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 50
+        varLenCntx = 1000  # varSzeBtch
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
