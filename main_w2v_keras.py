@@ -31,10 +31,10 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.001  # 0.05 showing some signs of conversion
 
 # Number of training iterations over the input text:
-varNumItr = 10
+varNumItr = 10000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 100
+varDspStp = 200
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -50,7 +50,7 @@ varNrn05 = 400
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 1  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
+varSzeBtch = 128  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
 
 # Input dropout:
 varInDrp = 0.3
@@ -94,7 +94,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[15:10000]
+vecC = vecC[100015:100162]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -323,7 +323,9 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='LSTMlayer04'
-                                    )(aryOut03)
+                                    )(tf.keras.layers.concatenate([aryOut03,
+                                                                   aryOut02],
+                                                                  axis=2))
 
     aryOut05 = tf.keras.layers.LSTM(varNrn05,
                                     activation='tanh',
@@ -340,7 +342,9 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='LSTMlayer05'
-                                    )(aryOut04)
+                                    )(tf.keras.layers.concatenate([aryOut04,
+                                                                   aryOut01],
+                                                                  axis=2))
 
     # Dense feedforward layer:
     # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
@@ -421,7 +425,9 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='TestingLSTMlayer04'
-                                    )(aryOutT3)
+                                    )(tf.keras.layers.concatenate([aryOutT3,
+                                                                   aryOutT2],
+                                                                  axis=2))
 
     aryOutT5 = tf.keras.layers.LSTM(varNrn05,
                                     activation='tanh',
@@ -438,7 +444,9 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='TestingLSTMlayer05'
-                                    )(aryOutT4)
+                                    )(tf.keras.layers.concatenate([aryOutT4,
+                                                                   aryOutT1],
+                                                                  axis=2))
 
     # Dense feedforward layer:
     # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
@@ -684,7 +692,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 1000  # varSzeBtch
+        varLenCntx = 50  # varSzeBtch
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
@@ -692,20 +700,23 @@ for idxOpt in range(varNumOpt):
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
 
-            # Initialise state of the (statefull) prediction model with
-            # context.
-            objTstMdl.reset_states()
-            # Loop through context window:
-            for idxCntx in range(1, varLenCntx):
-                # Get integer code of context word (the '- 1' is so as not
-                # to predict twice on the word right before the target
-                # word, see below):
-                varCtxt = vecC[(varTmpWrd - 1 - varLenCntx + idxCntx)]
-                # Get embedding vectors for context word(s):
-                aryCtxt = np.array(aryEmb[varCtxt, :]
-                                   ).reshape(1, varNumIn, varSzeEmb)
-                # Predict on current context word:
-                vecWrd = objTstMdl.predict_on_batch(aryCtxt)
+            # If the training model is stateless, initialise state of the
+            # (statefull) prediction model with context. This assumes that
+            # the model can be stateful during prediction (which is should be
+            # according to the documentation).
+            if not lgcState:
+                objTstMdl.reset_states()
+                # Loop through context window:
+                for idxCntx in range(1, varLenCntx):
+                    # Get integer code of context word (the '- 1' is so as not
+                    # to predict twice on the word right before the target
+                    # word, see below):
+                    varCtxt = vecC[(varTmpWrd - 1 - varLenCntx + idxCntx)]
+                    # Get embedding vectors for context word(s):
+                    aryCtxt = np.array(aryEmb[varCtxt, :]
+                                       ).reshape(1, varNumIn, varSzeEmb)
+                    # Predict on current context word:
+                    vecWrd = objTstMdl.predict_on_batch(aryCtxt)
 
             # Get integer code of context word:
             varTstCtxt = vecC[(varTmpWrd - 1)]
