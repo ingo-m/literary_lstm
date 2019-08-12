@@ -34,7 +34,7 @@ varLrnRte = 0.001  # 0.05 showing some signs of conversion
 varNumItr = 1000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 100
+varDspStp = 1000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -94,7 +94,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[15:10000]
+# vecC = vecC[15:10000]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -106,8 +106,8 @@ dictRvrs = objNpz['dictRvrs'][()]
 aryEmb = objNpz['aryEmbFnl']
 
 # Scale embedding matrix (to have an absolute maximum of 1):
-varAbsMax = np.max(np.absolute(aryEmb.flatten()))
-aryEmb = np.divide(aryEmb, varAbsMax)
+# varAbsMax = np.max(np.absolute(aryEmb.flatten()))
+# aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
@@ -121,6 +121,9 @@ objSess = tf.Session()
 
 # Tell keras about tf session:
 tf.keras.backend.set_session(objSess)
+
+# Set default datatype:
+# tf.keras.backend.set_floatx('float16')
 
 # Vocabulary size (number of words):
 varNumWrds = aryEmb.shape[0]
