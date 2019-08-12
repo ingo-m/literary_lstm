@@ -16,25 +16,25 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
-#strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+#strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = 'drive/My Drive/lstm_log'
-#strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+#strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.05  # 0.05 showing some signs of conversion
+varLrnRte = 0.001  # 0.05 showing some signs of conversion
 
 # Number of training iterations over the input text:
-varNumItr = 1000
+varNumItr = 10000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 200
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -50,13 +50,13 @@ varNrn05 = 400
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 8192  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
+varSzeBtch = 128  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
 
 # Input dropout:
-varInDrp = 0.4
+varInDrp = 0.3
 
 # Recurrent state dropout:
-varStDrp = 0.4
+varStDrp = 0.2
 
 
 # -----------------------------------------------------------------------------
@@ -94,7 +94,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-#vecC = vecC[15:2471]
+vecC = vecC[100015:100162]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -151,7 +151,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 32
+varCapQ = 10
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -302,7 +302,9 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='LSTMlayer04'
-                                    )(aryOut03)
+                                    )(tf.keras.layers.concatenate([aryOut03,
+                                                                   aryOut02],
+                                                                  axis=2))
 
     aryOut05 = tf.keras.layers.LSTM(varNrn05,
                                     activation='tanh',
@@ -319,7 +321,9 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='LSTMlayer05'
-                                    )(aryOut04)
+                                    )(tf.keras.layers.concatenate([aryOut04,
+                                                                   aryOut01],
+                                                                  axis=2))
 
     # Dense feedforward layer:
     # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
@@ -399,7 +403,9 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='TestingLSTMlayer04'
-                                    )(aryOutT3)
+                                    )(tf.keras.layers.concatenate([aryOutT3,
+                                                                   aryOutT2],
+                                                                  axis=2))
 
     aryOutT5 = tf.keras.layers.LSTM(varNrn05,
                                     activation='tanh',
@@ -416,7 +422,9 @@ if strPthMdl is None:
                                     stateful=lgcState,
                                     unroll=False,
                                     name='TestingLSTMlayer05'
-                                    )(aryOutT4)
+                                    )(tf.keras.layers.concatenate([aryOutT4,
+                                                                   aryOutT1],
+                                                                  axis=2))
 
     # Dense feedforward layer:
     # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
@@ -627,7 +635,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        !nvidia-smi
+        #!nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -707,7 +715,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 1000  # varSzeBtch
+        varLenCntx = 50  # varSzeBtch
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
@@ -834,6 +842,10 @@ for idxOpt in range(varNumOpt):
 
                 # Save code of predicted word:
                 vecNew[idxNew] = varTmp
+
+                # Replace predicted embedding vector with embedding vector of
+                # closest word:
+                vecWrd = aryEmb[varTmp, :]
 
             # Decode newly generated words:
             lstNew = [dictRvrs[x] for x in vecNew]
