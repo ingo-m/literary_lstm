@@ -31,7 +31,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.001  # 0.05 showing some signs of conversion
 
 # Number of training iterations over the input text:
-varNumItr = 200
+varNumItr = 10
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 100
@@ -50,7 +50,7 @@ varNrn05 = 400
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 128  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
+varSzeBtch = 1  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
 
 # Input dropout:
 varInDrp = 0.3
@@ -692,23 +692,20 @@ for idxOpt in range(varNumOpt):
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
 
-            # If the training model is stateless, initialise state of the
-            # (statefull) prediction model with context. This assumes that
-            # the model can be stateful during prediction (which is should be
-            # according to the documentation).
-            if not lgcState:
-                objTstMdl.reset_states()
-                # Loop through context window:
-                for idxCntx in range(1, varLenCntx):
-                    # Get integer code of context word (the '- 1' is so as not
-                    # to predict twice on the word right before the target
-                    # word, see below):
-                    varCtxt = vecC[(varTmpWrd - 1 - varLenCntx + idxCntx)]
-                    # Get embedding vectors for context word(s):
-                    aryCtxt = np.array(aryEmb[varCtxt, :]
-                                       ).reshape(1, varNumIn, varSzeEmb)
-                    # Predict on current context word:
-                    vecWrd = objTstMdl.predict_on_batch(aryCtxt)
+            # Initialise state of the (statefull) prediction model with
+            # context.
+            objTstMdl.reset_states()
+            # Loop through context window:
+            for idxCntx in range(1, varLenCntx):
+                # Get integer code of context word (the '- 1' is so as not
+                # to predict twice on the word right before the target
+                # word, see below):
+                varCtxt = vecC[(varTmpWrd - 1 - varLenCntx + idxCntx)]
+                # Get embedding vectors for context word(s):
+                aryCtxt = np.array(aryEmb[varCtxt, :]
+                                   ).reshape(1, varNumIn, varSzeEmb)
+                # Predict on current context word:
+                vecWrd = objTstMdl.predict_on_batch(aryCtxt)
 
             # Get integer code of context word:
             varTstCtxt = vecC[(varTmpWrd - 1)]
