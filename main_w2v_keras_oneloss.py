@@ -34,7 +34,7 @@ varLrnRte = 0.001  # 0.05 showing some signs of conversion
 varNumItr = 10000
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 200
+varDspStp = 1000
 
 # Number of input words from which to predict next word:
 varNumIn = 1
@@ -50,7 +50,7 @@ varNrn05 = 400
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 128  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
+varSzeBtch = 1  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
 
 # Input dropout:
 varInDrp = 0.3
@@ -94,7 +94,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[100015:100162]
+vecC = vecC[15:200]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
