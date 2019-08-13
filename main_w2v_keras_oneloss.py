@@ -36,9 +36,6 @@ varNumItr = 500
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
 
-# Number of input words from which to predict next word:
-varNumIn = 1
-
 # Number of neurons:
 varNrn01 = 400
 varNrn02 = 200
@@ -50,7 +47,7 @@ varNrn05 = 400
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 4096  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
+varSzeBtch = 4096
 
 # Input dropout:
 varInDrp = 0.3
@@ -157,7 +154,7 @@ varCapQ = 32
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
                       dtypes=[tf.float32],
-                      shapes=[(varSzeBtch, varNumIn, varSzeEmb)])
+                      shapes=[(varSzeBtch, 1, varSzeEmb)])
 
 # Queue for training batches of target words:
 objQ02 = tf.FIFOQueue(capacity=varCapQ,
@@ -176,7 +173,7 @@ objSzeQ = objQ01.size()
 
 # Placeholder that is used to put batch on computational graph:
 objPlcHld01 = tf.placeholder(tf.float32,
-                             shape=[varSzeBtch, varNumIn, varSzeEmb])
+                             shape=[varSzeBtch, 1, varSzeEmb])
 objPlcHld02 = tf.placeholder(tf.float32,
                              shape=[varSzeBtch, varSzeEmb])
 objPlcHld03 = tf.placeholder(tf.float32,
@@ -201,14 +198,14 @@ tf.train.add_queue_runner(objRunQ03)
 # The tensor object that is retrieved from the queue. Functions like
 # placeholders for the data in the queue when defining the graph.
 # Training context placebolder (input):
-objTrnCtxt = tf.keras.Input(shape=(varSzeBtch, varNumIn, varSzeEmb),
+objTrnCtxt = tf.keras.Input(shape=(varSzeBtch, 1, varSzeEmb),
                             batch_size=varSzeBtch,
                             tensor=objQ01.dequeue(),
                             dtype=tf.float32)
 # Training target placeholder:
 objTrgt = objQ02.dequeue()
 # Testing context placeholder:
-objTstCtxt = tf.keras.Input(shape=(varNumIn, varSzeEmb),
+objTstCtxt = tf.keras.Input(shape=(1, varSzeEmb),
                             batch_size=1,
                             dtype=tf.float32)
 objWght = objQ03.dequeue()
@@ -217,22 +214,15 @@ objWght = objQ03.dequeue()
 # -----------------------------------------------------------------------------
 # *** Build the network
 
-# Adjust model's statefullness according to batch size:
-lgcState = True
-#if varSzeBtch == 1:
-#    print('Stateful training model.')
-#    lgcState = True
-#else:
-#    print('Stateless training model.')
-#    lgcState = False
-
 # Load pre-trained model, or create new one:
 if strPthMdl is None:
 
     print('Building new model.')
 
+    # Stateful model:
+    lgcState = True
+
     # Regularisation:
-    # objRegL2 = tf.keras.regularizers.l2(l=0.005)
     objRegL2 = None
 
     # The actual LSTM layers.
@@ -328,7 +318,6 @@ if strPthMdl is None:
                                                                   axis=2))
 
     # Dense feedforward layer:
-    # activity_regularizer=tf.keras.layers.ActivityRegularization(l2=0.1)
     aryOut06 = tf.keras.layers.Dense(varSzeEmb,
                                      activation=tf.keras.activations.tanh,
                                      name='DenseFF'
@@ -452,19 +441,9 @@ objMdl.summary()
 print('Testing model:')
 objTstMdl.summary()
 
-#class customLoss(tf.keras.losses.Loss):  # not possible in 1.13.1
-#    # Problem: 'ReductionV2' has no attribute 'MEAN'
-#    # def __init__(self, reduction=tf.compat.v2.losses.Reduction.NONE):
-#    #     super(customLoss, self).__init__(reduction=reduction)
-#    def call(self, y_true, y_pred):
-#        return tf.reduce_mean(tf.math.squared_difference(y_true, y_pred))
-
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
-               #loss=customLoss)
-               #loss=tf.keras.losses.MeanSquaredError())  # does not converge in 1.13.1 and 1.14.0; in 1.13.1 behaviour is like in 1.14.0
-               loss=tf.keras.losses.mean_squared_error)  # does converge with batch size 1 in 1.13.1 (a bit slower), not in 1.14.0. in 1.13.1, with batch size 128, next word is predicted (somewhat), but sequence breaks down
-               #loss=tf.losses.mean_squared_error)  # does converge with batch size 1 in 1.13.1, but not in 1.14.0
+               loss=tf.keras.losses.mean_squared_error)
 
 
 # -----------------------------------------------------------------------------
@@ -518,16 +497,15 @@ def training_queue():
 
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
-    varIdxWrd = varNumIn
+    varIdxWrd = 1
 
     # Array for new batch of context words:
-    aryCntxt = np.zeros((varSzeBtch, varNumIn, varSzeEmb), dtype=np.float32)
+    aryCntxt = np.zeros((varSzeBtch, 1, varSzeEmb), dtype=np.float32)
 
     # Array for new batch of target words:
     aryTrgt = np.zeros((varSzeBtch, varSzeEmb), dtype=np.float32)
 
     # Array for new batch of sample weights:
-    # aryWght = np.zeros((varSzeBtch, varNumIn), dtype=np.float32)
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
 
     # Sample weighting.
@@ -561,18 +539,6 @@ def training_queue():
     vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
     vecWght = np.add(varWghtMin, vecWght)
 
-    # Exponent (slope of weighting function, higher value gives higher relative
-    # weight to infrequent words):
-    # varPow = 3.0
-
-    # Weight vector:
-    # vecWght = np.linspace(1.0,
-    #                       0.0,
-    #                       num=varNumWrds)
-    # vecWght = np.power(vecWght, varPow)
-    # vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
-    # vecWght = np.subtract(varWghtMax, vecWght)
-
     # Loop through optimisation steps (one batch per optimisation step):
     for idxOpt in range(varNumOpt):
 
@@ -599,16 +565,19 @@ def training_queue():
             # Increment word index:
             varIdxWrd = varIdxWrd + 1
             if varIdxWrd >= varLenTxt:
-                varIdxWrd = varNumIn
+                varIdxWrd = 1
 
         # Put index of next target word on the queue (target word after current
         # batch, because index has already been incremented):
         objIdxQ.put(varIdxWrd)
 
-        # Reset word index for next batch, for stateful model:
-        varIdxWrd = varIdxWrd - varSzeBtch + 1
-        if varIdxWrd >= varLenTxt:
-            varIdxWrd = varNumIn
+        # Reset word index for next batch (necessary in case of stateful model
+        # with batch size larger than one in order for samples in successive
+        # batches to match):
+        if varSzeBtch > 1:
+            varIdxWrd = varIdxWrd - varSzeBtch + 1
+            if varIdxWrd >= varLenTxt:
+                varIdxWrd = 1
 
         # TODO
 
@@ -625,7 +594,7 @@ def training_queue():
         objSess.run(objEnQ03, feed_dict=dicIn03)
 
         # Array for new batch of context words:
-        aryCntxt = np.zeros((varSzeBtch, varNumIn, varSzeEmb),
+        aryCntxt = np.zeros((varSzeBtch, 1, varSzeEmb),
                             dtype=np.float32)
 
         # Array for new batch of target words:
@@ -682,15 +651,8 @@ print('--> Beginning of training.')
 # Loop through optimisation steps (one batch per optimisation step):
 for idxOpt in range(varNumOpt):
 
-    # Run optimisation:
-    # objMdl.fit(x=objTrnCtxt,
-    #            y=objTrgt,
-    #            epochs=10,
-    #            shuffle=False,
-    #            steps_per_epoch=1,
-    #            verbose=0)
-    #          callbacks=[objCallback])
-    varLoss01 = objMdl.train_on_batch(objTrnCtxt,  # run on single batch
+    # Run optimisation on single batch:
+    varLoss01 = objMdl.train_on_batch(objTrnCtxt,
                                       y=objTrgt,
                                       sample_weight=objWght)
 
@@ -722,7 +684,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 50  # varSzeBtch
+        varLenCntx = 50
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
@@ -730,30 +692,27 @@ for idxOpt in range(varNumOpt):
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
 
-            # If the training model is stateless, initialise state of the
-            # (statefull) prediction model with context. This assumes that
-            # the model can be stateful during prediction (which is should be
-            # according to the documentation).
-            if not lgcState:
-                objTstMdl.reset_states()
-                # Loop through context window:
-                for idxCntx in range(1, varLenCntx):
-                    # Get integer code of context word (the '- 1' is so as not
-                    # to predict twice on the word right before the target
-                    # word, see below):
-                    varCtxt = vecC[(varTmpWrd - 1 - varLenCntx + idxCntx)]
-                    # Get embedding vectors for context word(s):
-                    aryCtxt = np.array(aryEmb[varCtxt, :]
-                                       ).reshape(1, varNumIn, varSzeEmb)
-                    # Predict on current context word:
-                    vecWrd = objTstMdl.predict_on_batch(aryCtxt)
+            # Iinitialise state of the (statefull) prediction model with
+            # context.
+            # objTstMdl.reset_states()
+            # # Loop through context window:
+            # for idxCntx in range(1, varLenCntx):
+            #     # Get integer code of context word (the '- 1' is so as not
+            #     # to predict twice on the word right before the target
+            #     # word, see below):
+            #     varCtxt = vecC[(varTmpWrd - 1 - varLenCntx + idxCntx)]
+            #     # Get embedding vectors for context word(s):
+            #     aryCtxt = np.array(aryEmb[varCtxt, :]
+            #                        ).reshape(1, 1, varSzeEmb)
+            #     # Predict on current context word:
+            #     vecWrd = objTstMdl.predict_on_batch(aryCtxt)
 
             # Get integer code of context word:
             varTstCtxt = vecC[(varTmpWrd - 1)]
 
             # Get embedding vectors for context word(s):
             aryTstCtxt = np.array(aryEmb[varTstCtxt, :]
-                                  ).reshape(1, varNumIn, varSzeEmb)
+                                  ).reshape(1, 1, varSzeEmb)
 
             # Word to predict (target):
             varTrgt = vecC[varTmpWrd]
@@ -822,12 +781,7 @@ for idxOpt in range(varNumOpt):
 
                 # Update context (leave out first - i.e. oldest - word in
                 # context, and append newly predicted word):
-                if varNumIn > 1:
-                    aryTstCtxt = np.concatenate((aryTstCtxt[:, 1:, :],
-                                                 vecWrd.reshape(1, 1, varSzeEmb)
-                                                 ), axis=1)
-                else:
-                    aryTstCtxt = vecWrd.reshape(1, 1, varSzeEmb)
+                aryTstCtxt = vecWrd.reshape(1, 1, varSzeEmb)
 
                 # Get test prediction for current context word(s):
                 vecWrd = objTstMdl.predict_on_batch(aryTstCtxt)
@@ -869,13 +823,8 @@ for idxOpt in range(varNumOpt):
 
 print('--> End of training.')
 
-# objMdl.evaluate(x_test, y_test)
-
 # Get model weights:
 lstWghts = objMdl.get_weights()
-
-# print('len(lstWghts)')
-# print(len(lstWghts))
 
 # Save model to disk:
 tf.keras.models.save_model(objMdl,
@@ -887,7 +836,6 @@ tf.keras.models.save_model(objTstMdl,
 np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varLrnRte=varLrnRte,
          varNumItr=varNumItr,
-         varNumIn=varNumIn,
          varNrn01=varNrn01,
          varNrn02=varNrn02,
          varNrn03=varNrn03,
