@@ -16,22 +16,22 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
-#strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+#strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-#strPthLog = 'drive/My Drive/lstm_log'
+#strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.001  # 0.05 showing some signs of conversion
 
 # Number of training iterations over the input text:
-varNumItr = 10000
+varNumItr = 500
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -50,7 +50,7 @@ varNrn05 = 400
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 1  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
+varSzeBtch = 4096  # some learning with 32 and 128. with 128, next word is predicted relatively well, but sequence breaks down
 
 # Input dropout:
 varInDrp = 0.3
@@ -94,7 +94,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[15:200]
+# vecC = vecC[15:200]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -105,8 +105,9 @@ dictRvrs = objNpz['dictRvrs'][()]
 # Embedding matrix:
 aryEmb = objNpz['aryEmbFnl']
 
-# Scale embedding matrix (to have an absolute maximum of 1):
+# Scale embedding matrix:
 # varAbsMax = np.max(np.absolute(aryEmb.flatten()))
+# varAbsMax = varAbsMax / 0.2
 # aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
@@ -151,7 +152,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 10
+varCapQ = 32
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -217,12 +218,13 @@ objWght = objQ03.dequeue()
 # *** Build the network
 
 # Adjust model's statefullness according to batch size:
-if varSzeBtch == 1:
-    print('Stateful training model.')
-    lgcState = True
-else:
-    print('Stateless training model.')
-    lgcState = False
+lgcState = True
+#if varSzeBtch == 1:
+#    print('Stateful training model.')
+#    lgcState = True
+#else:
+#    print('Stateless training model.')
+#    lgcState = False
 
 # Load pre-trained model, or create new one:
 if strPthMdl is None:
@@ -603,6 +605,11 @@ def training_queue():
         # batch, because index has already been incremented):
         objIdxQ.put(varIdxWrd)
 
+        # Reset word index for next batch, for stateful model:
+        varIdxWrd = varIdxWrd - varSzeBtch + 1
+        if varIdxWrd >= varLenTxt:
+            varIdxWrd = varNumIn
+
         # TODO
 
         aryTmp01 = aryCntxt
@@ -635,7 +642,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        #!nvidia-smi
+        !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
