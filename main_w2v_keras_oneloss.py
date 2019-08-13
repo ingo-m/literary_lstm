@@ -21,14 +21,14 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = None
+strPthMdl = 'drive/My Drive/lstm_log/20190813_013947'
 
 # Log directory (parent directory, new session directory will be created):
 #strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.001  # 0.05 showing some signs of conversion
+varLrnRte = 0.001
 
 # Number of training iterations over the input text:
 varNumItr = 500
@@ -776,9 +776,6 @@ for idxOpt in range(varNumOpt):
             # Generate new text:
             for idxNew in range(varLenNewTxt):
 
-                # Place testing context word(s) on queue:
-                # testing_queue(aryTstCtxt)
-
                 # Update context (leave out first - i.e. oldest - word in
                 # context, and append newly predicted word):
                 aryTstCtxt = vecWrd.reshape(1, 1, varSzeEmb)
@@ -787,19 +784,22 @@ for idxOpt in range(varNumOpt):
                 vecWrd = objTstMdl.predict_on_batch(aryTstCtxt)
 
                 # Minimum squared deviation between prediciton and embedding
-                # vectors:
+                # vectors. We skip the first row of the embedding matrix
+                # (corresponding to the unknown-token).
                 vecDiff = np.sum(
                                  np.square(
                                            np.subtract(
-                                                       aryEmb,
+                                                       aryEmb[1:, :],
                                                        vecWrd[0, :]
                                                        )
                                            ),
                                  axis=1
                                  )
 
-                # Get code of closest word vector:
-                varTmp = int(np.argmin(vecDiff))
+                # Get code of closest word vector. (We have to add one because
+                # we skipped the first row of the embedding matrix in the
+                # previous step.)
+                varTmp = int(np.argmin(vecDiff)) + 1
 
                 # Save code of predicted word:
                 vecNew[idxNew] = varTmp
