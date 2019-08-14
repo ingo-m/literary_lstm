@@ -16,19 +16,19 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-#strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
-strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+#strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = 'drive/My Drive/lstm_log/20190813_230346'
+strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-#strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-strPthLog = 'drive/My Drive/lstm_log'
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+#strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.0001
+varLrnRte = 0.001
 
 # Number of training iterations over the input text:
 varNumItr = 900
@@ -47,7 +47,7 @@ varNrn05 = 400
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 4096
+varSzeBtch = 128
 
 # Input dropout:
 varInDrp = 0.3
@@ -149,7 +149,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 32
+varCapQ = 10
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -497,15 +497,19 @@ objIdxQ = queue.Queue(maxsize=varCapQ)
 def training_queue():
     """Place training data on queue."""
 
+    # We feed samples to the stateful LSTM by indexing the text at regular
+    # intervals. Each index is incremented after each optimisation step. In
+    # this way, samples in successive batches match in accordance with the
+    # cell states of a stateful LSTM.
+
+    # Initial index of last sample in batch:
+    varLast = float(varLenTxt) - (float(varLenTxt) / float(varSzeBtch))
+    varLast = int(np.floor(varLast))
+
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
-    varIdxWrd = 1
-
-    # Array for new batch of context words:
-    aryCntxt = np.zeros((varSzeBtch, 1, varSzeEmb), dtype=np.float32)
-
-    # Array for new batch of target words:
-    aryTrgt = np.zeros((varSzeBtch, varSzeEmb), dtype=np.float32)
+    # varIdxWrd = 1
+    vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
 
     # Array for new batch of sample weights:
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
@@ -540,55 +544,43 @@ def training_queue():
     # Scale weights to respective range:
     vecWght = np.multiply(vecWght, (varWghtMax - varWghtMin))
     vecWght = np.add(varWghtMin, vecWght)
+    vecWght = vecWght.astype(np.float32)
 
     # Loop through optimisation steps (one batch per optimisation step):
     for idxOpt in range(varNumOpt):
 
-        # Loop through batch:
-        for idxBtch in range(varSzeBtch):
+        # Get integer codes of context word (the word preceeding the target
+        # word):
+        vecCntxt = vecC[np.subtract(vecIdxWrd, 1)]
 
-            # Get integer codes of context word (the word preceeding the target
-            # word):
-            varCntxt = vecC[(varIdxWrd - 1)]
+        # Get embedding vector for context words (the words preceeding the
+        # target words):
+        aryCntxt = aryEmb[vecCntxt, :].reshape(varSzeBtch, 1, varSzeEmb)
 
-            # Get embedding vector for context word (the word preceeding the
-            # target word):
-            aryCntxt[idxBtch, :, :] = np.array(aryEmb[varCntxt, :])
+        # Words to predict (targets):
+        vecTrgt = vecC[vecIdxWrd]
 
-            # Word to predict (target):
-            varTrgt = vecC[varIdxWrd]
+        # Get embedding vector for target words:
+        aryTrgt = aryEmb[vecTrgt, :]
 
-            # Get embedding vector for target word:
-            aryTrgt[idxBtch, :] = aryEmb[varTrgt, :]
+        # Get sample weights for target words:
+        aryWght = vecWght[vecTrgt]
 
-            # Get sample weight for current target word:
-            aryWght[idxBtch] = vecWght[varTrgt]
+        # Increment word indicies for next batch:
+        vecIdxWrd = np.add(vecIdxWrd, 1)
+        # Reset word index to beginning of text if end has been reached:
+        vecGrtr = np.greater_equal(vecIdxWrd, varLenTxt)
+        vecIdxWrd[vecGrtr] = 1
 
-            # Increment word index:
-            varIdxWrd = varIdxWrd + 1
-            if varIdxWrd >= varLenTxt:
-                varIdxWrd = 1
-
+        # Chose one of the target word indices at random (for testing):
+        varIdxWrd = random.choice(vecIdxWrd)
         # Put index of next target word on the queue (target word after current
         # batch, because index has already been incremented):
         objIdxQ.put(varIdxWrd)
 
-        # Reset word index for next batch (necessary in case of stateful model
-        # with batch size larger than one in order for samples in successive
-        # batches to match):
-        if varSzeBtch > 1:
-            varIdxWrd = varIdxWrd - varSzeBtch + 1
-            if varIdxWrd >= varLenTxt:
-                varIdxWrd = 1
-
-        # TODO
-
-        aryTmp01 = aryCntxt
-        dicIn01 = {objPlcHld01: aryTmp01}
-        aryTmp02 = aryTrgt
-        dicIn02 = {objPlcHld02: aryTmp02}
-        aryTmp03 = aryWght
-        dicIn03 = {objPlcHld03: aryTmp03}
+        dicIn01 = {objPlcHld01: aryCntxt}
+        dicIn02 = {objPlcHld02: aryTrgt}
+        dicIn03 = {objPlcHld03: aryWght}
 
         # Batch is complete, push to the queue:
         objSess.run(objEnQ01, feed_dict=dicIn01)
@@ -613,7 +605,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        !nvidia-smi
+        #!nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -662,7 +654,7 @@ for idxOpt in range(varNumOpt):
     varTmpWrd = objIdxQ.get()
 
     # Update tensorboard information:
-    if (idxOpt % 50 == 0):
+    if (idxOpt % 100 == 0):
         # Use old (tf 1.13) implementation for writing loss to tensorboard
         # summary.
         objSmry = tf.Summary(value=[tf.Summary.Value(tag="loss",
@@ -686,7 +678,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 50
+        varLenCntx = 1000
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
@@ -694,25 +686,25 @@ for idxOpt in range(varNumOpt):
             # Copy weights from training model to test model:
             objTstMdl.set_weights(objMdl.get_weights())
 
-            # Iinitialise state of the (statefull) prediction model with
+            # Initialise state of the (statefull) prediction model with
             # context.
-            # objTstMdl.reset_states()
-            # # Loop through context window:
-            # for idxCntx in range(1, varLenCntx):
-            #     # Get integer code of context word (the '- 1' is so as not
-            #     # to predict twice on the word right before the target
-            #     # word, see below):
-            #     varCtxt = vecC[(varTmpWrd - 1 - varLenCntx + idxCntx)]
-            #     # Get embedding vectors for context word(s):
-            #     aryCtxt = np.array(aryEmb[varCtxt, :]
-            #                        ).reshape(1, 1, varSzeEmb)
-            #     # Predict on current context word:
-            #     vecWrd = objTstMdl.predict_on_batch(aryCtxt)
+            objTstMdl.reset_states()
+            # Loop through context window:
+            for idxCntx in range(1, varLenCntx):
+                # Get integer code of context word (the '- 1' is so as not
+                # to predict twice on the word right before the target
+                # word, see below):
+                varCtxt = vecC[(varTmpWrd - 1 - varLenCntx + idxCntx)]
+                # Get embedding vectors for context word(s):
+                aryCtxt = np.array(aryEmb[varCtxt, :]
+                                   ).reshape(1, 1, varSzeEmb)
+                # Predict on current context word:
+                vecWrd = objTstMdl.predict_on_batch(aryCtxt)
 
             # Get integer code of context word:
             varTstCtxt = vecC[(varTmpWrd - 1)]
 
-            # Get embedding vectors for context word(s):
+            # Get embedding vector for context word:
             aryTstCtxt = np.array(aryEmb[varTstCtxt, :]
                                   ).reshape(1, 1, varSzeEmb)
 
