@@ -21,17 +21,17 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
-strPthMdl = 'drive/My Drive/lstm_log/20190813_013947'
+strPthMdl = 'drive/My Drive/lstm_log/20190813_230346'
 
 # Log directory (parent directory, new session directory will be created):
 #strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 500
+varNumItr = 900
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -477,7 +477,9 @@ if not os.path.exists(strPthLogSes):
 # objHistPred = tf.summary.histogram("Prediction", objPlcPredWrd)
 
 # Old (tf 1.13) summary implementation for tensorboard:
-objLogWrt = tf.summary.FileWriter(strPthLogSes)
+objLogWrt = tf.summary.FileWriter(strPthLogSes,
+                                  graph=objSess.graph)
+#                                  session=objSess)
 
 # objMrgSmry = tf.summary.merge_all()
 
