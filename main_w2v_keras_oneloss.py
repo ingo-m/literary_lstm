@@ -37,14 +37,14 @@ varNumItr = 100
 varDspStp = 10000
 
 # Number of neurons:
-varNrn01 = 300
-varNrn02 = 100
-varNrn03 = 30
-varNrn04 = 100
-varNrn05 = 300
-varNrnLoop01 = 30
-varNrnLoop02 = 30
-varNrnLoop03 = 30
+varNrn01 = 384
+varNrn02 = 128
+varNrn03 = 32
+varNrn04 = 128
+varNrn05 = 384
+varNrnLoop01 = 32
+varNrnLoop02 = 32
+varNrnLoop03 = 32
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -577,7 +577,11 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
+    #vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
+    vecIdxWrd = np.linspace(1,
+                            (varSzeBtch * 100),
+                            num=varSzeBtch,
+                            dtype=np.int64)
 
     # Array for new batch of sample weights:
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
