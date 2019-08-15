@@ -31,26 +31,26 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 900
+varNumItr = 100
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 10000
 
 # Number of neurons:
-varNrn01 = 400
-varNrn02 = 200
-varNrn03 = 100
-varNrn04 = 200
-varNrn05 = 400
-varNrnLoop01 = 50
-varNrnLoop02 = 50
-varNrnLoop03 = 50
+varNrn01 = 300
+varNrn02 = 100
+varNrn03 = 30
+varNrn04 = 100
+varNrn05 = 300
+varNrnLoop01 = 30
+varNrnLoop02 = 30
+varNrnLoop03 = 30
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 128
+varSzeBtch = 256
 
 # Input dropout:
 varInDrp = 0.3
