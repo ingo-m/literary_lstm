@@ -39,17 +39,17 @@ from tensorflow.contrib.tensorboard.plugins import projector
 # *** Define parameters
 
 # Path of input text files:
-strPthIn = '/home/john/Dropbox/Harry_Potter/books/redacted/HP_all_books.txt'
+strPthIn = '/home/john/Dropbox/Ice_and_Fire/books/combined.txt'
 
 # Tensorflow log directory:
-strTfLog = '/home/john/PhD/GitLab/literary_lstm/log_w2v'
+strTfLog = '/home/john/Dropbox/Ice_and_Fire/embedding'
 
 # Batch size:
 varBatSze = 10000
 
 # Size of context window, i.e. how many words to consider to the left and to
 # the right of each target word.
-varConWin = 10
+varConWin = 16
 
 # Dimension of the embedding vector. (Number of neurons in hidden layer?)
 varSzeEmb = 300
@@ -66,7 +66,7 @@ varSzeEval = 10
 varVocSze = 5000
 
 # Number of training iterations:
-varNumIt = 2000000
+varNumIt = 3000000
 
 # ------------------------------------------------------------------------------
 # *** Preparations
