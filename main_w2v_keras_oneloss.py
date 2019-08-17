@@ -16,7 +16,7 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Ice_and_Fire/embedding/word2vec_data.npz'
 #strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
@@ -24,17 +24,17 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = '/home/john/Dropbox/Ice_and_Fire/lstm'
 #strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
 varNumItr = 100
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 1000
 
 # Number of neurons:
 varNrn01 = 384
@@ -53,10 +53,10 @@ varLenNewTxt = 100
 varSzeBtch = 256
 
 # Input dropout:
-varInDrp = 0.3
+varInDrp = 0.4
 
 # Recurrent state dropout:
-varStDrp = 0.2
+varStDrp = 0.4
 
 
 # -----------------------------------------------------------------------------
@@ -577,11 +577,11 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    #vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
-    vecIdxWrd = np.linspace(1,
-                            (varSzeBtch * 100),
-                            num=varSzeBtch,
-                            dtype=np.int64)
+    vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
+    #vecIdxWrd = np.linspace(1,
+    #                        (varSzeBtch * 10),
+    #                        num=varSzeBtch,
+    #                        dtype=np.int64)
 
     # Array for new batch of sample weights:
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
