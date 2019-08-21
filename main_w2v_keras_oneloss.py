@@ -29,7 +29,7 @@ strPthMdl = None
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
 varNumItr = 500
@@ -39,9 +39,9 @@ varDspStp = 1000
 
 # Number of neurons:
 varNrn01 = 384
-varNrn02 = 128
-varNrn03 = 32
-varNrn04 = 128
+varNrn02 = 256
+varNrn03 = 64
+varNrn04 = 256
 varNrn05 = 384
 varNrnLoop01 = 32
 varNrnLoop02 = 32
@@ -224,7 +224,7 @@ if strPthMdl is None:
     print('Building new model.')
 
     # Regularisation:
-    objRegL2 = tf.keras.regularizers.l2(l=0.001)
+    objRegL2 = None
 
     # Stateful model:
     lgcState = True
