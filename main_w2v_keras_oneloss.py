@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """LSTM function using word2vec embedding."""
 
+
 import os
 import random
 import datetime
@@ -16,22 +17,22 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Ice_and_Fire/embedding/word2vec_data.npz'
-#strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+#strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Ice_and_Fire/lstm'
-#strPthLog = 'drive/My Drive/lstm_log'
+#strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 100
+varNumItr = 500
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -50,7 +51,7 @@ varNrnLoop03 = 32
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 256
+varSzeBtch = 4096
 
 # Input dropout:
 varInDrp = 0.4
@@ -152,7 +153,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 10
+varCapQ = 32
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -222,6 +223,9 @@ if strPthMdl is None:
 
     print('Building new model.')
 
+    # Regularisation:
+    objRegL2 = tf.keras.regularizers.l2(l=0.001)
+
     # Stateful model:
     lgcState = True
 
@@ -233,6 +237,7 @@ if strPthMdl is None:
                                   recurrent_activation='hard_sigmoid',
                                   dropout=varInDrp,
                                   recurrent_dropout=varStDrp,
+                                  kernel_regularizer=objRegL2,
                                   return_sequences=True,
                                   return_state=False,
                                   go_backwards=False,
@@ -246,6 +251,7 @@ if strPthMdl is None:
                                   recurrent_activation='hard_sigmoid',
                                   dropout=varInDrp,
                                   recurrent_dropout=varStDrp,
+                                  kernel_regularizer=objRegL2,
                                   return_sequences=True,
                                   return_state=False,
                                   go_backwards=False,
@@ -259,6 +265,7 @@ if strPthMdl is None:
                                    recurrent_activation='hard_sigmoid',
                                    dropout=varInDrp,
                                    recurrent_dropout=varStDrp,
+                                   kernel_regularizer=objRegL2,
                                    return_sequences=True,
                                    return_state=False,
                                    go_backwards=False,
@@ -272,6 +279,7 @@ if strPthMdl is None:
                                      recurrent_activation='hard_sigmoid',
                                      dropout=varInDrp,
                                      recurrent_dropout=varStDrp,
+                                     kernel_regularizer=objRegL2,
                                      return_sequences=True,
                                      return_state=False,
                                      go_backwards=False,
@@ -285,6 +293,7 @@ if strPthMdl is None:
                                      recurrent_activation='hard_sigmoid',
                                      dropout=varInDrp,
                                      recurrent_dropout=varStDrp,
+                                     kernel_regularizer=objRegL2,
                                      return_sequences=True,
                                      return_state=False,
                                      go_backwards=False,
@@ -298,6 +307,7 @@ if strPthMdl is None:
                                      recurrent_activation='hard_sigmoid',
                                      dropout=varInDrp,
                                      recurrent_dropout=varStDrp,
+                                     kernel_regularizer=objRegL2,
                                      return_sequences=True,
                                      return_state=False,
                                      go_backwards=False,
@@ -311,6 +321,7 @@ if strPthMdl is None:
                                    recurrent_activation='hard_sigmoid',
                                    dropout=varInDrp,
                                    recurrent_dropout=varStDrp,
+                                   kernel_regularizer=objRegL2,
                                    return_sequences=True,
                                    return_state=False,
                                    go_backwards=False,
@@ -326,6 +337,7 @@ if strPthMdl is None:
                                   recurrent_activation='hard_sigmoid',
                                   dropout=varInDrp,
                                   recurrent_dropout=varStDrp,
+                                  kernel_regularizer=objRegL2,
                                   return_sequences=True,
                                   return_state=False,
                                   go_backwards=False,
@@ -341,6 +353,7 @@ if strPthMdl is None:
                                     recurrent_activation='hard_sigmoid',
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
+                                    kernel_regularizer=objRegL2,
                                     return_sequences=False,
                                     return_state=False,
                                     go_backwards=False,
@@ -354,6 +367,7 @@ if strPthMdl is None:
     # Dense feedforward layer:
     aryL06 = tf.keras.layers.Dense(varSzeEmb,
                                    activation=tf.keras.activations.tanh,
+                                   kernel_regularizer=objRegL2,
                                    name='DenseFF'
                                    )(aryL05)
 
@@ -577,11 +591,11 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
-    #vecIdxWrd = np.linspace(1,
-    #                        (varSzeBtch * 10),
-    #                        num=varSzeBtch,
-    #                        dtype=np.int64)
+    #vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
+    vecIdxWrd = np.linspace(1,
+                            (varSzeBtch * 1),
+                            num=varSzeBtch,
+                            dtype=np.int64)
 
     # Array for new batch of sample weights:
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
@@ -677,7 +691,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        #!nvidia-smi
+        !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
