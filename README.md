@@ -1,3 +1,3 @@
 # literary_lstm
 
-Toy example for a literary LSTM model.
+Toy example for a literate LSTM model.
