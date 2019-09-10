@@ -14,7 +14,7 @@
 # limitations under the License.
 # =============================================================================
 
-# See
+# Adapted from:
 # https://www.tensorflow.org/tutorials/representation/word2vec
 
 """Basic word2vec example."""
