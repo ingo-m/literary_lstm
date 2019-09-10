@@ -17,16 +17,16 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-# strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
-strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+# strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-# strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-strPthLog = 'drive/My Drive/lstm_log'
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+# strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.0001
@@ -40,24 +40,24 @@ varDspStp = 1000
 # Number of neurons:
 varNrn01 = 384
 varNrn02 = 256
-varNrn03 = 64
+varNrn03 = 128
 varNrn04 = 256
 varNrn05 = 384
-varNrnLoop01 = 32
-varNrnLoop02 = 32
-varNrnLoop03 = 32
+varNrnLoop01 = 64
+varNrnLoop02 = 64
+varNrnLoop03 = 64
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 4096
+varSzeBtch = 512
 
 # Input dropout:
-varInDrp = 0.4
+varInDrp = 0.3
 
 # Recurrent state dropout:
-varStDrp = 0.4
+varStDrp = 0.3
 
 
 # -----------------------------------------------------------------------------
@@ -153,7 +153,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 32
+varCapQ = 8
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -544,26 +544,21 @@ strPthLogSes = os.path.join(strPthLog, strDate)
 if not os.path.exists(strPthLogSes):
     os.makedirs(strPthLogSes)
 
-# Tf 2.0 / keras implementation does not work with train_on_batch.
-# Create object for tensorboard visualisations:
-# objCallback = tf.keras.callbacks.TensorBoard(log_dir=strPthLogSes,
-#                                              write_graph=True,
-#                                              write_images=True,
-#                                              update_freq='batch')
-# objCallback.set_model(objMdl)
+
 
 # Placeholder for word vector of predicted words:
-# objPlcPredWrd = tf.placeholder(tf.float32, shape=varSzeEmb)
+objPlcHist = tf.placeholder(tf.float32, shape=(300, 1536))
+# objHistVals = tf.Variable(initial_value=0.0, shape=varNrn01, dtype=tf.float32)
 
 # Create histrogram:
-# objHistPred = tf.summary.histogram("Prediction", objPlcPredWrd)
+objHistPred = tf.summary.histogram("Weights_01", objPlcHist)
 
 # Old (tf 1.13) summary implementation for tensorboard:
 objLogWrt = tf.summary.FileWriter(strPthLogSes,
                                   graph=objSess.graph)
 #                                  session=objSess)
 
-# objMrgSmry = tf.summary.merge_all()
+objMrgSmry = tf.summary.merge_all()
 
 
 # -----------------------------------------------------------------------------
@@ -692,7 +687,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        !nvidia-smi
+        #!nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -749,6 +744,12 @@ for idxOpt in range(varNumOpt):
                                     ])
         objLogWrt.add_summary(objSmry, global_step=idxOpt)
 
+        # Write model weights to histogram:
+        lstWghts = objMdl.get_weights()
+        objHistVals = objSess.run(objMrgSmry,
+                                  feed_dict={objPlcHist: lstWghts[0]})
+        objLogWrt.add_summary(objHistVals, global_step=idxOpt)
+
     # Give status feedback:
     if (idxOpt % varDspStp == 0):
 
@@ -804,11 +805,6 @@ for idxOpt in range(varNumOpt):
 
             # Get test prediction for current context word(s):
             vecWrd = objTstMdl.predict_on_batch(aryTstCtxt)
-
-            # objSmry = objSess.run(objMrgSmry,
-            #                       feed_dict={objPlcPredWrd:
-            #                                  vecWrd.flatten()})
-            # objLogWrt.add_summary(objSmry, global_step=idxOpt)
 
             # Current loss:
             varLoss02 = np.sum(
