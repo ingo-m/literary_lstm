@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-LSTM fun helper functions.
-"""
+"""LSTM fun helper functions."""
 
 
 import re
 import collections
-import random
 import numpy as np
 
 
@@ -15,15 +12,16 @@ def read_text(strPth):
     """
     Read text from file.
 
-    Parameters
-    ----------
+    Parameters;
+    -----------
     strPth : str
          Path of text file.
 
-    Returns
-    -------
+    Returns;
+    --------
     lstTxt : list
         List with text, separated into individual words and punctuation maks.
+
     """
     # List of permitted characters (all other characters will be removed):
     strChr = ('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
@@ -62,17 +60,17 @@ def build_dataset(lstTxt, varVocSze=50000):
     """
     Build dataset from text.
 
-    Parameters
-    ----------
+    Parameters;
+    -----------
     lstTxt : list
         Input text (corpus).
     varVocSze : int
-        Vocabulary size (number of words; rare words are replaced with 'unknown'
-        code if the vocabulary size is exceeded by the number of words in the
-        text).
+        Vocabulary size (number of words; rare words are replaced with
+        'unknown' code if the vocabulary size is exceeded by the number of
+        words in the text).
 
-    Returns
-    -------
+    Returns;
+    --------
     vecC : np.array
         Coded version of original text (corpus), where words are coded as
         integers. The integer code of a word is its ordinal occurence
@@ -85,6 +83,7 @@ def build_dataset(lstTxt, varVocSze=50000):
         i.e. words in order of number of occurences.
     dictRvrs : dict
         Reverse dictionary (where keys are word order).
+
     """
     # List of tuples with words and corresponding count of occurences in
     # text (word, count):
@@ -144,8 +143,8 @@ def generate_batch_n(vecC, varIdx, varBatSze=5, varConWin=5.0, varTrnk=10):
     """
     Generate training batch for skip-gram model.
 
-    Inputs
-    ------
+    Inputs;
+    -------
     vecC : np.array
         Coded version of original text (corpus), where words are coded as
         integers. The integer code of a word is its ordinal occurence
@@ -166,21 +165,20 @@ def generate_batch_n(vecC, varIdx, varBatSze=5, varConWin=5.0, varTrnk=10):
         distribution needs to be truncated so as not to run over the limits of
         the corpus.
 
-    Returns
-    -------
+    Returns;
+    --------
     vecWrds : np.array
         Batch of (integer) codes of input words (whose context to predict).
     aryCntxt : np.array
         Vector (batch_size * 1) of context words to predict.
 
-    Notes
-    -----
+    Notes;
+    ------
     The distance between sample word and context words are drawn from a normal
     probability distribution, in order to sample close words with higher
     probability.
+    TODO: Sample common words (with repsect to occurence in corpus) more often.
 
-    TODO:
-    Sample common words (with repsect to occurence in corpus) more often.
     """
     # Vector with indices of context words, relative to sample word (e.g. -1
     # would refer to word before sample word, +1 to the word after the sample
@@ -214,7 +212,6 @@ def generate_batch_n(vecC, varIdx, varBatSze=5, varConWin=5.0, varTrnk=10):
                                vecLgcNgt
                                )
     vecRndn[vecLgcTrc] = int(-varTrnk)
-
 
     # Indices of sample words in corpus (linear):
     vecIdxWrds = np.arange(varIdx, (varIdx + varBatSze))

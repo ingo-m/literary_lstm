@@ -95,7 +95,7 @@ vecC, lstWrdCnt, dicWdCnOdr, dictRvrs = build_dataset(lstTxt, varVocSze)
 del lstTxt
 
 # Generate example batch:
-#vecWrds, aryCntxt = generate_batch_n(vecC,
+# vecWrds, aryCntxt = generate_batch_n(vecC,
 #                                     50,
 #                                     varBatSze=50,
 #                                     varConWin=5.0,
@@ -156,7 +156,7 @@ with graph.as_default():
         # neurons).
         aryWghts = tf.Variable(
             tf.truncated_normal([varVocSze, varSzeEmb],
-            stddev=(1.0 / math.sqrt(varSzeEmb)))
+                                stddev=(1.0 / math.sqrt(varSzeEmb)))
             )
 
     with tf.name_scope('biases'):
@@ -203,15 +203,12 @@ with graph.as_default():
     aryEvalEmbd = tf.nn.embedding_lookup(aryNormEmb,
                                          vecTfEvalSmple)
 
-
     # "similarity", size: number of words in validation set * number of words
     # in vocabulary.
     arySim = tf.matmul(aryEvalEmbd, aryNormEmb, transpose_b=True)
 
     # Merge all summaries.
     objMrgSmry = tf.summary.merge_all()
-
-
 
     # Add variable initializer.
     objInit = tf.global_variables_initializer()
@@ -257,14 +254,14 @@ with tf.Session(graph=graph) as objSess:
         # Define metadata variable.
         objMetadata = tf.RunMetadata()
 
-        # We perform one update step by evaluating the optimizer op (including it
-        # in the list of returned values for session.run()
+        # We perform one update step by evaluating the optimizer op (including
+        # it in the list of returned values for session.run()
         # Also, evaluate the merged op to get all summaries from the returned
         # "summary" variable. Feed metadata variable to session for visualizing
         # the graph in TensorBoard.
         _, objSmry, varTmpLoss = objSess.run([objOpt, objMrgSmry, varLoss],
-                                              feed_dict=dicFeed,
-                                              run_metadata=objMetadata)
+                                             feed_dict=dicFeed,
+                                             run_metadata=objMetadata)
         varAvrgLoss += varTmpLoss
 
         # Add returned summaries to writer in each step.
@@ -283,7 +280,8 @@ with tf.Session(graph=graph) as objSess:
             print('Average loss at step ', idxItr, ': ', varAvrgLoss)
             varAvrgLoss = 0
 
-        # Note that this is expensive (~20% slowdown if computed every 500 steps)
+        # Note that this is expensive (~20% slowdown if computed every 500
+        # steps)
         if idxItr % 50000 == 0:
 
             arySimTmp = arySim.eval()
@@ -344,8 +342,9 @@ np.savez(os.path.join(strTfLog, 'word2vec_data.npz'),
 
 print('---Visualising embeddings.')
 
-# Function to draw visualization of distance between embeddings.
+
 def plot_with_labels(low_dim_embs, aryCntxt, filename):
+    """Draw visualization of distance between embeddings."""
     assert low_dim_embs.shape[0] >= len(aryCntxt), 'More labels than embeddings'
     plt.figure(figsize=(18, 18))  # in inches
     for i, label in enumerate(aryCntxt):
@@ -360,6 +359,7 @@ def plot_with_labels(low_dim_embs, aryCntxt, filename):
             va='bottom')
 
     plt.savefig(filename)
+
 
 tsne = TSNE(perplexity=30,
             n_components=2,

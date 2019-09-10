@@ -17,7 +17,7 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-#strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+# strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
@@ -25,7 +25,7 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-#strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+# strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
@@ -69,7 +69,7 @@ try:
     tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
     print(('--> Using device: ' + gpus[0].name))
     lgcGpu = True
-except:
+except AttributeError:
     lgcGpu = False
 
 
@@ -81,7 +81,7 @@ try:
     from google.colab import drive
     # Mount google drive:
     drive.mount('drive')
-except:
+except ModuleNotFoundError:
     pass
 
 # Load npz file:
@@ -349,20 +349,20 @@ if strPthMdl is None:
                                                                 axis=2))
 
     aryL05 = tf.keras.layers.LSTM(varNrn05,
-                                    activation='tanh',
-                                    recurrent_activation='hard_sigmoid',
-                                    dropout=varInDrp,
-                                    recurrent_dropout=varStDrp,
-                                    kernel_regularizer=objRegL2,
-                                    return_sequences=False,
-                                    return_state=False,
-                                    go_backwards=False,
-                                    stateful=lgcState,
-                                    unroll=False,
-                                    name='LstmLayer05'
-                                    )(tf.keras.layers.concatenate([aryL04,
-                                                                   aryL01],
-                                                                  axis=2))
+                                  activation='tanh',
+                                  recurrent_activation='hard_sigmoid',
+                                  dropout=varInDrp,
+                                  recurrent_dropout=varStDrp,
+                                  kernel_regularizer=objRegL2,
+                                  return_sequences=False,
+                                  return_state=False,
+                                  go_backwards=False,
+                                  stateful=lgcState,
+                                  unroll=False,
+                                  name='LstmLayer05'
+                                  )(tf.keras.layers.concatenate([aryL04,
+                                                                 aryL01],
+                                                                axis=2))
 
     # Dense feedforward layer:
     aryL06 = tf.keras.layers.Dense(varSzeEmb,
@@ -485,19 +485,19 @@ if strPthMdl is None:
                                                                 axis=2))
 
     aryT05 = tf.keras.layers.LSTM(varNrn05,
-                                    activation='tanh',
-                                    recurrent_activation='hard_sigmoid',
-                                    dropout=0.0,
-                                    recurrent_dropout=0.0,
-                                    return_sequences=False,
-                                    return_state=False,
-                                    go_backwards=False,
-                                    stateful=True,
-                                    unroll=False,
-                                    name='TestingLstmLayer05'
-                                    )(tf.keras.layers.concatenate([aryT04,
-                                                                   aryT01],
-                                                                  axis=2))
+                                  activation='tanh',
+                                  recurrent_activation='hard_sigmoid',
+                                  dropout=0.0,
+                                  recurrent_dropout=0.0,
+                                  return_sequences=False,
+                                  return_state=False,
+                                  go_backwards=False,
+                                  stateful=True,
+                                  unroll=False,
+                                  name='TestingLstmLayer05'
+                                  )(tf.keras.layers.concatenate([aryT04,
+                                                                 aryT01],
+                                                                axis=2))
 
     # Dense feedforward layer:
     aryT06 = tf.keras.layers.Dense(varSzeEmb,
@@ -576,6 +576,7 @@ objIdxQ = queue.Queue(maxsize=varCapQ)
 # Batches are prepared in a queue-feeding-function that runs in a separate
 # thread.
 
+
 def training_queue():
     """Place training data on queue."""
 
@@ -591,7 +592,7 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    #vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
+    # vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
     vecIdxWrd = np.linspace(1,
                             (varSzeBtch * 1),
                             num=varSzeBtch,
@@ -744,7 +745,8 @@ for idxOpt in range(varNumOpt):
         # Use old (tf 1.13) implementation for writing loss to tensorboard
         # summary.
         objSmry = tf.Summary(value=[tf.Summary.Value(tag="loss",
-            simple_value=varLoss01), ])
+                                                     simple_value=varLoss01),
+                                    ])
         objLogWrt.add_summary(objSmry, global_step=idxOpt)
 
     # Give status feedback:
@@ -803,9 +805,10 @@ for idxOpt in range(varNumOpt):
             # Get test prediction for current context word(s):
             vecWrd = objTstMdl.predict_on_batch(aryTstCtxt)
 
-            #objSmry = objSess.run(objMrgSmry,
-            #                      feed_dict={objPlcPredWrd: vecWrd.flatten()})
-            #objLogWrt.add_summary(objSmry, global_step=idxOpt)
+            # objSmry = objSess.run(objMrgSmry,
+            #                       feed_dict={objPlcPredWrd:
+            #                                  vecWrd.flatten()})
+            # objLogWrt.add_summary(objSmry, global_step=idxOpt)
 
             # Current loss:
             varLoss02 = np.sum(
