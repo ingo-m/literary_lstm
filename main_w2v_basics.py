@@ -29,10 +29,10 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 # strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 10
+varNumItr = 1000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -44,7 +44,7 @@ varNrn01 = 384
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 512
+varSzeBtch = 1
 
 # Input dropout:
 varInDrp = 0.3
@@ -88,7 +88,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-# vecC = vecC[15:200]
+vecC = vecC[15:1000]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -567,7 +567,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 1000
+        varLenCntx = 100
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
