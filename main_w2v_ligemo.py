@@ -228,6 +228,7 @@ if strPthMdl is None:
     # Shortcut for activation functions:
     tanh = tf.keras.activations.tanh
     sigmoid = tf.keras.activations.sigmoid
+    softmax = tf.keras.activations.softmax
 
     class LiGeMo(tf.keras.Model):
         """Literature generating model."""
@@ -270,7 +271,7 @@ if strPthMdl is None:
 
             # Dense layer controlling input to memory:
             self.dmi = tf.keras.layers.Dense(units_01,
-                                             activation=sigmoid,
+                                             activation=softmax,
                                              name='dense_memory_in')
 
             # Random values for initial state of memory vector:
