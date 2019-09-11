@@ -231,6 +231,8 @@ if strPthMdl is None:
                      name='whuut',
                      **kwargs):
             super(MyModel, self).__init__(name=name, **kwargs)
+
+            # Feedforward:
             self.drop1 = tf.keras.layers.Dropout(drop_in)
             self.d1 = tf.keras.layers.Dense(units_01,
                                             input_shape=(batch_size, 1, emb_size),
@@ -241,19 +243,66 @@ if strPthMdl is None:
                                             activation=tf.keras.activations.tanh,
                                             name='dense_2')
 
+            # Recurrent access:
+            vec_rand_01 = tf.random.normal((batch_size, units_01),
+                                           mean=0.0,
+                                           stddev=0.5,
+                                           dtype=tf.float32)
+            #vec_rand_01 = np.random.normal(loc=0.0,
+            #                               scale=0.5,
+            #                               size=(batch_size, units_01)).astype(np.float32)
+            self.r_a_state = tf.Variable(initial_value=vec_rand_01,
+                                         trainable=True,
+                                         dtype=tf.float32,
+                                         name='recurrent_access_state')
+            self.r_a = tf.keras.layers.Dense(units_01,
+                                             activation=tf.keras.activations.tanh,
+                                             name='recurrent_access')
+
+            # Memory:
+            vec_rand_02 = tf.random.normal((batch_size, units_01),
+                                           mean=0.0,
+                                           stddev=0.1,
+                                           dtype=tf.float32)
+            #vec_rand_02 = np.random.normal(loc=0.0,
+            #                               scale=0.5,
+            #                               size=(batch_size, units_01)).astype(np.float32)
+            self.memory = tf.Variable(initial_value=vec_rand_02,
+                                      trainable=False,
+                                      dtype=tf.float32,
+                                      name='recurrent_memory')
+
+            # Math ops:
+            self.a1 = tf.keras.layers.Add()
+            self.m1 = tf.keras.layers.Multiply()
+            self.c1 = tf.keras.layers.Concatenate(axis=2)
+
         def call(self, inputs):
+            # Feedforward module 1:
             x = self.drop1(inputs)
             x = self.d1(x)
-            x = self.drop2(x)
+
+            # Recurrent memory:
+            r = self.r_a(self.r_a_state)
+            n = self.m1([r, x])
+            m = self.a1([self.memory, n])
+            j = self.c1([x, m])
+
+            # Update memory and state:
+            self.memory = m
+            self.r_a_state = r
+
+            # Feedforward module 2:
+            x = self.drop2(j)
             x = self.d2(x)
             return x
 
-    objMdlInst = MyModel(varSzeBtch, varSzeEmb, varNrn01, varInDrp)
+    objMdlInst = MyModel(varSzeBtch, varSzeEmb, varNrn01, varInDrp, name='Train_model')
     objOut = objMdlInst(objTrnCtxt)
     objMdl = tf.keras.Model(inputs=objTrnCtxt, outputs=objOut)
 
-    objTstMdlInst = MyModel(1, varSzeEmb, varNrn01, 0.0)
-    objTstOut = objMdlInst(objTstCtxt)
+    objTstMdlInst = MyModel(1, varSzeEmb, varNrn01, 0.0, name='Test_model')
+    objTstOut = objTstMdlInst(objTstCtxt)
     objTstMdl = tf.keras.Model(inputs=objTstCtxt, outputs=objTstOut)
 
 
@@ -470,6 +519,10 @@ if lgcGpu:
 # *** Training
 
 print('--> Beginning of training.')
+
+# init = tf.initialize_all_variables()
+init = tf.global_variables_initializer()
+objSess.run(init)
 
 # Loop through optimisation steps (one batch per optimisation step):
 for idxOpt in range(varNumOpt):
