@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""LSTM function using word2vec embedding."""
+"""
+Generative language model.
+
+Specifications:
+  - Two feedforward layers
+  - A separate memory module projecting into the second feedforward layer
+  - A simple recurrent module controlling access to memory module from first
+    feedforward layer
+  - Word-level embedding (word2vec)
+"""
 
 
 import os
