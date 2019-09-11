@@ -6,8 +6,7 @@ Literature generating model.
 Specifications:
   - Two feedforward layers
   - A separate memory module projecting into the second feedforward layer
-  - A simple recurrent module controlling access to memory module from first
-    feedforward layer
+  - A recurrent module controlling access to memory module
   - Word-level embedding (word2vec)
 """
 
@@ -48,6 +47,9 @@ varDspStp = 1000
 
 # Number of neurons:
 varNrn01 = 384
+
+# Number of memory units:
+varNumMem = 1000
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -237,10 +239,13 @@ if strPthMdl is None:
                      batch_size,
                      emb_size,
                      units_01,
+                     mem_size,
                      drop_in,
                      name='LiGeMo',
                      **kwargs):
             super(LiGeMo, self).__init__(name=name, **kwargs)
+
+            # ** Feedforward modules **
 
             # First feedforward module:
             self.drop1 = tf.keras.layers.Dropout(drop_in)
@@ -257,37 +262,80 @@ if strPthMdl is None:
                                             activation=tanh,
                                             name='dense_2')
 
+            # ** Memory input **
+
             # Random values for initial state of memory input gate:
-            vec_rand_01 = tf.random.normal((batch_size, units_01),
+            vec_rand_01 = tf.random.normal((batch_size, mem_size),
                                            mean=0.0,
                                            stddev=0.5,
                                            dtype=tf.float32)
 
-            # Memory input state:
+            # Memory input gate, recurrent input:
             self.mem_in_state = tf.Variable(initial_value=vec_rand_01,
-                                            trainable=True,
+                                            trainable=False,
                                             dtype=tf.float32,
                                             name='memory_input_state')
 
             # Dense layer controlling input to memory:
-            self.dmi = tf.keras.layers.Dense(units_01,
-                                             activation=tanh,
+            self.dmi = tf.keras.layers.Dense(mem_size,
+                                             activation=softmax,
                                              name='dense_memory_in')
 
+            # ** Memory output **
+
+            # Random values for initial state of memory output gate:
+            vec_rand_02 = tf.random.normal((batch_size, emb_size),
+                                           mean=0.0,
+                                           stddev=0.5,
+                                           dtype=tf.float32)
+
+            # Memory output gate, recurrent input:
+            self.mem_out_state = tf.Variable(initial_value=vec_rand_02,
+                                             trainable=False,
+                                             dtype=tf.float32,
+                                             name='memory_output_state')
+
+            # Dense layer controlling memory output:
+            self.dmo = tf.keras.layers.Dense(emb_size,
+                                             activation=tanh,
+                                             name='dense_memory_out')
+
+            # ** Erase **
+
+            # Random values for initial state of memory output gate:
+            vec_rand_03 = tf.random.normal((batch_size, mem_size),
+                                           mean=0.0,
+                                           stddev=0.5,
+                                           dtype=tf.float32)
+
+            # Memory output gate, recurrent input:
+            self.erase_state = tf.Variable(initial_value=vec_rand_03,
+                                           trainable=False,
+                                           dtype=tf.float32,
+                                           name='forget_state')
+
+            # Dense layer controlling forgetting (erasing from memory):
+            self.ers = tf.keras.layers.Dense(mem_size,
+                                             activation=softmax,
+                                             name='dense_forget')
+
+            # ** Memory **
+
             # Random values for initial state of memory vector:
-            vec_rand_02 = tf.random.normal((batch_size, units_01),
+            vec_rand_04 = tf.random.normal((batch_size, mem_size),
                                            mean=0.0,
                                            stddev=0.1,
                                            dtype=tf.float32)
 
             # The actual memory state:
-            self.memory = tf.Variable(initial_value=vec_rand_02,
+            self.memory = tf.Variable(initial_value=vec_rand_04,
                                       trainable=False,
                                       dtype=tf.float32,
                                       name='memory_vector')
 
             # Math ops:
             self.add = tf.keras.layers.Add()
+            self.sub = tf.keras.layers.Subtract()
             self.mult = tf.keras.layers.Multiply()
             self.conc = tf.keras.layers.Concatenate(axis=1)
 
@@ -297,36 +345,62 @@ if strPthMdl is None:
             f1 = self.drop1(inputs)
             f1 = self.d1(f1)
 
-            # Recurrent layer controlling memory access takes as input its own
-            # output (i.e. recurrent), the output of the first feedforward
-            # module, and the memory vector itself:
+            # Recurrent layer controlling memory input:
             r1 = self.conc([self.mem_in_state,
+                            self.mem_out_state,
+                            self.erase_state,
                             f1[:, 0, :],
                             self.memory])
-            recurrent = self.dmi(r1)
+            mem_in = self.dmi(r1)
 
             # Activation of first feedforward module gets gated into memory:
-            recurrent_scaled = self.mult([recurrent, f1[:, 0, :]])
-            new_memory = self.add([self.memory, recurrent_scaled])
+            # recurrent_scaled = self.mult([recurrent, f1[:, 0, :]])
+            # new_memory = self.add([self.memory, recurrent_scaled])
 
-            # Update memory and state:
+            # Recurrent layer controlling memory output (read from memory):
+            r2 = self.conc([self.mem_in_state,
+                            self.mem_out_state,
+                            self.erase_state,
+                            f1[:, 0, :],
+                            self.memory])
+            mem_out = self.dmo(r2)
+
+            # Recurrent layer controlling forgetting (erase memory):
+            r3 = self.conc([self.mem_in_state,
+                            self.mem_out_state,
+                            self.erase_state,
+                            f1[:, 0, :],
+                            self.memory])
+            erase = self.ers(r3)
+
+            # Output of memory input layer gets added to memory:
+            new_memory = self.add([self.memory, mem_in])
+            # Output of forget layer gets subtracted from memory:
+            new_memory = self.sub([new_memory, erase])
+            # new_memory = self.sub([mem_in, erase])
+            # new_memory = self.add([self.memory, new_memory])
+
+            # Update memory and states:
             self.memory = new_memory
-            self.mem_in_state = recurrent
+            self.mem_in_state = mem_in
+            self.mem_out_state = mem_out
+            self.erase_state = erase
 
             # Concatenate output of first feedforward module and updated memory
-            # vector:
-            f1_mem = self.conc([f1[:, 0, :], new_memory])
+            # output:
+            # f1_mem = self.conc([f1[:, 0, :], mem_out])  # no gradient
+            f1_mem = self.conc([f1[:, 0, :], mem_in, mem_out, erase])
 
             # Activation of second feedforward module:
             f2 = self.drop2(f1_mem)
             f2 = self.d2(f2)
-
             return f2
 
     # Training model (with dropout):
     objMdlInst = LiGeMo(varSzeBtch,
                         varSzeEmb,
                         varNrn01,
+                        varNumMem,
                         varInDrp,
                         name='Train_model')
     objOut = objMdlInst(objTrnCtxt)
@@ -336,6 +410,7 @@ if strPthMdl is None:
     objTstMdlInst = LiGeMo(1,
                            varSzeEmb,
                            varNrn01,
+                           varNumMem,
                            0.0,
                            name='Test_model')
     objTstOut = objTstMdlInst(objTstCtxt)
