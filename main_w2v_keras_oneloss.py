@@ -544,9 +544,7 @@ strPthLogSes = os.path.join(strPthLog, strDate)
 if not os.path.exists(strPthLogSes):
     os.makedirs(strPthLogSes)
 
-
-
-# Placeholder for word vector of predicted words:
+# Placeholder for histogram vector:
 objPlcHist = tf.placeholder(tf.float32, shape=(300, 1536))
 # objHistVals = tf.Variable(initial_value=0.0, shape=varNrn01, dtype=tf.float32)
 
