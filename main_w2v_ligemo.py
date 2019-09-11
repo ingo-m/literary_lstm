@@ -298,8 +298,8 @@ if strPthMdl is None:
             f1 = self.d1(f1)
 
             # Recurrent layer controlling memory access takes as input its own
-            # output (i.e. recurrent), the memory state, and the memory vector
-            # itself:
+            # output (i.e. recurrent), the output of the first feedforward
+            # module, and the memory vector itself:
             r1 = self.conc([self.mem_in_state,
                             f1[:, 0, :],
                             self.memory])
