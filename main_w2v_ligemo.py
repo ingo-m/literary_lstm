@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Generative language model.
+Literature generating model.
 
 Specifications:
   - Two feedforward layers
@@ -26,7 +26,7 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
 # strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
@@ -59,14 +59,14 @@ varSzeBtch = 1
 varInDrp = 0.3
 
 # Recurrent state dropout:
-varStDrp = 0.3
+# varStDrp = 0.3
 
 
 # -----------------------------------------------------------------------------
 # *** Use GPU if available:
 
 try:
-    from tensorflow.python.client import device_lib
+    from tensorflow.python.client import device_lib  # noqa
     gpus = tf.config.experimental.list_physical_devices('GPU')
     tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
     print(('--> Using device: ' + gpus[0].name))
@@ -225,95 +225,114 @@ if strPthMdl is None:
 
     print('Building new model.')
 
-    # Regularisation:
-    objRegL2 = None
+    # Shortcut for activation functions:
+    tanh = tf.keras.activations.tanh
+    sigmoid = tf.keras.activations.sigmoid
 
-    # Stateful model:
-    lgcState = True
+    class LiGeMo(tf.keras.Model):
+        """Literature generating model."""
 
-    class MyModel(tf.keras.Model):
-        def __init__(self,
+        def __init__(self,  # noqa
                      batch_size,
                      emb_size,
                      units_01,
                      drop_in,
-                     name='whuut',
+                     name='LiGeMo',
                      **kwargs):
-            super(MyModel, self).__init__(name=name, **kwargs)
+            super(LiGeMo, self).__init__(name=name, **kwargs)
 
-            # Feedforward:
+            # First feedforward module:
             self.drop1 = tf.keras.layers.Dropout(drop_in)
             self.d1 = tf.keras.layers.Dense(units_01,
-                                            input_shape=(batch_size, 1, emb_size),
-                                            activation=tf.keras.activations.tanh,
+                                            input_shape=(batch_size,
+                                                         1,
+                                                         emb_size),
+                                            activation=tanh,
                                             name='dense_1')
+
+            # Second feedforward module:
             self.drop2 = tf.keras.layers.Dropout(drop_in)
             self.d2 = tf.keras.layers.Dense(emb_size,
-                                            activation=tf.keras.activations.tanh,
+                                            activation=tanh,
                                             name='dense_2')
 
-            # Recurrent access:
+            # Random values for initial state of memory input gate:
             vec_rand_01 = tf.random.normal((batch_size, units_01),
                                            mean=0.0,
                                            stddev=0.5,
                                            dtype=tf.float32)
-            #vec_rand_01 = np.random.normal(loc=0.0,
-            #                               scale=0.5,
-            #                               size=(batch_size, units_01)).astype(np.float32)
-            self.r_a_state = tf.Variable(initial_value=vec_rand_01,
-                                         trainable=True,
-                                         dtype=tf.float32,
-                                         name='recurrent_access_state')
-            self.r_a = tf.keras.layers.Dense(units_01,
-                                             activation=tf.keras.activations.tanh,
-                                             name='recurrent_access')
 
-            # Memory:
+            # Memory input state:
+            self.mem_in_state = tf.Variable(initial_value=vec_rand_01,
+                                            trainable=True,
+                                            dtype=tf.float32,
+                                            name='memory_input_state')
+
+            # Dense layer controlling input to memory:
+            self.dmi = tf.keras.layers.Dense(units_01,
+                                             activation=sigmoid,
+                                             name='dense_memory_in')
+
+            # Random values for initial state of memory vector:
             vec_rand_02 = tf.random.normal((batch_size, units_01),
                                            mean=0.0,
                                            stddev=0.1,
                                            dtype=tf.float32)
-            #vec_rand_02 = np.random.normal(loc=0.0,
-            #                               scale=0.5,
-            #                               size=(batch_size, units_01)).astype(np.float32)
+
+            # The actual memory state:
             self.memory = tf.Variable(initial_value=vec_rand_02,
                                       trainable=False,
                                       dtype=tf.float32,
-                                      name='recurrent_memory')
+                                      name='memory_vector')
 
             # Math ops:
-            self.a1 = tf.keras.layers.Add()
-            self.m1 = tf.keras.layers.Multiply()
-            self.c1 = tf.keras.layers.Concatenate(axis=2)
+            self.add = tf.keras.layers.Add()
+            self.mult = tf.keras.layers.Multiply()
+            self.conc = tf.keras.layers.Concatenate(axis=2)
 
-        def call(self, inputs):
-            # Feedforward module 1:
-            x = self.drop1(inputs)
-            x = self.d1(x)
+        def call(self, inputs):  # noqa
 
-            # Recurrent memory:
-            r = self.r_a(self.r_a_state)
-            n = self.m1([r, x])
-            m = self.a1([self.memory, n])
-            j = self.c1([x, m])
+            # Activation of first feedforward module:
+            f1 = self.drop1(inputs)
+            f1 = self.d1(f1)
+
+            # Recurrent layer controlling memory access activates itself:
+            recurrent = self.dmi(self.mem_in_state)
+
+            # Activation of first feedforward module gets gated into memory:
+            recurrent_scaled = self.mult([recurrent, f1])
+            new_memory = self.add([self.memory, recurrent_scaled])
 
             # Update memory and state:
-            self.memory = m
-            self.r_a_state = r
+            self.memory = new_memory
+            self.mem_in_state = recurrent
 
-            # Feedforward module 2:
-            x = self.drop2(j)
-            x = self.d2(x)
-            return x
+            # Concatenate output of first feedforward module and updated memory
+            # vector:
+            f1_mem = self.conc([f1, new_memory])
 
-    objMdlInst = MyModel(varSzeBtch, varSzeEmb, varNrn01, varInDrp, name='Train_model')
+            # Activation of second feedforward module:
+            f2 = self.drop2(f1_mem)
+            f2 = self.d2(f2)
+            return f2
+
+    # Training model (with dropout):
+    objMdlInst = LiGeMo(varSzeBtch,
+                        varSzeEmb,
+                        varNrn01,
+                        varInDrp,
+                        name='Train_model')
     objOut = objMdlInst(objTrnCtxt)
     objMdl = tf.keras.Model(inputs=objTrnCtxt, outputs=objOut)
 
-    objTstMdlInst = MyModel(1, varSzeEmb, varNrn01, 0.0, name='Test_model')
+    # Testing model (without dropout):
+    objTstMdlInst = LiGeMo(1,
+                           varSzeEmb,
+                           varNrn01,
+                           0.0,
+                           name='Test_model')
     objTstOut = objTstMdlInst(objTstCtxt)
     objTstMdl = tf.keras.Model(inputs=objTstCtxt, outputs=objTstOut)
-
 
 else:
     print('Loading pre-trained model from disk.')
@@ -353,7 +372,8 @@ if not os.path.exists(strPthLogSes):
 
 # Placeholder for histogram values:
 # objPlcHist = tf.placeholder(tf.float32, shape=(300, 1536))
-# objHistVals = tf.Variable(initial_value=0.0, shape=varNrn01, dtype=tf.float32)
+# objHistVals = tf.Variable(initial_value=0.0, shape=varNrn01,
+#  dtype=tf.float32)
 
 # Create histrogram:
 # objHistPred = tf.summary.histogram("Weights_01", objPlcHist)
@@ -379,7 +399,6 @@ objIdxQ = queue.Queue(maxsize=varCapQ)
 
 def training_queue():
     """Place training data on queue."""
-
     # We feed samples to the stateful LSTM by indexing the text at regular
     # intervals. Each index is incremented after each optimisation step. In
     # this way, samples in successive batches match in accordance with the
@@ -492,7 +511,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        #!nvidia-smi
+        # !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -714,19 +733,18 @@ print('--> End of training.')
 # Get model weights:
 lstWghts = objMdl.get_weights()
 
-# Save model to disk:
-tf.keras.models.save_model(objMdl,
-                           os.path.join(strPthLogSes, 'lstm_training_model'))
-tf.keras.models.save_model(objTstMdl,
-                           os.path.join(strPthLogSes, 'lstm_test_model'))
-
 # Save model weights and training parameters to disk:
-np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
+np.savez(os.path.join(strPthLogSes, 'ligemo_data.npz'),
          varLrnRte=varLrnRte,
          varNumItr=varNumItr,
          varSzeEmb=varSzeEmb,
          varSzeBtch=varSzeBtch,
          varInDrp=varInDrp,
-         varStDrp=varStDrp,
          lstWghts=lstWghts,
          )
+
+# Save model to disk:
+# tf.keras.models.save_model(objMdl,
+#                            os.path.join(strPthLogSes, 'lstm_training_model'))
+# tf.keras.models.save_model(objTstMdl,
+#                            os.path.join(strPthLogSes, 'lstm_test_model'))
