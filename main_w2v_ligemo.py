@@ -271,7 +271,7 @@ if strPthMdl is None:
 
             # Dense layer controlling input to memory:
             self.dmi = tf.keras.layers.Dense(units_01,
-                                             activation=softmax,
+                                             activation=tanh,
                                              name='dense_memory_in')
 
             # Random values for initial state of memory vector:
@@ -289,7 +289,7 @@ if strPthMdl is None:
             # Math ops:
             self.add = tf.keras.layers.Add()
             self.mult = tf.keras.layers.Multiply()
-            self.conc = tf.keras.layers.Concatenate(axis=2)
+            self.conc = tf.keras.layers.Concatenate(axis=1)
 
         def call(self, inputs):  # noqa
 
@@ -297,11 +297,16 @@ if strPthMdl is None:
             f1 = self.drop1(inputs)
             f1 = self.d1(f1)
 
-            # Recurrent layer controlling memory access activates itself:
-            recurrent = self.dmi(self.mem_in_state)
+            # Recurrent layer controlling memory access takes as input its own
+            # output (i.e. recurrent), the memory state, and the memory vector
+            # itself:
+            r1 = self.conc([self.mem_in_state,
+                            f1[:, 0, :],
+                            self.memory])
+            recurrent = self.dmi(r1)
 
             # Activation of first feedforward module gets gated into memory:
-            recurrent_scaled = self.mult([recurrent, f1])
+            recurrent_scaled = self.mult([recurrent, f1[:, 0, :]])
             new_memory = self.add([self.memory, recurrent_scaled])
 
             # Update memory and state:
@@ -310,11 +315,12 @@ if strPthMdl is None:
 
             # Concatenate output of first feedforward module and updated memory
             # vector:
-            f1_mem = self.conc([f1, new_memory])
+            f1_mem = self.conc([f1[:, 0, :], new_memory])
 
             # Activation of second feedforward module:
             f2 = self.drop2(f1_mem)
             f2 = self.d2(f2)
+
             return f2
 
     # Training model (with dropout):
