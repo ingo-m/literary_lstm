@@ -25,25 +25,25 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
-# strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+# strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
+strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-# strPthLog = 'drive/My Drive/lstm_log'
+# strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 1000
+varNumItr = 100
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 10000
 
 # Number of neurons:
 varNrn01 = 384
@@ -99,7 +99,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[15:1000]
+# vecC = vecC[15:1000]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -157,7 +157,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 8
+varCapQ = 100
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -380,6 +380,11 @@ if strPthMdl is None:
             # new_memory = self.sub([mem_in, erase])
             # new_memory = self.add([self.memory, new_memory])
 
+            # Avoid excessive growth of memory vector:
+            new_memory = tf.clip_by_value(new_memory,
+                                          -1.0,
+                                          1.0)
+
             # Update memory and states:
             self.memory = new_memory
             self.mem_in_state = mem_in
@@ -593,7 +598,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        # !nvidia-smi
+        !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
