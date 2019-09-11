@@ -222,40 +222,37 @@ if strPthMdl is None:
     # Stateful model:
     lgcState = True
 
-    # specify an `input_shape` argument in the first layer(s) for automatic build
-
     class MyModel(tf.keras.Model):
         def __init__(self,
                      batch_size,
                      emb_size,
                      units_01,
+                     drop_in,
                      name='whuut',
                      **kwargs):
             super(MyModel, self).__init__(name=name, **kwargs)
+            self.drop1 = tf.keras.layers.Dropout(drop_in)
             self.d1 = tf.keras.layers.Dense(units_01,
                                             input_shape=(batch_size, 1, emb_size),
                                             activation=tf.keras.activations.tanh,
                                             name='dense_1')
+            self.drop2 = tf.keras.layers.Dropout(drop_in)
             self.d2 = tf.keras.layers.Dense(emb_size,
                                             activation=tf.keras.activations.tanh,
                                             name='dense_2')
 
         def call(self, inputs):
-            x = self.d1(inputs)
+            x = self.drop1(inputs)
+            x = self.d1(x)
+            x = self.drop2(x)
             x = self.d2(x)
             return x
 
-    objMdlInst = MyModel(varSzeBtch, varSzeEmb, varNrn01)
-    #objMdl.build((varSzeBtch, 1, varSzeEmb))
-    #objMdl.inputs = objTrnCtxt
-    #objMdl.outputs =
+    objMdlInst = MyModel(varSzeBtch, varSzeEmb, varNrn01, varInDrp)
     objOut = objMdlInst(objTrnCtxt)
     objMdl = tf.keras.Model(inputs=objTrnCtxt, outputs=objOut)
 
-    objTstMdlInst = MyModel(1, varSzeEmb, varNrn01)
-    #objTstMdl.build((1, 1, varSzeEmb))
-    #objTstMdl.inputs = objTstCtxt
-    #objTstMdl.outputs =
+    objTstMdlInst = MyModel(1, varSzeEmb, varNrn01, 0.0)
     objTstOut = objMdlInst(objTstCtxt)
     objTstMdl = tf.keras.Model(inputs=objTstCtxt, outputs=objTstOut)
 
