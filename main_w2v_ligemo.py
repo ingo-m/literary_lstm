@@ -25,37 +25,37 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
-# strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+#strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
+strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-# strPthLog = 'drive/My Drive/lstm_log'
+#strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 100
+varNumItr = 1000
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
 
 # Number of neurons:
-varNrn01 = 384
+varNrn01 = 512
 
 # Number of memory units:
-varNumMem = 384
+varNumMem = 512
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 1
+varSzeBtch = 512
 
 # Input dropout:
 varInDrp = 0.3
@@ -99,7 +99,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[15:1000]
+# vecC = vecC[15:1000]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -564,7 +564,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        #!nvidia-smi
+        !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -648,13 +648,23 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 100
+        varLenCntx = 1000
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
 
             # Copy weights from training model to test model:
-            objTstMdl.set_weights(objMdl.get_weights())
+            lstTmpWghts = objMdl.get_weights()
+            # Recurrent status vectors and memory state have different batch
+            # size between training and testing model. They are initialised as
+            # zero. Not needed in tensorflow 1.14.0.
+            # lstTmpWghts[8] = np.zeros(objTstMdl.get_weights()[8].shape,
+            #                           dtype=np.float32)
+            # lstTmpWghts[9] = np.zeros(objTstMdl.get_weights()[9].shape,
+            #                           dtype=np.float32)
+            # lstTmpWghts[10] = np.zeros(objTstMdl.get_weights()[10].shape,
+            #                           dtype=np.float32)
+            objTstMdl.set_weights(lstTmpWghts)
 
             # Initialise state of the (statefull) prediction model with
             # context.
