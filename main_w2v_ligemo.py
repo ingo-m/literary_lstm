@@ -25,16 +25,16 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-# strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
-strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
+# strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of previously trained model (parent directory containing training and
 # test models; if None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-# strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-strPthLog = 'drive/My Drive/lstm_log'
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+# strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.00001
@@ -49,7 +49,7 @@ varDspStp = 10000
 varNrn01 = 384
 
 # Number of memory units:
-varNumMem = 1000
+varNumMem = 384
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -99,7 +99,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-# vecC = vecC[15:1000]
+vecC = vecC[15:1000]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -296,28 +296,9 @@ if strPthMdl is None:
                                              name='memory_output_state')
 
             # Dense layer controlling memory output:
-            self.dmo = tf.keras.layers.Dense(emb_size,
+            self.dmo = tf.keras.layers.Dense(mem_size,
                                              activation=tanh,
                                              name='dense_memory_out')
-
-            # ** Erase **
-
-            # Random values for initial state of memory output gate:
-            vec_rand_03 = tf.random.normal((batch_size, mem_size),
-                                           mean=0.0,
-                                           stddev=0.5,
-                                           dtype=tf.float32)
-
-            # Memory output gate, recurrent input:
-            self.erase_state = tf.Variable(initial_value=vec_rand_03,
-                                           trainable=False,
-                                           dtype=tf.float32,
-                                           name='forget_state')
-
-            # Dense layer controlling forgetting (erasing from memory):
-            self.ers = tf.keras.layers.Dense(mem_size,
-                                             activation=softmax,
-                                             name='dense_forget')
 
             # ** Memory **
 
@@ -348,53 +329,38 @@ if strPthMdl is None:
             # Recurrent layer controlling memory input:
             r1 = self.conc([self.mem_in_state,
                             self.mem_out_state,
-                            self.erase_state,
                             f1[:, 0, :],
                             self.memory])
             mem_in = self.dmi(r1)
 
-            # Activation of first feedforward module gets gated into memory:
-            # recurrent_scaled = self.mult([recurrent, f1[:, 0, :]])
-            # new_memory = self.add([self.memory, recurrent_scaled])
-
             # Recurrent layer controlling memory output (read from memory):
             r2 = self.conc([self.mem_in_state,
                             self.mem_out_state,
-                            self.erase_state,
                             f1[:, 0, :],
                             self.memory])
             mem_out = self.dmo(r2)
 
-            # Recurrent layer controlling forgetting (erase memory):
-            r3 = self.conc([self.mem_in_state,
-                            self.mem_out_state,
-                            self.erase_state,
-                            f1[:, 0, :],
-                            self.memory])
-            erase = self.ers(r3)
+            # Gated memory output:
+            mem_out = self.mult([mem_out, self.memory])
 
             # Output of memory input layer gets added to memory:
-            new_memory = self.add([self.memory, mem_in])
-            # Output of forget layer gets subtracted from memory:
-            new_memory = self.sub([new_memory, erase])
-            # new_memory = self.sub([mem_in, erase])
-            # new_memory = self.add([self.memory, new_memory])
+            men_in_gated = self.mult([mem_in, f1[:, 0, :]])
+            new_memory = self.add([self.memory, men_in_gated])
 
             # Avoid excessive growth of memory vector:
             new_memory = tf.clip_by_value(new_memory,
-                                          -1.0,
-                                          1.0)
+                                          -100.0,
+                                          100.0)
 
             # Update memory and states:
             self.memory = new_memory
             self.mem_in_state = mem_in
             self.mem_out_state = mem_out
-            self.erase_state = erase
 
             # Concatenate output of first feedforward module and updated memory
             # output:
             # f1_mem = self.conc([f1[:, 0, :], mem_out])  # no gradient
-            f1_mem = self.conc([f1[:, 0, :], mem_in, mem_out, erase])
+            f1_mem = self.conc([f1[:, 0, :], mem_in, mem_out])
 
             # Activation of second feedforward module:
             f2 = self.drop2(f1_mem)
@@ -598,7 +564,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        !nvidia-smi
+        #!nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
