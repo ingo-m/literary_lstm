@@ -12,6 +12,8 @@ import numpy as np
 import tensorflow as tf
 import time
 
+from memory_module import MeLa
+
 
 # -----------------------------------------------------------------------------
 # *** Define parameters
@@ -43,9 +45,6 @@ varNrn02 = 256
 varNrn03 = 128
 varNrn04 = 256
 varNrn05 = 384
-varNrnLoop01 = 64
-varNrnLoop02 = 64
-varNrnLoop03 = 64
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -260,77 +259,25 @@ if strPthMdl is None:
                                   name='LstmLayer02'
                                   )(aryL01)
 
-    aryL03a = tf.keras.layers.LSTM(varNrn03,
-                                   activation='tanh',
-                                   recurrent_activation='hard_sigmoid',
-                                   dropout=varInDrp,
-                                   recurrent_dropout=varStDrp,
-                                   kernel_regularizer=objRegL2,
-                                   return_sequences=True,
-                                   return_state=False,
-                                   go_backwards=False,
-                                   stateful=lgcState,
-                                   unroll=False,
-                                   name='LstmLayer03a'
-                                   )(aryL02)
+    aryL03 = tf.keras.layers.LSTM(varNrn03,
+                                  activation='tanh',
+                                  recurrent_activation='hard_sigmoid',
+                                  dropout=varInDrp,
+                                  recurrent_dropout=varStDrp,
+                                  kernel_regularizer=objRegL2,
+                                  return_sequences=True,
+                                  return_state=False,
+                                  go_backwards=False,
+                                  stateful=lgcState,
+                                  unroll=False,
+                                  name='LstmLayer03'
+                                  )(aryL02)
 
-    aryLoop01 = tf.keras.layers.LSTM(varNrnLoop01,
-                                     activation='tanh',
-                                     recurrent_activation='hard_sigmoid',
-                                     dropout=varInDrp,
-                                     recurrent_dropout=varStDrp,
-                                     kernel_regularizer=objRegL2,
-                                     return_sequences=True,
-                                     return_state=False,
-                                     go_backwards=False,
-                                     stateful=lgcState,
-                                     unroll=False,
-                                     name='LstmLoop01'
-                                     )(aryL03a)
-
-    aryLoop02 = tf.keras.layers.LSTM(varNrnLoop02,
-                                     activation='tanh',
-                                     recurrent_activation='hard_sigmoid',
-                                     dropout=varInDrp,
-                                     recurrent_dropout=varStDrp,
-                                     kernel_regularizer=objRegL2,
-                                     return_sequences=True,
-                                     return_state=False,
-                                     go_backwards=False,
-                                     stateful=lgcState,
-                                     unroll=False,
-                                     name='LstmLoop02'
-                                     )(aryLoop01)
-
-    aryLoop03 = tf.keras.layers.LSTM(varNrnLoop03,
-                                     activation='tanh',
-                                     recurrent_activation='hard_sigmoid',
-                                     dropout=varInDrp,
-                                     recurrent_dropout=varStDrp,
-                                     kernel_regularizer=objRegL2,
-                                     return_sequences=True,
-                                     return_state=False,
-                                     go_backwards=False,
-                                     stateful=lgcState,
-                                     unroll=False,
-                                     name='LstmLoop03'
-                                     )(aryLoop02)
-
-    aryL03b = tf.keras.layers.LSTM(varNrn03,
-                                   activation='tanh',
-                                   recurrent_activation='hard_sigmoid',
-                                   dropout=varInDrp,
-                                   recurrent_dropout=varStDrp,
-                                   kernel_regularizer=objRegL2,
-                                   return_sequences=True,
-                                   return_state=False,
-                                   go_backwards=False,
-                                   stateful=lgcState,
-                                   unroll=False,
-                                   name='LstmLayer03b'
-                                   )(tf.keras.layers.concatenate([aryL03a,
-                                                                  aryLoop03],
-                                                                 axis=2))
+    aryMemMod = MeLa(batch_size=varSzeBtch,
+                     input_size=varNrn03,
+                     drop_in=0.3,
+                     drop_state=0.3,
+                     drop_mem=0.1)(aryL03)
 
     aryL04 = tf.keras.layers.LSTM(varNrn04,
                                   activation='tanh',
@@ -344,7 +291,7 @@ if strPthMdl is None:
                                   stateful=lgcState,
                                   unroll=False,
                                   name='LstmLayer04'
-                                  )(tf.keras.layers.concatenate([aryL03b,
+                                  )(tf.keras.layers.concatenate([aryMemMod,
                                                                  aryL02],
                                                                 axis=2))
 
@@ -415,59 +362,11 @@ if strPthMdl is None:
                                    name='TestingLstmLayer03a'
                                    )(aryT02)
 
-    aryLoopT1 = tf.keras.layers.LSTM(varNrnLoop01,
-                                     activation='tanh',
-                                     recurrent_activation='hard_sigmoid',
-                                     dropout=0.0,
-                                     recurrent_dropout=0.0,
-                                     return_sequences=True,
-                                     return_state=False,
-                                     go_backwards=False,
-                                     stateful=True,
-                                     unroll=False,
-                                     name='TestingLstmLoop01'
-                                     )(aryT03a)
-
-    aryLoopT2 = tf.keras.layers.LSTM(varNrnLoop02,
-                                     activation='tanh',
-                                     recurrent_activation='hard_sigmoid',
-                                     dropout=0.0,
-                                     recurrent_dropout=0.0,
-                                     return_sequences=True,
-                                     return_state=False,
-                                     go_backwards=False,
-                                     stateful=True,
-                                     unroll=False,
-                                     name='TestingLstmLoop02'
-                                     )(aryLoopT1)
-
-    aryLoopT3 = tf.keras.layers.LSTM(varNrnLoop03,
-                                     activation='tanh',
-                                     recurrent_activation='hard_sigmoid',
-                                     dropout=0.0,
-                                     recurrent_dropout=0.0,
-                                     return_sequences=True,
-                                     return_state=False,
-                                     go_backwards=False,
-                                     stateful=True,
-                                     unroll=False,
-                                     name='TestingLstmLoop03'
-                                     )(aryLoopT2)
-
-    aryT03b = tf.keras.layers.LSTM(varNrn03,
-                                   activation='tanh',
-                                   recurrent_activation='hard_sigmoid',
-                                   dropout=0.0,
-                                   recurrent_dropout=0.0,
-                                   return_sequences=True,
-                                   return_state=False,
-                                   go_backwards=False,
-                                   stateful=True,
-                                   unroll=False,
-                                   name='TestingLstmLayer03b'
-                                   )(tf.keras.layers.concatenate([aryT03a,
-                                                                  aryLoopT3],
-                                                                 axis=2))
+    aryMemModT = MeLa(batch_size=1,
+                      input_size=varNrn03,
+                      drop_in=0.0,
+                      drop_state=0.0,
+                      drop_mem=0.0)(aryT03a)
 
     aryT04 = tf.keras.layers.LSTM(varNrn04,
                                   activation='tanh',
@@ -480,7 +379,7 @@ if strPthMdl is None:
                                   stateful=True,
                                   unroll=False,
                                   name='TestingLstmLayer04'
-                                  )(tf.keras.layers.concatenate([aryT03b,
+                                  )(tf.keras.layers.concatenate([aryMemModT,
                                                                  aryT02],
                                                                 axis=2))
 
@@ -516,6 +415,9 @@ else:
                                                      'lstm_training_model'))
     objTstMdl = tf.keras.models.load_model(os.path.join(strPthMdl,
                                                         'lstm_test_model'))
+
+init = tf.global_variables_initializer()
+objSess.run(init)
 
 # Print model summary:
 print('Training model:')

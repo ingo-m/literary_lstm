@@ -17,20 +17,19 @@ class MeLa(tf.keras.layers.Layer):
     """Memory layer for literature generating model."""
 
     def __init__(self,  # noqa
-                 batch_size,
-                 input_size,
-                 output_size,
-                 mem_size,
-                 drop_in,
-                 drop_state,
-                 drop_mem,
+                 batch_size=None,
+                 input_size=None,
+                 drop_in=None,
+                 drop_state=None,
+                 drop_mem=None,
                  name='LiGeMo',
                  **kwargs):
         super(MeLa, self).__init__(name=name, **kwargs)
 
         # ** Memory input **
 
-        # Dropout layers for state arrays:
+        # Dropout layers:
+        self.drop_in = tf.keras.layers.Dropout(drop_in)
         self.drop_mem = tf.keras.layers.Dropout(drop_mem)
         self.drop_state1 = tf.keras.layers.Dropout(drop_state)
         self.drop_state2 = tf.keras.layers.Dropout(drop_state)
@@ -58,7 +57,7 @@ class MeLa(tf.keras.layers.Layer):
         # ** Memory output **
 
         # Random values for initial state of memory output gate:
-        vec_rand_02 = tf.random.normal((batch_size, output_size),
+        vec_rand_02 = tf.random.normal((batch_size, mem_size),
                                        mean=0.0,
                                        stddev=0.5,
                                        dtype=tf.float32)
@@ -70,7 +69,7 @@ class MeLa(tf.keras.layers.Layer):
                                          name='memory_output_state')
 
         # Dense layer controlling memory output:
-        self.dmo = tf.keras.layers.Dense(output_size,
+        self.dmo = tf.keras.layers.Dense(mem_size,
                                          activation=tanh,
                                          name='dense_memory_out')
 
@@ -94,11 +93,16 @@ class MeLa(tf.keras.layers.Layer):
         self.mult = tf.keras.layers.Multiply()
         self.conc = tf.keras.layers.Concatenate(axis=1)
 
+        # Reshape op for output (batch size gets added automatically):
+        self.reshape = tf.keras.layers.Reshape((1,
+                                                (2 * mem_size + input_size)
+                                                ))
+
 
     def call(self, inputs):  # noqa
 
         # Input dropout:
-        inputs = self.drop1(inputs)
+        inputs = self.drop_in(inputs)
 
         # Recurrent layer controlling memory input:
         r1 = self.conc([self.mem_in_state,   # batch_size * mem_size
@@ -145,6 +149,6 @@ class MeLa(tf.keras.layers.Layer):
         # Concatenate output of first feedforward module and updated memory
         # output:
         # f1_mem = self.conc([f1[:, 0, :], mem_out])  # no gradient
-        # out = self.conc([f1[:, 0, :], mem_in, mem_out])
+        out = self.conc([inputs[:, 0, :], mem_in, mem_out])
 
-        return mem_out
+        return self.reshape(out)
