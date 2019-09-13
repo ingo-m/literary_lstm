@@ -320,6 +320,7 @@ if strPthMdl is None:
             self.mult = tf.keras.layers.Multiply()
             self.conc = tf.keras.layers.Concatenate(axis=1)
 
+
         def call(self, inputs):  # noqa
 
             # Activation of first feedforward module:
@@ -361,6 +362,12 @@ if strPthMdl is None:
             self.memory = new_memory
             self.mem_in_state = mem_in
             self.mem_out_state = mem_out
+
+            # Only the reduced mean of the memory input gating is feed into
+            # the second feedforward layer.
+            mem_in = tf.math.reduce_mean(mem_in,
+                                         axis=1,
+                                         keepdims=True)
 
             # Concatenate output of first feedforward module and updated memory
             # output:
