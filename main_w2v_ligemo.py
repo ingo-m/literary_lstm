@@ -49,7 +49,7 @@ varDspStp = 10000
 varNrn01 = 512
 
 # Number of memory units:
-varNumMem = 512
+varNumMem = varNrn01 * 3  # hardcoded
 
 # Length of new text to generate:
 varLenNewTxt = 100
@@ -327,8 +327,8 @@ if strPthMdl is None:
             f1 = self.d1(f1)
 
             # Recurrent layer controlling memory input:
-            r1 = self.conc([self.mem_in_state,
-                            self.mem_out_state,
+            r1 = self.conc([self.mem_in_state,   # batch_size * mem_size
+                            self.mem_out_state,  # batch_size * emb_size
                             f1[:, 0, :],
                             self.memory])
             mem_in = self.dmi(r1)
@@ -344,7 +344,12 @@ if strPthMdl is None:
             mem_out = self.mult([mem_out, self.memory])
 
             # Output of memory input layer gets added to memory:
-            men_in_gated = self.mult([mem_in, f1[:, 0, :]])
+            men_in_gated = self.mult([mem_in,
+                                      self.conc([f1[:, 0, :],
+                                                 f1[:, 0, :],
+                                                 f1[:, 0, :]
+                                                 ])
+                                      ])
             new_memory = self.add([self.memory, men_in_gated])
 
             # Avoid excessive growth of memory vector:
