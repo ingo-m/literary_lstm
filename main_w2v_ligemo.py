@@ -46,7 +46,7 @@ varNumItr = 1000
 varDspStp = 10000
 
 # Number of neurons:
-varNrn01 = 512
+varNrn01 = 384
 
 # Number of memory units:
 varNumMem = varNrn01 * 3  # hardcoded
@@ -61,7 +61,7 @@ varSzeBtch = 512
 varInDrp = 0.3
 
 # Recurrent state dropout:
-# varStDrp = 0.3
+varStDrp = 0.2
 
 
 # -----------------------------------------------------------------------------
@@ -157,7 +157,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 100
+varCapQ = 32
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -241,6 +241,7 @@ if strPthMdl is None:
                      units_01,
                      mem_size,
                      drop_in,
+                     drop_state,
                      name='LiGeMo',
                      **kwargs):
             super(LiGeMo, self).__init__(name=name, **kwargs)
@@ -263,6 +264,11 @@ if strPthMdl is None:
                                             name='dense_2')
 
             # ** Memory input **
+
+            # Dropout layers for state arrays:
+            self.drop3 = tf.keras.layers.Dropout(drop_state)
+            self.drop4 = tf.keras.layers.Dropout(drop_state)
+            self.drop5 = tf.keras.layers.Dropout(drop_state)
 
             # Random values for initial state of memory input gate:
             vec_rand_01 = tf.random.normal((batch_size, mem_size),
@@ -359,9 +365,9 @@ if strPthMdl is None:
                                           100.0)
 
             # Update memory and states:
-            self.memory = new_memory
-            self.mem_in_state = mem_in
-            self.mem_out_state = mem_out
+            self.memory = self.drop3(new_memory)
+            self.mem_in_state = self.drop4(mem_in)
+            self.mem_out_state = self.drop5(mem_out)
 
             # Only the reduced mean of the memory input gating is feed into
             # the second feedforward layer.
@@ -385,6 +391,7 @@ if strPthMdl is None:
                         varNrn01,
                         varNumMem,
                         varInDrp,
+                        varStDrp,
                         name='Train_model')
     objOut = objMdlInst(objTrnCtxt)
     objMdl = tf.keras.Model(inputs=objTrnCtxt, outputs=objOut)
@@ -394,6 +401,7 @@ if strPthMdl is None:
                            varSzeEmb,
                            varNrn01,
                            varNumMem,
+                           0.0,
                            0.0,
                            name='Test_model')
     objTstOut = objTstMdlInst(objTstCtxt)
