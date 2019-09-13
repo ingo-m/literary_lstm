@@ -63,6 +63,9 @@ varInDrp = 0.3
 # Recurrent state dropout:
 varStDrp = 0.2
 
+# Memory dropout:
+varMemDrp = 0.1
+
 
 # -----------------------------------------------------------------------------
 # *** Use GPU if available:
@@ -242,6 +245,7 @@ if strPthMdl is None:
                      mem_size,
                      drop_in,
                      drop_state,
+                     drop_mem,
                      name='LiGeMo',
                      **kwargs):
             super(LiGeMo, self).__init__(name=name, **kwargs)
@@ -266,9 +270,9 @@ if strPthMdl is None:
             # ** Memory input **
 
             # Dropout layers for state arrays:
-            self.drop3 = tf.keras.layers.Dropout(drop_state)
-            self.drop4 = tf.keras.layers.Dropout(drop_state)
-            self.drop5 = tf.keras.layers.Dropout(drop_state)
+            self.drop_mem = tf.keras.layers.Dropout(drop_mem)
+            self.drop_state1 = tf.keras.layers.Dropout(drop_state)
+            self.drop_state2 = tf.keras.layers.Dropout(drop_state)
 
             # Random values for initial state of memory input gate:
             vec_rand_01 = tf.random.normal((batch_size, mem_size),
@@ -284,7 +288,7 @@ if strPthMdl is None:
 
             # Dense layer controlling input to memory:
             self.dmi = tf.keras.layers.Dense(mem_size,
-                                             activation=softmax,
+                                             activation=tanh,  # or use softmax?
                                              name='dense_memory_in')
 
             # ** Memory output **
@@ -365,9 +369,9 @@ if strPthMdl is None:
                                           100.0)
 
             # Update memory and states:
-            self.memory = self.drop3(new_memory)
-            self.mem_in_state = self.drop4(mem_in)
-            self.mem_out_state = self.drop5(mem_out)
+            self.memory = self.drop_mem(new_memory)
+            self.mem_in_state = self.drop_state1(mem_in)
+            self.mem_out_state = self.drop_state2(mem_out)
 
             # Only the reduced mean of the memory input gating is feed into
             # the second feedforward layer.
@@ -392,6 +396,7 @@ if strPthMdl is None:
                         varNumMem,
                         varInDrp,
                         varStDrp,
+                        varMemDrp,
                         name='Train_model')
     objOut = objMdlInst(objTrnCtxt)
     objMdl = tf.keras.Model(inputs=objTrnCtxt, outputs=objOut)
@@ -401,6 +406,7 @@ if strPthMdl is None:
                            varSzeEmb,
                            varNrn01,
                            varNumMem,
+                           0.0,
                            0.0,
                            0.0,
                            name='Test_model')
