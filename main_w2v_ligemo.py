@@ -25,15 +25,15 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-#strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
+# strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
 strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
-# Path of previously trained model (parent directory containing training and
-# test models; if None, new model is created):
-strPthMdl = None
+# Path of npz file containing previously trained model's weights to load (if
+# None, new model is created):
+strPthMdl = 'drive/My Drive/lstm_log/20190913_132940/ligemo_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
-#strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+# strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
@@ -225,202 +225,204 @@ objWght = objQ03.dequeue()
 # -----------------------------------------------------------------------------
 # *** Build the network
 
-# Load pre-trained model, or create new one:
+# Shortcut for activation functions:
+tanh = tf.keras.activations.tanh
+sigmoid = tf.keras.activations.sigmoid
+softmax = tf.keras.activations.softmax
+
+
+class LiGeMo(tf.keras.Model):
+    """Literature generating model."""
+
+    def __init__(self,  # noqa
+                 batch_size,
+                 emb_size,
+                 units_01,
+                 mem_size,
+                 drop_in,
+                 drop_state,
+                 drop_mem,
+                 name='LiGeMo',
+                 **kwargs):
+        super(LiGeMo, self).__init__(name=name, **kwargs)
+
+        # ** Feedforward modules **
+
+        # First feedforward module:
+        self.drop1 = tf.keras.layers.Dropout(drop_in)
+        self.d1 = tf.keras.layers.Dense(units_01,
+                                        input_shape=(batch_size,
+                                                     1,
+                                                     emb_size),
+                                        activation=tanh,
+                                        name='dense_1')
+
+        # Second feedforward module:
+        self.drop2 = tf.keras.layers.Dropout(drop_in)
+        self.d2 = tf.keras.layers.Dense(emb_size,
+                                        activation=tanh,
+                                        name='dense_2')
+
+        # ** Memory input **
+
+        # Dropout layers for state arrays:
+        self.drop_mem = tf.keras.layers.Dropout(drop_mem)
+        self.drop_state1 = tf.keras.layers.Dropout(drop_state)
+        self.drop_state2 = tf.keras.layers.Dropout(drop_state)
+
+        # Random values for initial state of memory input gate:
+        vec_rand_01 = tf.random.normal((batch_size, mem_size),
+                                       mean=0.0,
+                                       stddev=0.5,
+                                       dtype=tf.float32)
+
+        # Memory input gate, recurrent input:
+        self.mem_in_state = tf.Variable(initial_value=vec_rand_01,
+                                        trainable=False,
+                                        dtype=tf.float32,
+                                        name='memory_input_state')
+
+        # Dense layer controlling input to memory:
+        self.dmi = tf.keras.layers.Dense(mem_size,
+                                         activation=tanh,  # or use softmax?
+                                         name='dense_memory_in')
+
+        # ** Memory output **
+
+        # Random values for initial state of memory output gate:
+        vec_rand_02 = tf.random.normal((batch_size, emb_size),
+                                       mean=0.0,
+                                       stddev=0.5,
+                                       dtype=tf.float32)
+
+        # Memory output gate, recurrent input:
+        self.mem_out_state = tf.Variable(initial_value=vec_rand_02,
+                                         trainable=False,
+                                         dtype=tf.float32,
+                                         name='memory_output_state')
+
+        # Dense layer controlling memory output:
+        self.dmo = tf.keras.layers.Dense(mem_size,
+                                         activation=tanh,
+                                         name='dense_memory_out')
+
+        # ** Memory **
+
+        # Random values for initial state of memory vector:
+        vec_rand_04 = tf.random.normal((batch_size, mem_size),
+                                       mean=0.0,
+                                       stddev=0.1,
+                                       dtype=tf.float32)
+
+        # The actual memory state:
+        self.memory = tf.Variable(initial_value=vec_rand_04,
+                                  trainable=False,
+                                  dtype=tf.float32,
+                                  name='memory_vector')
+
+        # Math ops:
+        self.add = tf.keras.layers.Add()
+        self.sub = tf.keras.layers.Subtract()
+        self.mult = tf.keras.layers.Multiply()
+        self.conc = tf.keras.layers.Concatenate(axis=1)
+
+
+    def call(self, inputs):  # noqa
+
+        # Activation of first feedforward module:
+        f1 = self.drop1(inputs)
+        f1 = self.d1(f1)
+
+        # Recurrent layer controlling memory input:
+        r1 = self.conc([self.mem_in_state,   # batch_size * mem_size
+                        self.mem_out_state,  # batch_size * emb_size
+                        f1[:, 0, :],
+                        self.memory])
+        mem_in = self.dmi(r1)
+
+        # Recurrent layer controlling memory output (read from memory):
+        r2 = self.conc([self.mem_in_state,
+                        self.mem_out_state,
+                        f1[:, 0, :],
+                        self.memory])
+        mem_out = self.dmo(r2)
+
+        # Gated memory output:
+        mem_out = self.mult([mem_out, self.memory])
+
+        # Output of memory input layer gets added to memory:
+        men_in_gated = self.mult([mem_in,
+                                  self.conc([f1[:, 0, :],
+                                             f1[:, 0, :],
+                                             f1[:, 0, :]
+                                             ])
+                                  ])
+        new_memory = self.add([self.memory, men_in_gated])
+
+        # Avoid excessive growth of memory vector:
+        new_memory = tf.clip_by_value(new_memory,
+                                      -100.0,
+                                      100.0)
+
+        # Update memory and states:
+        self.memory = self.drop_mem(new_memory)
+        self.mem_in_state = self.drop_state1(mem_in)
+        self.mem_out_state = self.drop_state2(mem_out)
+
+        # Only the reduced mean of the memory input gating is feed into
+        # the second feedforward layer.
+        # mem_in = tf.math.reduce_mean(mem_in,
+        #                              axis=1,
+        #                              keepdims=True)
+
+        # Concatenate output of first feedforward module and updated memory
+        # output:
+        # f1_mem = self.conc([f1[:, 0, :], mem_out])  # no gradient
+        f1_mem = self.conc([f1[:, 0, :], mem_in, mem_out])
+
+        # Activation of second feedforward module:
+        f2 = self.drop2(f1_mem)
+        f2 = self.d2(f2)
+        return f2
+
+
+# Training model (with dropout):
+objMdlInst = LiGeMo(varSzeBtch,
+                    varSzeEmb,
+                    varNrn01,
+                    varNumMem,
+                    varInDrp,
+                    varStDrp,
+                    varMemDrp,
+                    name='Train_model')
+objOut = objMdlInst(objTrnCtxt)
+objMdl = tf.keras.Model(inputs=objTrnCtxt, outputs=objOut)
+
+# Testing model (without dropout):
+objTstMdlInst = LiGeMo(1,
+                       varSzeEmb,
+                       varNrn01,
+                       varNumMem,
+                       0.0,
+                       0.0,
+                       0.0,
+                       name='Test_model')
+objTstOut = objTstMdlInst(objTstCtxt)
+objTstMdl = tf.keras.Model(inputs=objTstCtxt, outputs=objTstOut)
+
+# Load pre-trained weights from disk?
 if strPthMdl is None:
-
     print('Building new model.')
-
-    # Shortcut for activation functions:
-    tanh = tf.keras.activations.tanh
-    sigmoid = tf.keras.activations.sigmoid
-    softmax = tf.keras.activations.softmax
-
-    class LiGeMo(tf.keras.Model):
-        """Literature generating model."""
-
-        def __init__(self,  # noqa
-                     batch_size,
-                     emb_size,
-                     units_01,
-                     mem_size,
-                     drop_in,
-                     drop_state,
-                     drop_mem,
-                     name='LiGeMo',
-                     **kwargs):
-            super(LiGeMo, self).__init__(name=name, **kwargs)
-
-            # ** Feedforward modules **
-
-            # First feedforward module:
-            self.drop1 = tf.keras.layers.Dropout(drop_in)
-            self.d1 = tf.keras.layers.Dense(units_01,
-                                            input_shape=(batch_size,
-                                                         1,
-                                                         emb_size),
-                                            activation=tanh,
-                                            name='dense_1')
-
-            # Second feedforward module:
-            self.drop2 = tf.keras.layers.Dropout(drop_in)
-            self.d2 = tf.keras.layers.Dense(emb_size,
-                                            activation=tanh,
-                                            name='dense_2')
-
-            # ** Memory input **
-
-            # Dropout layers for state arrays:
-            self.drop_mem = tf.keras.layers.Dropout(drop_mem)
-            self.drop_state1 = tf.keras.layers.Dropout(drop_state)
-            self.drop_state2 = tf.keras.layers.Dropout(drop_state)
-
-            # Random values for initial state of memory input gate:
-            vec_rand_01 = tf.random.normal((batch_size, mem_size),
-                                           mean=0.0,
-                                           stddev=0.5,
-                                           dtype=tf.float32)
-
-            # Memory input gate, recurrent input:
-            self.mem_in_state = tf.Variable(initial_value=vec_rand_01,
-                                            trainable=False,
-                                            dtype=tf.float32,
-                                            name='memory_input_state')
-
-            # Dense layer controlling input to memory:
-            self.dmi = tf.keras.layers.Dense(mem_size,
-                                             activation=tanh,  # or use softmax?
-                                             name='dense_memory_in')
-
-            # ** Memory output **
-
-            # Random values for initial state of memory output gate:
-            vec_rand_02 = tf.random.normal((batch_size, emb_size),
-                                           mean=0.0,
-                                           stddev=0.5,
-                                           dtype=tf.float32)
-
-            # Memory output gate, recurrent input:
-            self.mem_out_state = tf.Variable(initial_value=vec_rand_02,
-                                             trainable=False,
-                                             dtype=tf.float32,
-                                             name='memory_output_state')
-
-            # Dense layer controlling memory output:
-            self.dmo = tf.keras.layers.Dense(mem_size,
-                                             activation=tanh,
-                                             name='dense_memory_out')
-
-            # ** Memory **
-
-            # Random values for initial state of memory vector:
-            vec_rand_04 = tf.random.normal((batch_size, mem_size),
-                                           mean=0.0,
-                                           stddev=0.1,
-                                           dtype=tf.float32)
-
-            # The actual memory state:
-            self.memory = tf.Variable(initial_value=vec_rand_04,
-                                      trainable=False,
-                                      dtype=tf.float32,
-                                      name='memory_vector')
-
-            # Math ops:
-            self.add = tf.keras.layers.Add()
-            self.sub = tf.keras.layers.Subtract()
-            self.mult = tf.keras.layers.Multiply()
-            self.conc = tf.keras.layers.Concatenate(axis=1)
-
-
-        def call(self, inputs):  # noqa
-
-            # Activation of first feedforward module:
-            f1 = self.drop1(inputs)
-            f1 = self.d1(f1)
-
-            # Recurrent layer controlling memory input:
-            r1 = self.conc([self.mem_in_state,   # batch_size * mem_size
-                            self.mem_out_state,  # batch_size * emb_size
-                            f1[:, 0, :],
-                            self.memory])
-            mem_in = self.dmi(r1)
-
-            # Recurrent layer controlling memory output (read from memory):
-            r2 = self.conc([self.mem_in_state,
-                            self.mem_out_state,
-                            f1[:, 0, :],
-                            self.memory])
-            mem_out = self.dmo(r2)
-
-            # Gated memory output:
-            mem_out = self.mult([mem_out, self.memory])
-
-            # Output of memory input layer gets added to memory:
-            men_in_gated = self.mult([mem_in,
-                                      self.conc([f1[:, 0, :],
-                                                 f1[:, 0, :],
-                                                 f1[:, 0, :]
-                                                 ])
-                                      ])
-            new_memory = self.add([self.memory, men_in_gated])
-
-            # Avoid excessive growth of memory vector:
-            new_memory = tf.clip_by_value(new_memory,
-                                          -100.0,
-                                          100.0)
-
-            # Update memory and states:
-            self.memory = self.drop_mem(new_memory)
-            self.mem_in_state = self.drop_state1(mem_in)
-            self.mem_out_state = self.drop_state2(mem_out)
-
-            # Only the reduced mean of the memory input gating is feed into
-            # the second feedforward layer.
-            # mem_in = tf.math.reduce_mean(mem_in,
-            #                              axis=1,
-            #                              keepdims=True)
-
-            # Concatenate output of first feedforward module and updated memory
-            # output:
-            # f1_mem = self.conc([f1[:, 0, :], mem_out])  # no gradient
-            f1_mem = self.conc([f1[:, 0, :], mem_in, mem_out])
-
-            # Activation of second feedforward module:
-            f2 = self.drop2(f1_mem)
-            f2 = self.d2(f2)
-            return f2
-
-    # Training model (with dropout):
-    objMdlInst = LiGeMo(varSzeBtch,
-                        varSzeEmb,
-                        varNrn01,
-                        varNumMem,
-                        varInDrp,
-                        varStDrp,
-                        varMemDrp,
-                        name='Train_model')
-    objOut = objMdlInst(objTrnCtxt)
-    objMdl = tf.keras.Model(inputs=objTrnCtxt, outputs=objOut)
-
-    # Testing model (without dropout):
-    objTstMdlInst = LiGeMo(1,
-                           varSzeEmb,
-                           varNrn01,
-                           varNumMem,
-                           0.0,
-                           0.0,
-                           0.0,
-                           name='Test_model')
-    objTstOut = objTstMdlInst(objTstCtxt)
-    objTstMdl = tf.keras.Model(inputs=objTstCtxt, outputs=objTstOut)
-
 else:
-    print('Loading pre-trained model from disk.')
+    print('Loading pre-trained model weights from disk.')
 
-    # Load pre-trained model from disk:
-    objMdl = tf.keras.models.load_model(os.path.join(strPthMdl,
-                                                     'lstm_training_model'))
-    objTstMdl = tf.keras.models.load_model(os.path.join(strPthMdl,
-                                                        'lstm_test_model'))
+    # Get weights from npz file:
+    objNpz = np.load(strPthMdl)
+    objNpz.allow_pickle = True
+    lstWghts = list(objNpz['lstWghts'])
+
+    # Set model weights:
+    objMdl.set_weights(lstWghts)
 
 # Print model summary:
 print('Training model:')
@@ -831,9 +833,3 @@ np.savez(os.path.join(strPthLogSes, 'ligemo_data.npz'),
          varInDrp=varInDrp,
          lstWghts=lstWghts,
          )
-
-# Save model to disk:
-# tf.keras.models.save_model(objMdl,
-#                            os.path.join(strPthLogSes, 'lstm_training_model'))
-# tf.keras.models.save_model(objTstMdl,
-#                            os.path.join(strPthLogSes, 'lstm_test_model'))
