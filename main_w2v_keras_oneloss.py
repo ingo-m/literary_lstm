@@ -34,10 +34,10 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 10000
+varNumItr = 100
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 100
 
 # Number of neurons:
 varNrn01 = 384
@@ -50,7 +50,7 @@ varNrn05 = 384
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 64
+varSzeBtch = 16
 
 # Input dropout:
 varInDrp = 0.3
@@ -94,7 +94,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[15:1310]
+# vecC = vecC[15:1310]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -152,7 +152,7 @@ varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
 # thread.
 
 # Queue capacity:
-varCapQ = 8
+varCapQ = 32
 
 # Queue for training batches of context words:
 objQ01 = tf.FIFOQueue(capacity=varCapQ,
@@ -275,8 +275,8 @@ if strPthMdl is None:
 
     aryMemMod = MeLa(batch_size=varSzeBtch,
                      input_size=varNrn03,
-                     drop_in=0.3,
-                     drop_state=0.3,
+                     drop_in=varInDrp,
+                     drop_state=varStDrp,
                      drop_mem=0.1)(aryL03)
 
     aryL04 = tf.keras.layers.LSTM(varNrn04,
@@ -587,7 +587,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        #!nvidia-smi
+        # !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -667,13 +667,26 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 100
+        varLenCntx = 1000
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
 
+            # Get model weights from training model:
+            lstTmpWghts = objMdl.get_weights()
+
+            # Recurrent status vectors and memory state have different batch
+            # size between training and testing model. They are initialised as
+            # zero. Not needed in tensorflow 1.14.0.
+            lstTmpWghts[13] = np.zeros(objTstMdl.get_weights()[13].shape,
+                                       dtype=np.float32)
+            lstTmpWghts[14] = np.zeros(objTstMdl.get_weights()[14].shape,
+                                       dtype=np.float32)
+            lstTmpWghts[15] = np.zeros(objTstMdl.get_weights()[15].shape,
+                                       dtype=np.float32)
+
             # Copy weights from training model to test model:
-            objTstMdl.set_weights(objMdl.get_weights())
+            objTstMdl.set_weights(lstTmpWghts)
 
             # Initialise state of the (statefull) prediction model with
             # context.
