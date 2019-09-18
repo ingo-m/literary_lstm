@@ -272,7 +272,8 @@ aryMemMod = MeLa(batch_size=varSzeBtch,
                  input_size=varNrn03,
                  drop_in=varInDrp,
                  drop_state=varStDrp,
-                 drop_mem=0.1)(aryL03)
+                 drop_mem=0.1,
+                 name='MeLa')(aryL03)
 
 aryL04 = tf.keras.layers.LSTM(varNrn04,
                               activation='tanh',
@@ -361,7 +362,8 @@ aryMemModT = MeLa(batch_size=1,
                   input_size=varNrn03,
                   drop_in=0.0,
                   drop_state=0.0,
-                  drop_mem=0.0)(aryT03a)
+                  drop_mem=0.0,
+                  name='MeLa')(aryT03a)
 
 aryT04 = tf.keras.layers.LSTM(varNrn04,
                               activation='tanh',
@@ -691,6 +693,8 @@ for idxOpt in range(varNumOpt):
             # Initialise state of the (statefull) prediction model with
             # context.
             objTstMdl.reset_states()
+            objTstMdl.get_layer(name='MeLa').erase_memory(batch_size=1,
+                                                          input_size=varNrn03)
             # Loop through context window:
             for idxCntx in range(1, varLenCntx):
                 # Get integer code of context word (the '- 1' is so as not
@@ -812,6 +816,13 @@ for idxOpt in range(varNumOpt):
         print('Resetting model states.')
         objMdl.reset_states()
         objTstMdl.reset_states()
+
+        # The memory vector of the custom memory layer needs to be reset
+        # manually:
+        objMdl.get_layer(name='MeLa').erase_memory(batch_size=varSzeBtch,
+                                                   input_size=varNrn03)
+        objTstMdl.get_layer(name='MeLa').erase_memory(batch_size=1,
+                                                      input_size=varNrn03)
 
 print('--> End of training.')
 

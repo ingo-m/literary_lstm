@@ -152,3 +152,15 @@ class MeLa(tf.keras.layers.Layer):
         out = self.conc([inputs[:, 0, :], mem_in, mem_out])
 
         return self.reshape(out)
+
+    def erase_memory(self, batch_size=None, input_size=None):
+        """Re-initialise memory vector."""
+        # Memory size is hardcoded (room for improvement):
+        mem_size = 3 * input_size
+
+        # Random values for new state of memory vector:
+        vec_rand_05 = tf.random.normal((batch_size, mem_size),
+                                       mean=0.0,
+                                       stddev=0.1,
+                                       dtype=tf.float32)
+        self.memory = vec_rand_05
