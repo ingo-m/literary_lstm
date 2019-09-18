@@ -22,9 +22,9 @@ from memory_module import MeLa
 strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 # strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
-# Path of previously trained model (parent directory containing training and
-# test models; if None, new model is created):
-strPthMdl = None
+# Path of npz file containing previously trained model's weights to load (if
+# None, new model is created):
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20190916_145415/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
@@ -34,10 +34,10 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 100
+varNumItr = 50
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 100
+varDspStp = 1000
 
 # Number of neurons:
 varNrn01 = 384
@@ -50,7 +50,7 @@ varNrn05 = 384
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 16
+varSzeBtch = 32
 
 # Input dropout:
 varInDrp = 0.3
@@ -217,204 +217,204 @@ objWght = objQ03.dequeue()
 # -----------------------------------------------------------------------------
 # *** Build the network
 
-# Load pre-trained model, or create new one:
+# Regularisation:
+objRegL2 = None
+
+# Stateful model:
+lgcState = True
+
+# The actual LSTM layers.
+# Note that this cell is not optimized for performance on GPU.
+# Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
+aryL01 = tf.keras.layers.LSTM(varNrn01,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=varInDrp,
+                              recurrent_dropout=varStDrp,
+                              kernel_regularizer=objRegL2,
+                              return_sequences=True,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=lgcState,
+                              unroll=False,
+                              name='LstmLayer01'
+                              )(objTrnCtxt)
+
+aryL02 = tf.keras.layers.LSTM(varNrn02,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=varInDrp,
+                              recurrent_dropout=varStDrp,
+                              kernel_regularizer=objRegL2,
+                              return_sequences=True,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=lgcState,
+                              unroll=False,
+                              name='LstmLayer02'
+                              )(aryL01)
+
+aryL03 = tf.keras.layers.LSTM(varNrn03,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=varInDrp,
+                              recurrent_dropout=varStDrp,
+                              kernel_regularizer=objRegL2,
+                              return_sequences=True,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=lgcState,
+                              unroll=False,
+                              name='LstmLayer03'
+                              )(aryL02)
+
+aryMemMod = MeLa(batch_size=varSzeBtch,
+                 input_size=varNrn03,
+                 drop_in=varInDrp,
+                 drop_state=varStDrp,
+                 drop_mem=0.1)(aryL03)
+
+aryL04 = tf.keras.layers.LSTM(varNrn04,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=varInDrp,
+                              recurrent_dropout=varStDrp,
+                              kernel_regularizer=objRegL2,
+                              return_sequences=True,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=lgcState,
+                              unroll=False,
+                              name='LstmLayer04'
+                              )(tf.keras.layers.concatenate([aryMemMod,
+                                                             aryL02],
+                                                            axis=2))
+
+aryL05 = tf.keras.layers.LSTM(varNrn05,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=varInDrp,
+                              recurrent_dropout=varStDrp,
+                              kernel_regularizer=objRegL2,
+                              return_sequences=False,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=lgcState,
+                              unroll=False,
+                              name='LstmLayer05'
+                              )(tf.keras.layers.concatenate([aryL04,
+                                                             aryL01],
+                                                            axis=2))
+
+# Dense feedforward layer:
+aryL06 = tf.keras.layers.Dense(varSzeEmb,
+                               activation=tf.keras.activations.tanh,
+                               kernel_regularizer=objRegL2,
+                               name='DenseFF'
+                               )(aryL05)
+
+# Initialise the model:
+objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryL06)
+
+# An almost idential version of the model used for testing, without dropout
+# and possibly different input size (fixed batch size of one).
+aryT01 = tf.keras.layers.LSTM(varNrn01,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=0.0,
+                              recurrent_dropout=0.0,
+                              return_sequences=True,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=True,
+                              unroll=False,
+                              name='TestingLstmLayer01'
+                              )(objTstCtxt)
+
+aryT02 = tf.keras.layers.LSTM(varNrn02,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=0.0,
+                              recurrent_dropout=0.0,
+                              return_sequences=True,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=True,
+                              unroll=False,
+                              name='TestingLstmLayer02'
+                              )(aryT01)
+
+aryT03a = tf.keras.layers.LSTM(varNrn03,
+                               activation='tanh',
+                               recurrent_activation='hard_sigmoid',
+                               dropout=0.0,
+                               recurrent_dropout=0.0,
+                               return_sequences=True,
+                               return_state=False,
+                               go_backwards=False,
+                               stateful=True,
+                               unroll=False,
+                               name='TestingLstmLayer03a'
+                               )(aryT02)
+
+aryMemModT = MeLa(batch_size=1,
+                  input_size=varNrn03,
+                  drop_in=0.0,
+                  drop_state=0.0,
+                  drop_mem=0.0)(aryT03a)
+
+aryT04 = tf.keras.layers.LSTM(varNrn04,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=0.0,
+                              recurrent_dropout=0.0,
+                              return_sequences=True,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=True,
+                              unroll=False,
+                              name='TestingLstmLayer04'
+                              )(tf.keras.layers.concatenate([aryMemModT,
+                                                             aryT02],
+                                                            axis=2))
+
+aryT05 = tf.keras.layers.LSTM(varNrn05,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=0.0,
+                              recurrent_dropout=0.0,
+                              return_sequences=False,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=True,
+                              unroll=False,
+                              name='TestingLstmLayer05'
+                              )(tf.keras.layers.concatenate([aryT04,
+                                                             aryT01],
+                                                            axis=2))
+
+# Dense feedforward layer:
+aryT06 = tf.keras.layers.Dense(varSzeEmb,
+                               activation=tf.keras.activations.tanh,
+                               name='DenseFF'
+                               )(aryT05)
+
+# Initialise the model:
+objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryT06)
+
+# Load pre-trained weights from disk?
 if strPthMdl is None:
-
     print('Building new model.')
-
-    # Regularisation:
-    objRegL2 = None
-
-    # Stateful model:
-    lgcState = True
-
-    # The actual LSTM layers.
-    # Note that this cell is not optimized for performance on GPU.
-    # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
-    aryL01 = tf.keras.layers.LSTM(varNrn01,
-                                  activation='tanh',
-                                  recurrent_activation='hard_sigmoid',
-                                  dropout=varInDrp,
-                                  recurrent_dropout=varStDrp,
-                                  kernel_regularizer=objRegL2,
-                                  return_sequences=True,
-                                  return_state=False,
-                                  go_backwards=False,
-                                  stateful=lgcState,
-                                  unroll=False,
-                                  name='LstmLayer01'
-                                  )(objTrnCtxt)
-
-    aryL02 = tf.keras.layers.LSTM(varNrn02,
-                                  activation='tanh',
-                                  recurrent_activation='hard_sigmoid',
-                                  dropout=varInDrp,
-                                  recurrent_dropout=varStDrp,
-                                  kernel_regularizer=objRegL2,
-                                  return_sequences=True,
-                                  return_state=False,
-                                  go_backwards=False,
-                                  stateful=lgcState,
-                                  unroll=False,
-                                  name='LstmLayer02'
-                                  )(aryL01)
-
-    aryL03 = tf.keras.layers.LSTM(varNrn03,
-                                  activation='tanh',
-                                  recurrent_activation='hard_sigmoid',
-                                  dropout=varInDrp,
-                                  recurrent_dropout=varStDrp,
-                                  kernel_regularizer=objRegL2,
-                                  return_sequences=True,
-                                  return_state=False,
-                                  go_backwards=False,
-                                  stateful=lgcState,
-                                  unroll=False,
-                                  name='LstmLayer03'
-                                  )(aryL02)
-
-    aryMemMod = MeLa(batch_size=varSzeBtch,
-                     input_size=varNrn03,
-                     drop_in=varInDrp,
-                     drop_state=varStDrp,
-                     drop_mem=0.1)(aryL03)
-
-    aryL04 = tf.keras.layers.LSTM(varNrn04,
-                                  activation='tanh',
-                                  recurrent_activation='hard_sigmoid',
-                                  dropout=varInDrp,
-                                  recurrent_dropout=varStDrp,
-                                  kernel_regularizer=objRegL2,
-                                  return_sequences=True,
-                                  return_state=False,
-                                  go_backwards=False,
-                                  stateful=lgcState,
-                                  unroll=False,
-                                  name='LstmLayer04'
-                                  )(tf.keras.layers.concatenate([aryMemMod,
-                                                                 aryL02],
-                                                                axis=2))
-
-    aryL05 = tf.keras.layers.LSTM(varNrn05,
-                                  activation='tanh',
-                                  recurrent_activation='hard_sigmoid',
-                                  dropout=varInDrp,
-                                  recurrent_dropout=varStDrp,
-                                  kernel_regularizer=objRegL2,
-                                  return_sequences=False,
-                                  return_state=False,
-                                  go_backwards=False,
-                                  stateful=lgcState,
-                                  unroll=False,
-                                  name='LstmLayer05'
-                                  )(tf.keras.layers.concatenate([aryL04,
-                                                                 aryL01],
-                                                                axis=2))
-
-    # Dense feedforward layer:
-    aryL06 = tf.keras.layers.Dense(varSzeEmb,
-                                   activation=tf.keras.activations.tanh,
-                                   kernel_regularizer=objRegL2,
-                                   name='DenseFF'
-                                   )(aryL05)
-
-    # Initialise the model:
-    objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryL06)
-
-    # An almost idential version of the model used for testing, without dropout
-    # and possibly different input size (fixed batch size of one).
-    aryT01 = tf.keras.layers.LSTM(varNrn01,
-                                  activation='tanh',
-                                  recurrent_activation='hard_sigmoid',
-                                  dropout=0.0,
-                                  recurrent_dropout=0.0,
-                                  return_sequences=True,
-                                  return_state=False,
-                                  go_backwards=False,
-                                  stateful=True,
-                                  unroll=False,
-                                  name='TestingLstmLayer01'
-                                  )(objTstCtxt)
-
-    aryT02 = tf.keras.layers.LSTM(varNrn02,
-                                  activation='tanh',
-                                  recurrent_activation='hard_sigmoid',
-                                  dropout=0.0,
-                                  recurrent_dropout=0.0,
-                                  return_sequences=True,
-                                  return_state=False,
-                                  go_backwards=False,
-                                  stateful=True,
-                                  unroll=False,
-                                  name='TestingLstmLayer02'
-                                  )(aryT01)
-
-    aryT03a = tf.keras.layers.LSTM(varNrn03,
-                                   activation='tanh',
-                                   recurrent_activation='hard_sigmoid',
-                                   dropout=0.0,
-                                   recurrent_dropout=0.0,
-                                   return_sequences=True,
-                                   return_state=False,
-                                   go_backwards=False,
-                                   stateful=True,
-                                   unroll=False,
-                                   name='TestingLstmLayer03a'
-                                   )(aryT02)
-
-    aryMemModT = MeLa(batch_size=1,
-                      input_size=varNrn03,
-                      drop_in=0.0,
-                      drop_state=0.0,
-                      drop_mem=0.0)(aryT03a)
-
-    aryT04 = tf.keras.layers.LSTM(varNrn04,
-                                  activation='tanh',
-                                  recurrent_activation='hard_sigmoid',
-                                  dropout=0.0,
-                                  recurrent_dropout=0.0,
-                                  return_sequences=True,
-                                  return_state=False,
-                                  go_backwards=False,
-                                  stateful=True,
-                                  unroll=False,
-                                  name='TestingLstmLayer04'
-                                  )(tf.keras.layers.concatenate([aryMemModT,
-                                                                 aryT02],
-                                                                axis=2))
-
-    aryT05 = tf.keras.layers.LSTM(varNrn05,
-                                  activation='tanh',
-                                  recurrent_activation='hard_sigmoid',
-                                  dropout=0.0,
-                                  recurrent_dropout=0.0,
-                                  return_sequences=False,
-                                  return_state=False,
-                                  go_backwards=False,
-                                  stateful=True,
-                                  unroll=False,
-                                  name='TestingLstmLayer05'
-                                  )(tf.keras.layers.concatenate([aryT04,
-                                                                 aryT01],
-                                                                axis=2))
-
-    # Dense feedforward layer:
-    aryT06 = tf.keras.layers.Dense(varSzeEmb,
-                                   activation=tf.keras.activations.tanh,
-                                   name='DenseFF'
-                                   )(aryT05)
-
-    # Initialise the model:
-    objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryT06)
-
 else:
-    print('Loading pre-trained model from disk.')
+    print('Loading pre-trained model weights from disk.')
 
-    # Load pre-trained model from disk:
-    objMdl = tf.keras.models.load_model(os.path.join(strPthMdl,
-                                                     'lstm_training_model'))
-    objTstMdl = tf.keras.models.load_model(os.path.join(strPthMdl,
-                                                        'lstm_test_model'))
+    # Get weights from npz file:
+    objNpz = np.load(strPthMdl)
+    objNpz.allow_pickle = True
+    lstWghts = list(objNpz['lstWghts'])
+
+    # Set model weights:
+    objMdl.set_weights(lstWghts)
 
 init = tf.global_variables_initializer()
 objSess.run(init)
@@ -489,7 +489,7 @@ def training_queue():
     # varIdxWrd = 1
     # vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
     vecIdxWrd = np.linspace(1,
-                            (varSzeBtch * 1),
+                            (varSzeBtch * 10),
                             num=varSzeBtch,
                             dtype=np.int64)
 
