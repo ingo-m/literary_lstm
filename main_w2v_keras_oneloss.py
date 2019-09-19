@@ -24,7 +24,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20190916_145415/lstm_data.npz'
+strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
@@ -34,7 +34,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 50
+varNumItr = 20
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -50,7 +50,7 @@ varNrn05 = 384
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 32
+varSzeBtch = 128
 
 # Input dropout:
 varInDrp = 0.3
@@ -272,7 +272,7 @@ aryMemMod = MeLa(batch_size=varSzeBtch,
                  input_size=varNrn03,
                  drop_in=varInDrp,
                  drop_state=varStDrp,
-                 drop_mem=0.1,
+                 drop_mem=0.2,
                  name='MeLa')(aryL03)
 
 aryL04 = tf.keras.layers.LSTM(varNrn04,
@@ -287,9 +287,7 @@ aryL04 = tf.keras.layers.LSTM(varNrn04,
                               stateful=lgcState,
                               unroll=False,
                               name='LstmLayer04'
-                              )(tf.keras.layers.concatenate([aryMemMod,
-                                                             aryL02],
-                                                            axis=2))
+                              )(aryMemMod)
 
 aryL05 = tf.keras.layers.LSTM(varNrn05,
                               activation='tanh',
@@ -345,25 +343,25 @@ aryT02 = tf.keras.layers.LSTM(varNrn02,
                               name='TestingLstmLayer02'
                               )(aryT01)
 
-aryT03a = tf.keras.layers.LSTM(varNrn03,
-                               activation='tanh',
-                               recurrent_activation='hard_sigmoid',
-                               dropout=0.0,
-                               recurrent_dropout=0.0,
-                               return_sequences=True,
-                               return_state=False,
-                               go_backwards=False,
-                               stateful=True,
-                               unroll=False,
-                               name='TestingLstmLayer03a'
-                               )(aryT02)
+aryT03 = tf.keras.layers.LSTM(varNrn03,
+                              activation='tanh',
+                              recurrent_activation='hard_sigmoid',
+                              dropout=0.0,
+                              recurrent_dropout=0.0,
+                              return_sequences=True,
+                              return_state=False,
+                              go_backwards=False,
+                              stateful=True,
+                              unroll=False,
+                              name='TestingLstmLayer03a'
+                              )(aryT02)
 
 aryMemModT = MeLa(batch_size=1,
                   input_size=varNrn03,
                   drop_in=0.0,
                   drop_state=0.0,
                   drop_mem=0.0,
-                  name='MeLa')(aryT03a)
+                  name='MeLa')(aryT03)
 
 aryT04 = tf.keras.layers.LSTM(varNrn04,
                               activation='tanh',
@@ -376,9 +374,7 @@ aryT04 = tf.keras.layers.LSTM(varNrn04,
                               stateful=True,
                               unroll=False,
                               name='TestingLstmLayer04'
-                              )(tf.keras.layers.concatenate([aryMemModT,
-                                                             aryT02],
-                                                            axis=2))
+                              )(aryMemModT)
 
 aryT05 = tf.keras.layers.LSTM(varNrn05,
                               activation='tanh',
@@ -491,7 +487,7 @@ def training_queue():
     # varIdxWrd = 1
     # vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
     vecIdxWrd = np.linspace(1,
-                            (varSzeBtch * 10),
+                            (varSzeBtch * 1),
                             num=varSzeBtch,
                             dtype=np.int64)
 
