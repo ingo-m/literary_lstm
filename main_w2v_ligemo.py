@@ -432,17 +432,27 @@ class LiGeMo(tf.keras.Model):
         new_memory = tf.math.add(new_memory,
                                  write_mat)
 
+        # Apply dropout:
+        new_memory = self.drop_mem(new_memory)
+        weight_vec = self.drop_state_weights(weight_vec)
+        erase_vec = self.drop_state_erase(erase_vec)
+        write_vec = self.drop_state_write(write_vec)
+
         # Update memory and states:
-        self.memory = self.drop_mem(new_memory)
-        self.state_weights = self.drop_state_weights(weight_vec)
-        self.state_erase = self.drop_state_erase(erase_vec)
-        self.state_write = self.drop_state_write(write_vec)
+        self.memory = new_memory
+        self.state_weights = weight_vec
+        self.state_erase = erase_vec
+        self.state_write = write_vec
 
         # Concatenate output of first feedforward module and memory readout:
         # f1_mem = self.conc([f1[:, 0, :], read_vec])
+        mem_and_states = self.conc([read_vec,
+                                    weight_vec,
+                                    erase_vec,
+                                    write_vec])
 
         # Activation of second feedforward module:
-        f2 = self.drop2(read_vec)
+        f2 = self.drop2(mem_and_states)
         f2 = self.d2(f2)
         return f2
 
@@ -769,9 +779,9 @@ for idxOpt in range(varNumOpt):
             # Initialise state of the (statefull) prediction model with
             # context.
             objTstMdl.reset_states()
-            objTstMdl.get_layer(name='MeLa').erase_memory(batch_size=1,
-                                                          mem_locations=varNumMem,
-                                                          mem_size=varSzeMem)
+            objTstMdl.get_layer(name='Test_model').erase_memory(batch_size=1,
+                                                                mem_locations=varNumMem,
+                                                                mem_size=varSzeMem)
 
             # Loop through context window:
             for idxCntx in range(1, varLenCntx):
@@ -897,12 +907,12 @@ for idxOpt in range(varNumOpt):
 
         # The memory vector of the custom memory layer needs to be reset
         # manually:
-        objMdl.get_layer(name='MeLa').erase_memory(batch_size=varSzeBtch,
-                                                   mem_locations=varNumMem,
-                                                   mem_size=varSzeMem)
-        objTstMdl.get_layer(name='MeLa').erase_memory(batch_size=1,
-                                                      mem_locations=varNumMem,
-                                                      mem_size=varSzeMem)
+        objMdl.get_layer(name='Train_model').erase_memory(batch_size=varSzeBtch,
+                                                          mem_locations=varNumMem,
+                                                          mem_size=varSzeMem)
+        objTstMdl.get_layer(name='Test_model').erase_memory(batch_size=1,
+                                                            mem_locations=varNumMem,
+                                                            mem_size=varSzeMem)
 
 print('--> End of training.')
 
