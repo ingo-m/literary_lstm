@@ -3,11 +3,10 @@
 """
 Literature generating model.
 
-Specifications:
-  - Two feedforward layers
-  - A separate memory module projecting into the second feedforward layer
-  - A recurrent module controlling access to memory module
-  - Word-level embedding (word2vec)
+At the core of the model there is a memory matrix. A single weight vector is
+used to control reading, erasing, and writing to/from the memory matrix.
+Separate recurrent layers control the content of the erase and write vectors.
+The text is encoded by means of word-level embedding (word2vec).
 """
 
 
@@ -35,7 +34,7 @@ strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-# strPthLog = 'drive/My Drive/lstm_log'
+# strPthLog = 'drive/My Drive/ligemo_log'
 
 # Learning rate:
 varLrnRte = 0.0001
@@ -50,16 +49,16 @@ varDspStp = 1000
 varNrn01 = 384
 
 # Number of memory locations:
-varNumMem = 500
+varNumMem = 256
 
 # Size of memory locations:
-varSzeMem = 400
+varSzeMem = 512
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 16
+varSzeBtch = 32
 
 # Input dropout:
 varInDrp = 0.3
@@ -106,7 +105,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-vecC = vecC[15:2000]
+# vecC = vecC[15:2000]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
