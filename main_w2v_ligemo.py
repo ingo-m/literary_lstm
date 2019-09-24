@@ -25,16 +25,17 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-# strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
-strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
+# strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = 'drive/My Drive/lstm_log/20190913_132940/ligemo_data.npz'
+strPthMdl = None
+# strPthMdl = 'drive/My Drive/lstm_log/20190913_132940/ligemo_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
-# strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-strPthLog = 'drive/My Drive/lstm_log'
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+# strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.0001
@@ -48,14 +49,17 @@ varDspStp = 1000
 # Number of neurons:
 varNrn01 = 384
 
-# Number of memory units:
-varNumMem = varNrn01 * 3  # hardcoded
+# Number of memory locations:
+varNumMem = 500
+
+# Size of memory locations:
+varSzeMem = 400
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 4096
+varSzeBtch = 16
 
 # Input dropout:
 varInDrp = 0.3
@@ -102,7 +106,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-# vecC = vecC[15:1000]
+vecC = vecC[15:2000]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -232,12 +236,19 @@ softmax = tf.keras.activations.softmax
 
 
 class LiGeMo(tf.keras.Model):
-    """Literature generating model."""
+    """
+    Literature generating model.
+
+    At the core of the model there is a memory matrix. A single weight vector
+    is used to control reading, erasing, and writing to/from the memory matrix.
+    Separate layers control the content of the erase and write vectors.
+    """
 
     def __init__(self,  # noqa
                  batch_size,
                  emb_size,
                  units_01,
+                 mem_locations,
                  mem_size,
                  drop_in,
                  drop_state,
@@ -246,144 +257,182 @@ class LiGeMo(tf.keras.Model):
                  **kwargs):
         super(LiGeMo, self).__init__(name=name, **kwargs)
 
-        # ** Feedforward modules **
+        # ** Layers **
 
-        # First feedforward module:
+        # Input feedforward module:
         self.drop1 = tf.keras.layers.Dropout(drop_in)
         self.d1 = tf.keras.layers.Dense(units_01,
                                         input_shape=(batch_size,
                                                      1,
                                                      emb_size),
                                         activation=tanh,
-                                        name='dense_1')
+                                        name='dense_in')
 
-        # Second feedforward module:
+        # Layer controlling weight vector:
+        self.mem_weights = tf.keras.layers.Dense(mem_locations,
+                                                 activation=softmax,
+                                                 name='memory_weights')
+
+        # Layer controlling content of write vector:
+        self.write = tf.keras.layers.Dense(mem_size,
+                                           activation=tanh,
+                                           name='memory_write')
+
+        # Layer controlling content of erase vector:
+        self.erase = tf.keras.layers.Dense(mem_size,
+                                           activation=tanh,
+                                           name='memory_erase')
+
+        # Output feedforward module:
         self.drop2 = tf.keras.layers.Dropout(drop_in)
         self.d2 = tf.keras.layers.Dense(emb_size,
                                         activation=tanh,
-                                        name='dense_2')
+                                        name='dense_out')
 
-        # ** Memory input **
+        # ** Dropouts **
 
-        # Dropout layers for state arrays:
+        # Dropout layers for state arrays and memory:
         self.drop_mem = tf.keras.layers.Dropout(drop_mem)
-        self.drop_state1 = tf.keras.layers.Dropout(drop_state)
-        self.drop_state2 = tf.keras.layers.Dropout(drop_state)
+        self.drop_state_weights = tf.keras.layers.Dropout(drop_state)
+        self.drop_state_erase = tf.keras.layers.Dropout(drop_state)
+        self.drop_state_write = tf.keras.layers.Dropout(drop_state)
 
-        # Random values for initial state of memory input gate:
-        vec_rand_01 = tf.random.normal((batch_size, mem_size),
+        # ** Recurrent states **
+
+        # The three layers (controlling the weights, erase, and write vectors)
+        # have a recurrent state vector.
+
+        # State of weights vector:
+        vec_rand_01 = tf.random.normal((batch_size, mem_locations),
                                        mean=0.0,
-                                       stddev=0.5,
+                                       stddev=0.1,
                                        dtype=tf.float32)
-
-        # Memory input gate, recurrent input:
-        self.mem_in_state = tf.Variable(initial_value=vec_rand_01,
-                                        trainable=False,
-                                        dtype=tf.float32,
-                                        name='memory_input_state')
-
-        # Dense layer controlling input to memory:
-        self.dmi = tf.keras.layers.Dense(mem_size,
-                                         activation=tanh,  # or use softmax?
-                                         name='dense_memory_in')
-
-        # ** Memory output **
-
-        # Random values for initial state of memory output gate:
-        vec_rand_02 = tf.random.normal((batch_size, emb_size),
-                                       mean=0.0,
-                                       stddev=0.5,
-                                       dtype=tf.float32)
-
-        # Memory output gate, recurrent input:
-        self.mem_out_state = tf.Variable(initial_value=vec_rand_02,
+        self.state_weights = tf.Variable(initial_value=vec_rand_01,
                                          trainable=False,
                                          dtype=tf.float32,
-                                         name='memory_output_state')
+                                         name='state_weights')
 
-        # Dense layer controlling memory output:
-        self.dmo = tf.keras.layers.Dense(mem_size,
-                                         activation=tanh,
-                                         name='dense_memory_out')
+        # State of erase vector:
+        vec_rand_02 = tf.random.normal((batch_size, mem_size),
+                                       mean=0.0,
+                                       stddev=0.1,
+                                       dtype=tf.float32)
+        self.state_erase = tf.Variable(initial_value=vec_rand_02,
+                                       trainable=False,
+                                       dtype=tf.float32,
+                                       name='state_erase')
+
+        # State of write vector:
+        vec_rand_03 = tf.random.normal((batch_size, mem_size),
+                                       mean=0.0,
+                                       stddev=0.1,
+                                       dtype=tf.float32)
+        self.state_write = tf.Variable(initial_value=vec_rand_03,
+                                       trainable=False,
+                                       dtype=tf.float32,
+                                       name='state_write')
 
         # ** Memory **
 
         # Random values for initial state of memory vector:
-        vec_rand_04 = tf.random.normal((batch_size, mem_size),
+        vec_rand_04 = tf.random.normal((batch_size, mem_locations, mem_size),
                                        mean=0.0,
                                        stddev=0.1,
                                        dtype=tf.float32)
 
-        # The actual memory state:
+        # The actual memory matrix:
         self.memory = tf.Variable(initial_value=vec_rand_04,
                                   trainable=False,
                                   dtype=tf.float32,
-                                  name='memory_vector')
+                                  name='memory_matrix')
+
+        # Matrix of ones (needed for memory update):
+        self.ones = tf.ones((batch_size, mem_locations, mem_size),
+                            dtype=tf.float32,
+                            name='ones_matrix')
 
         # Math ops:
-        self.add = tf.keras.layers.Add()
-        self.sub = tf.keras.layers.Subtract()
-        self.mult = tf.keras.layers.Multiply()
+        # self.add = tf.keras.layers.Add()
+        # self.sub = tf.keras.layers.Subtract()
+        # self.mult = tf.keras.layers.Multiply()
         self.conc = tf.keras.layers.Concatenate(axis=1)
 
 
     def call(self, inputs):  # noqa
 
-        # Activation of first feedforward module:
+        # Activate of first feedforward module:
         f1 = self.drop1(inputs)
         f1 = self.d1(f1)
 
-        # Recurrent layer controlling memory input:
-        r1 = self.conc([self.mem_in_state,   # batch_size * mem_size
-                        self.mem_out_state,  # batch_size * emb_size
-                        f1[:, 0, :],
-                        self.memory])
-        mem_in = self.dmi(r1)
+        # Activate recurrent layer that controls weights vector:
+        conc_01 = self.conc([f1[:, 0, :],
+                            self.state_weights,   # batch_size * mem_locations
+                            self.state_erase,     # batch_size * mem_size
+                            self.state_write])    # batch_size * mem_size
+        weight_vec = self.mem_weights(conc_01)
 
-        # Recurrent layer controlling memory output (read from memory):
-        r2 = self.conc([self.mem_in_state,
-                        self.mem_out_state,
-                        f1[:, 0, :],
-                        self.memory])
-        mem_out = self.dmo(r2)
+        # Activate recurrent layer that controls write vector:
+        conc_02 = self.conc([f1[:, 0, :],
+                            self.state_weights,   # batch_size * mem_locations
+                            self.state_erase,     # batch_size * mem_size
+                            self.state_write])    # batch_size * mem_size
+        write_vec = self.write(conc_02)
 
-        # Gated memory output:
-        mem_out = self.mult([mem_out, self.memory])
+        # Activate recurrent layer that controls erase vector:
+        conc_03 = self.conc([f1[:, 0, :],
+                            self.state_weights,   # batch_size * mem_locations
+                            self.state_erase,     # batch_size * mem_size
+                            self.state_write])    # batch_size * mem_size
+        erase_vec = self.erase(conc_03)
 
-        # Output of memory input layer gets added to memory:
-        men_in_gated = self.mult([mem_in,
-                                  self.conc([f1[:, 0, :],
-                                             f1[:, 0, :],
-                                             f1[:, 0, :]
-                                             ])
-                                  ])
-        new_memory = self.add([self.memory, men_in_gated])
+        # Calculate read vector:
+        read_vec = tf.linalg.matvec(self.memory,
+                                    weight_vec,
+                                    transpose_a=True)
 
-        # Avoid excessive growth of memory vector:
-        new_memory = tf.clip_by_value(new_memory,
-                                      -100.0,
-                                      100.0)
+        # Calculate new memory matrix
+        # (from these inputs: weight_vec, write_vec, erase_vec).
+        new_memory = \
+            tf.math.add(
+                        tf.math.multiply(
+                                         self.memory,
+                                         tf.math.subtract(
+                                                          self.ones,
+                                                          tf.linalg.matmul(
+                                                                           weight_vec,
+                                                                           erase_vec,
+                                                                           transpose_b=True)
+                                                          )
+                                         ),
+                        tf.linalg.matmul(
+                                         weight_vec,
+                                         write_vec,
+                                         transpose_b=True
+                                         )
+                        )
 
         # Update memory and states:
         self.memory = self.drop_mem(new_memory)
-        self.mem_in_state = self.drop_state1(mem_in)
-        self.mem_out_state = self.drop_state2(mem_out)
+        self.state_weights = self.drop_state_weights(weight_vec)
+        self.state_erase = self.drop_state_erase(erase_vec)
+        self.state_write = self.drop_state_write(write_vec)
 
-        # Only the reduced mean of the memory input gating is feed into
-        # the second feedforward layer.
-        # mem_in = tf.math.reduce_mean(mem_in,
-        #                              axis=1,
-        #                              keepdims=True)
-
-        # Concatenate output of first feedforward module and updated memory
-        # output:
-        # f1_mem = self.conc([f1[:, 0, :], mem_out])  # no gradient
-        f1_mem = self.conc([f1[:, 0, :], mem_in, mem_out])
+        # Concatenate output of first feedforward module and memory readout:
+        # f1_mem = self.conc([f1[:, 0, :], read_vec])
 
         # Activation of second feedforward module:
-        f2 = self.drop2(f1_mem)
+        f2 = self.drop2(read_vec)
         f2 = self.d2(f2)
         return f2
+
+    def erase_memory(self, batch_size=None, mem_locations=None, mem_size=None):
+        """Re-initialise memory vector."""
+        # Random values for new state of memory vector:
+        vec_rand_05 = tf.random.normal((batch_size, mem_locations, mem_size),
+                                       mean=0.0,
+                                       stddev=0.1,
+                                       dtype=tf.float32)
+        self.memory = vec_rand_05
 
 
 # Training model (with dropout):
@@ -391,6 +440,7 @@ objMdlInst = LiGeMo(varSzeBtch,
                     varSzeEmb,
                     varNrn01,
                     varNumMem,
+                    varSzeMem,
                     varInDrp,
                     varStDrp,
                     varMemDrp,
@@ -403,6 +453,7 @@ objTstMdlInst = LiGeMo(1,
                        varSzeEmb,
                        varNrn01,
                        varNumMem,
+                       varSzeMem,
                        0.0,
                        0.0,
                        0.0,
@@ -592,7 +643,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        !nvidia-smi
+        #!nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -676,7 +727,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 1000
+        varLenCntx = 100
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
@@ -697,6 +748,10 @@ for idxOpt in range(varNumOpt):
             # Initialise state of the (statefull) prediction model with
             # context.
             objTstMdl.reset_states()
+            objTstMdl.get_layer(name='MeLa').erase_memory(batch_size=1,
+                                                          mem_locations=varNumMem,
+                                                          mem_size=varSzeMem)
+
             # Loop through context window:
             for idxCntx in range(1, varLenCntx):
                 # Get integer code of context word (the '- 1' is so as not
@@ -818,6 +873,15 @@ for idxOpt in range(varNumOpt):
         print('Resetting model states.')
         objMdl.reset_states()
         objTstMdl.reset_states()
+
+        # The memory vector of the custom memory layer needs to be reset
+        # manually:
+        objMdl.get_layer(name='MeLa').erase_memory(batch_size=varSzeBtch,
+                                                   mem_locations=varNumMem,
+                                                   mem_size=varSzeMem)
+        objTstMdl.get_layer(name='MeLa').erase_memory(batch_size=1,
+                                                      mem_locations=varNumMem,
+                                                      mem_size=varSzeMem)
 
 print('--> End of training.')
 
