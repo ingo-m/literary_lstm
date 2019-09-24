@@ -24,23 +24,22 @@ import time
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'  # noqa
 # strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
 strPthMdl = None
-# strPthMdl = 'drive/My Drive/lstm_log/20190913_132940/ligemo_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 # strPthLog = 'drive/My Drive/ligemo_log'
+strPthLog = '/home/john/Dropbox/Harry_Potter/ligemo'
 
 # Learning rate:
-varLrnRte = 0.0001
+varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 1000
+varNumItr = 100
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -49,16 +48,16 @@ varDspStp = 1000
 varNrn01 = 384
 
 # Number of memory locations:
-varNumMem = 256
+varNumMem = 600
 
 # Size of memory locations:
-varSzeMem = 512
+varSzeMem = 800
 
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 32
+varSzeBtch = 128
 
 # Input dropout:
 varInDrp = 0.3
@@ -575,7 +574,7 @@ def training_queue():
     # varIdxWrd = 1
     # vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
     vecIdxWrd = np.linspace(1,
-                            (varSzeBtch * 1),
+                            (varSzeBtch * 10),
                             num=varSzeBtch,
                             dtype=np.int64)
 
@@ -673,7 +672,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        #!nvidia-smi
+        # !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -764,15 +763,18 @@ for idxOpt in range(varNumOpt):
 
             # Copy weights from training model to test model:
             lstTmpWghts = objMdl.get_weights()
+
             # Recurrent status vectors and memory state have different batch
             # size between training and testing model. They are initialised as
             # zero. Not needed in tensorflow 1.14.0.
-            # lstTmpWghts[8] = np.zeros(objTstMdl.get_weights()[8].shape,
-            #                           dtype=np.float32)
-            # lstTmpWghts[9] = np.zeros(objTstMdl.get_weights()[9].shape,
-            #                           dtype=np.float32)
-            # lstTmpWghts[10] = np.zeros(objTstMdl.get_weights()[10].shape,
-            #                           dtype=np.float32)
+            lstTmpWghts[10] = np.zeros(objTstMdl.get_weights()[10].shape,
+                                       dtype=np.float32)
+            lstTmpWghts[11] = np.zeros(objTstMdl.get_weights()[11].shape,
+                                       dtype=np.float32)
+            lstTmpWghts[12] = np.zeros(objTstMdl.get_weights()[12].shape,
+                                       dtype=np.float32)
+            lstTmpWghts[13] = np.zeros(objTstMdl.get_weights()[13].shape,
+                                       dtype=np.float32)
             objTstMdl.set_weights(lstTmpWghts)
 
             # Initialise state of the (statefull) prediction model with
