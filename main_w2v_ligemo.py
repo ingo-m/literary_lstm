@@ -257,6 +257,11 @@ class LiGeMo(tf.keras.Model):
                  **kwargs):
         super(LiGeMo, self).__init__(name=name, **kwargs)
 
+        # ** Model parameters **
+        self.lgm_batch_size = batch_size
+        self.lgm_mem_locations = mem_locations
+        self.lgm_mem_size = mem_size
+
         # ** Layers **
 
         # Input feedforward module:
@@ -386,30 +391,46 @@ class LiGeMo(tf.keras.Model):
         erase_vec = self.erase(conc_03)
 
         # Calculate read vector:
-        read_vec = tf.linalg.matvec(self.memory,
-                                    weight_vec,
+        read_vec = tf.linalg.matvec(self.memory,  # batch_size * mem_locations * mem_size
+                                    weight_vec,   # batch_size * mem_locations
                                     transpose_a=True)
 
-        # Calculate new memory matrix
-        # (from these inputs: weight_vec, write_vec, erase_vec).
-        new_memory = \
-            tf.math.add(
-                        tf.math.multiply(
-                                         self.memory,
-                                         tf.math.subtract(
-                                                          self.ones,
-                                                          tf.linalg.matmul(
-                                                                           weight_vec,
-                                                                           erase_vec,
-                                                                           transpose_b=True)
-                                                          )
-                                         ),
-                        tf.linalg.matmul(
-                                         weight_vec,
-                                         write_vec,
-                                         transpose_b=True
-                                         )
-                        )
+        # ** Calculate new memory matrix **
+
+        # Multiply weight vector with erase vector:
+        erase_mat = tf.linalg.matmul(tf.reshape(weight_vec,
+                                                (self.lgm_batch_size,
+                                                 self.lgm_mem_locations,
+                                                 1)),
+                                     tf.reshape(erase_vec,
+                                                (self.lgm_batch_size,
+                                                 1,
+                                                 self.lgm_mem_size)),
+                                     transpose_a=False,
+                                     transpose_b=False)
+        # Subtract resulting erase matrix from ones:
+        erase_mat = tf.math.subtract(self.ones,
+                                     erase_mat)
+
+        # Multiply previous memory matrix with erase matrix (element-wise):
+        new_memory = tf.math.multiply(self.memory,
+                                      erase_mat)
+
+        # Multiply weight vector with write vector:
+        write_mat = tf.linalg.matmul(tf.reshape(weight_vec,
+                                                (self.lgm_batch_size,
+                                                 self.lgm_mem_locations,
+                                                 1)),
+                                     tf.reshape(write_vec,
+                                                (self.lgm_batch_size,
+                                                 1,
+                                                 self.lgm_mem_size)),
+                                     transpose_a=False,
+                                     transpose_b=False)
+
+        # Add write matrix to new memory matrix:
+        new_memory = tf.math.add(new_memory,
+                                 write_mat)
 
         # Update memory and states:
         self.memory = self.drop_mem(new_memory)
