@@ -19,22 +19,22 @@ from memory_module import MeLa
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
-# strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+# strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-# strPthLog = 'drive/My Drive/lstm_log'
+# strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 20
+varNumItr = 500
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -46,17 +46,26 @@ varNrn03 = 128
 varNrn04 = 256
 varNrn05 = 384
 
+# Number of memory locations:
+varNumMem = 256
+
+# Size of memory locations:
+varSzeMem = 256
+
 # Length of new text to generate:
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 128
+varSzeBtch = 1028
 
 # Input dropout:
 varInDrp = 0.3
 
 # Recurrent state dropout:
 varStDrp = 0.3
+
+# Memory dropout:
+varMemDrp = 0.1
 
 
 # -----------------------------------------------------------------------------
@@ -269,10 +278,13 @@ aryL03 = tf.keras.layers.LSTM(varNrn03,
                               )(aryL02)
 
 aryMemMod = MeLa(batch_size=varSzeBtch,
-                 input_size=varNrn03,
+                 emb_size=varNrn03,
+                 units_01=varNrn03,
+                 mem_locations=varNumMem,
+                 mem_size=varSzeMem,
                  drop_in=varInDrp,
                  drop_state=varStDrp,
-                 drop_mem=0.2,
+                 drop_mem=varMemDrp,
                  name='MeLa')(aryL03)
 
 aryL04 = tf.keras.layers.LSTM(varNrn04,
@@ -357,11 +369,14 @@ aryT03 = tf.keras.layers.LSTM(varNrn03,
                               )(aryT02)
 
 aryMemModT = MeLa(batch_size=1,
-                  input_size=varNrn03,
+                  emb_size=varNrn03,
+                  units_01=varNrn03,
+                  mem_locations=varNumMem,
+                  mem_size=varSzeMem,
                   drop_in=0.0,
                   drop_state=0.0,
                   drop_mem=0.0,
-                  name='MeLa')(aryT03)
+                  name='TeMeLa')(aryT03)
 
 aryT04 = tf.keras.layers.LSTM(varNrn04,
                               activation='tanh',
@@ -487,7 +502,7 @@ def training_queue():
     # varIdxWrd = 1
     # vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
     vecIdxWrd = np.linspace(1,
-                            (varSzeBtch * 1),
+                            (varSzeBtch * 10),
                             num=varSzeBtch,
                             dtype=np.int64)
 
@@ -585,7 +600,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        # !nvidia-smi
+        !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -689,8 +704,9 @@ for idxOpt in range(varNumOpt):
             # Initialise state of the (statefull) prediction model with
             # context.
             objTstMdl.reset_states()
-            objTstMdl.get_layer(name='MeLa').erase_memory(batch_size=1,
-                                                          input_size=varNrn03)
+            objTstMdl.get_layer(name='TeMeLa').erase_memory(
+                batch_size=1, mem_locations=varNumMem, mem_size=varSzeMem)
+
             # Loop through context window:
             for idxCntx in range(1, varLenCntx):
                 # Get integer code of context word (the '- 1' is so as not
@@ -815,10 +831,10 @@ for idxOpt in range(varNumOpt):
 
         # The memory vector of the custom memory layer needs to be reset
         # manually:
-        objMdl.get_layer(name='MeLa').erase_memory(batch_size=varSzeBtch,
-                                                   input_size=varNrn03)
-        objTstMdl.get_layer(name='MeLa').erase_memory(batch_size=1,
-                                                      input_size=varNrn03)
+        objMdl.get_layer(name='MeLa').erase_memory(
+            batch_size=varSzeBtch, mem_locations=varNumMem, mem_size=varSzeMem)
+        objTstMdl.get_layer(name='TeMeLa').erase_memory(
+            batch_size=1, mem_locations=varNumMem, mem_size=varSzeMem)
 
 print('--> End of training.')
 
