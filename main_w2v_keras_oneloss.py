@@ -19,22 +19,22 @@ from memory_module import MeLa
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-# strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
-strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+# strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-# strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-strPthLog = 'drive/My Drive/lstm_log'
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+# strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 500
+varNumItr = 1
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -56,7 +56,7 @@ varSzeMem = 256
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 1028
+varSzeBtch = 32
 
 # Input dropout:
 varInDrp = 0.3
@@ -103,7 +103,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-# vecC = vecC[15:1310]
+# vecC = vecC[15:15020]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -151,7 +151,7 @@ print(('Vocabulary / text ratio: ' + str(varNumRto)))
 varSzeEmb = aryEmb.shape[1]
 
 # Number of optimisation steps:
-varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
+varNumOpt = int(np.floor(float(varLenTxt * varNumItr)))
 
 
 # -----------------------------------------------------------------------------
@@ -299,7 +299,9 @@ aryL04 = tf.keras.layers.LSTM(varNrn04,
                               stateful=lgcState,
                               unroll=False,
                               name='LstmLayer04'
-                              )(aryMemMod)
+                              )(tf.keras.layers.concatenate([aryMemMod,
+                                                             aryL03],
+                                                            axis=2))
 
 aryL05 = tf.keras.layers.LSTM(varNrn05,
                               activation='tanh',
@@ -389,7 +391,9 @@ aryT04 = tf.keras.layers.LSTM(varNrn04,
                               stateful=True,
                               unroll=False,
                               name='TestingLstmLayer04'
-                              )(aryMemModT)
+                              )(tf.keras.layers.concatenate([aryMemModT,
+                                                             aryT03],
+                                                            axis=2))
 
 aryT05 = tf.keras.layers.LSTM(varNrn05,
                               activation='tanh',
@@ -460,11 +464,11 @@ if not os.path.exists(strPthLogSes):
     os.makedirs(strPthLogSes)
 
 # Placeholder for histogram vector:
-objPlcHist = tf.placeholder(tf.float32, shape=(300, 1536))
+# objPlcHist = tf.placeholder(tf.float32, shape=(300, 1536))
 # objHistVals = tf.Variable(initial_value=0.0, shape=varNrn01, dtype=tf.float32)
 
 # Create histrogram:
-objHistPred = tf.summary.histogram("Weights_01", objPlcHist)
+# objHistPred = tf.summary.histogram("Weights_01", objPlcHist)
 
 # Old (tf 1.13) summary implementation for tensorboard:
 objLogWrt = tf.summary.FileWriter(strPthLogSes,
@@ -500,11 +504,11 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    # vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
-    vecIdxWrd = np.linspace(1,
-                            (varSzeBtch * 10),
-                            num=varSzeBtch,
-                            dtype=np.int64)
+    vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
+    # vecIdxWrd = np.linspace(1,
+    #                         (varSzeBtch * 10),
+    #                         num=varSzeBtch,
+    #                         dtype=np.int64)
 
     # Array for new batch of sample weights:
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
@@ -658,10 +662,10 @@ for idxOpt in range(varNumOpt):
         objLogWrt.add_summary(objSmry, global_step=idxOpt)
 
         # Write model weights to histogram:
-        lstWghts = objMdl.get_weights()
-        objHistVals = objSess.run(objMrgSmry,
-                                  feed_dict={objPlcHist: lstWghts[0]})
-        objLogWrt.add_summary(objHistVals, global_step=idxOpt)
+        # lstWghts = objMdl.get_weights()
+        # objHistVals = objSess.run(objMrgSmry,
+        #                           feed_dict={objPlcHist: lstWghts[0]})
+        # objLogWrt.add_summary(objHistVals, global_step=idxOpt)
 
     # Give status feedback:
     if (idxOpt % varDspStp == 0):
