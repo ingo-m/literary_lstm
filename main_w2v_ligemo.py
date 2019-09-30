@@ -29,7 +29,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = None
+strPthMdl = '/home/john/Dropbox/Harry_Potter/ligemo/20190925_013238/ligemo_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 # strPthLog = 'drive/My Drive/ligemo_log'
