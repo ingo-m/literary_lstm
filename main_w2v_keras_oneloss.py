@@ -604,7 +604,7 @@ def gpu_status():
     """Print GPU status information."""
     while True:
         # Print nvidia GPU status information:
-        !nvidia-smi
+        # !nvidia-smi
         # Sleep some time before next status message:
         time.sleep(600)
 
@@ -695,11 +695,13 @@ for idxOpt in range(varNumOpt):
             # Recurrent status vectors and memory state have different batch
             # size between training and testing model. They are initialised as
             # zero. Not needed in tensorflow 1.14.0.
-            lstTmpWghts[13] = np.zeros(objTstMdl.get_weights()[13].shape,
+            lstTmpWghts[19] = np.zeros(objTstMdl.get_weights()[19].shape,
                                        dtype=np.float32)
-            lstTmpWghts[14] = np.zeros(objTstMdl.get_weights()[14].shape,
+            lstTmpWghts[20] = np.zeros(objTstMdl.get_weights()[20].shape,
                                        dtype=np.float32)
-            lstTmpWghts[15] = np.zeros(objTstMdl.get_weights()[15].shape,
+            lstTmpWghts[21] = np.zeros(objTstMdl.get_weights()[21].shape,
+                                       dtype=np.float32)
+            lstTmpWghts[22] = np.zeros(objTstMdl.get_weights()[22].shape,
                                        dtype=np.float32)
 
             # Copy weights from training model to test model:
@@ -845,12 +847,6 @@ print('--> End of training.')
 # Get model weights:
 lstWghts = objMdl.get_weights()
 
-# Save model to disk:
-tf.keras.models.save_model(objMdl,
-                           os.path.join(strPthLogSes, 'lstm_training_model'))
-tf.keras.models.save_model(objTstMdl,
-                           os.path.join(strPthLogSes, 'lstm_test_model'))
-
 # Save model weights and training parameters to disk:
 np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varLrnRte=varLrnRte,
@@ -866,3 +862,9 @@ np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varStDrp=varStDrp,
          lstWghts=lstWghts,
          )
+
+# Save model to disk:
+tf.keras.models.save_model(objMdl,
+                           os.path.join(strPthLogSes, 'lstm_training_model'))
+tf.keras.models.save_model(objTstMdl,
+                           os.path.join(strPthLogSes, 'lstm_test_model'))
