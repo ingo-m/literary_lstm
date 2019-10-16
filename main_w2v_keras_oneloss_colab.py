@@ -1101,9 +1101,3 @@ np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varStDrp=varStDrp,
          lstWghts=lstWghts,
          )
-
-# Save model to disk:
-tf.keras.models.save_model(objMdl,
-                           os.path.join(strPthLogSes, 'lstm_training_model'))
-tf.keras.models.save_model(objTstMdl,
-                           os.path.join(strPthLogSes, 'lstm_test_model'))
