@@ -285,7 +285,7 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = None
+strPthMdl = 'drive/My Drive/lstm_log/20191015_231336/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = 'drive/My Drive/lstm_log'
@@ -294,10 +294,10 @@ strPthLog = 'drive/My Drive/lstm_log'
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 1
+varNumItr = 0.25
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 10000
 
 # Number of neurons:
 varNrn01 = 384
@@ -316,7 +316,7 @@ varSzeMem = 512
 varLenNewTxt = 100
 
 # Batch size:
-varSzeBtch = 1028
+varSzeBtch = 2056
 
 # Input dropout:
 varInDrp = 0.3
@@ -325,7 +325,7 @@ varInDrp = 0.3
 varStDrp = 0.3
 
 # Memory dropout:
-varMemDrp = 0.1
+varMemDrp = 0.2
 
 
 # -----------------------------------------------------------------------------
