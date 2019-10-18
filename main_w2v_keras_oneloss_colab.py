@@ -247,13 +247,34 @@ class MeLa(tf.keras.layers.Layer):
         return self.reshape(f2)
 
     def erase_memory(self, batch_size=None, mem_locations=None, mem_size=None):
-        """Re-initialise memory vector."""
-        # Random values for new state of memory vector:
-        vec_rand_05 = tf.random.normal((batch_size, mem_locations, mem_size),
+        """Re-initialise memory and recurrent states."""
+        # Reset state of weights vector:
+        vec_rand_01 = tf.random.normal((batch_size, mem_locations),
                                        mean=0.0,
                                        stddev=0.1,
                                        dtype=tf.float32)
-        self.memory = vec_rand_05
+        self.state_weights = vec_rand_01
+
+        # Reset state of erase vector:
+        vec_rand_02 = tf.random.normal((batch_size, mem_size),
+                                       mean=0.0,
+                                       stddev=0.1,
+                                       dtype=tf.float32)
+        self.state_erase = vec_rand_02
+
+        # Reset state of write vector:
+        vec_rand_03 = tf.random.normal((batch_size, mem_size),
+                                       mean=0.0,
+                                       stddev=0.1,
+                                       dtype=tf.float32)
+        self.state_write = vec_rand_03
+
+        # Reset state of memory matrix:
+        vec_rand_04 = tf.random.normal((batch_size, mem_locations, mem_size),
+                                       mean=0.0,
+                                       stddev=0.1,
+                                       dtype=tf.float32)
+        self.memory = vec_rand_04
 
 
 # -----------------------------------------------------------------------------
