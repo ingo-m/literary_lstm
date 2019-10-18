@@ -613,7 +613,7 @@ for idxOpt in range(varNumOpt):
         if varTmpWrd > varLenCntx:
 
             # Get model weights from training model:
-            lstTmpWghts = objMdl.get_weights()
+            lstWghts = objMdl.get_weights()
 
             # Copy weights from training model to test model:
 
