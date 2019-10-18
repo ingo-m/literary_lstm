@@ -20,21 +20,19 @@ from memory_module import MeLa
 
 # Path of input data file (containing text and word2vec embedding):
 strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
-# strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20191017_225532/lstm_data.npz'
+strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
-# strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
 varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
-varNumItr = 1.5
+varNumItr = 1
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -267,10 +265,10 @@ aryL02 = tf.keras.layers.LSTM(varNrn02,
                               go_backwards=False,
                               stateful=lgcState,
                               unroll=False,
-                              name='LstmLayer05')(aryMemMod)
-#                              )(tf.keras.layers.concatenate([aryMemMod,
-#                                                             aryL01],
-#                                                            axis=2))
+                              name='LstmLayer02'
+                              )(tf.keras.layers.concatenate([aryMemMod,
+                                                             aryL01],
+                                                            axis=2))
 
 # Dense feedforward layer:
 aryL03 = tf.keras.layers.Dense(varSzeEmb,
@@ -317,10 +315,10 @@ aryT02 = tf.keras.layers.LSTM(varNrn02,
                               go_backwards=False,
                               stateful=True,
                               unroll=False,
-                              name='TestingLstmLayer05')(aryMemModT)
-#                              )(tf.keras.layers.concatenate([aryMemModT,
-#                                                             aryT01],
-#                                                            axis=2))
+                              name='TestingLstmLayer02'
+                              )(tf.keras.layers.concatenate([aryMemModT,
+                                                             aryT01],
+                                                            axis=2))
 
 
 # Dense feedforward layer:
@@ -555,10 +553,10 @@ while varTmpSzeQ < varBuff:
 
 # -----------------------------------------------------------------------------
 # Additional thread for GPU status information:
-if lgcGpu:
-    objThrdGpuStt = threading.Thread(target=gpu_status)
-    objThrdGpuStt.setDaemon(True)
-    objThrdGpuStt.start()
+# if lgcGpu:
+#     objThrdGpuStt = threading.Thread(target=gpu_status)
+#     objThrdGpuStt.setDaemon(True)
+#     objThrdGpuStt.start()
 
 
 # -----------------------------------------------------------------------------
@@ -788,7 +786,7 @@ np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          )
 
 # Save model to disk:
-tf.keras.models.save_model(objMdl,
-                           os.path.join(strPthLogSes, 'lstm_training_model'))
-tf.keras.models.save_model(objTstMdl,
-                           os.path.join(strPthLogSes, 'lstm_test_model'))
+# tf.keras.models.save_model(objMdl,
+#                            os.path.join(strPthLogSes, 'lstm_training_model'))
+# tf.keras.models.save_model(objTstMdl,
+#                            os.path.join(strPthLogSes, 'lstm_test_model'))
