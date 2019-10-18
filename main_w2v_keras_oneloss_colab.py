@@ -690,8 +690,20 @@ else:
     objNpz.allow_pickle = True
     lstWghts = list(objNpz['lstWghts'])
 
-    # Set model weights:
-    objMdl.set_weights(lstWghts)
+    # Counter for weights:
+    varCntWght = 0
+    # Number of layers:
+    varNumLry = len(objMdl.layers)
+    # Loop through layers:
+    for idxLry in range(varNumLry):
+        # Number of weight arrays to set in current layer:
+        varNumWght = len(objMdl.layers[idxLry].get_weights())
+        # Pre-trained weights to be assigned to current layer:
+        lstTmpWghts = lstWghts[varCntWght:(varCntWght+varNumWght)]
+        # Assign weights to model:
+        objMdl.layers[idxLry].set_weights(lstTmpWghts)
+        # Increment counter:
+        varCntWght += varNumWght
 
 init = tf.global_variables_initializer()
 objSess.run(init)
@@ -952,20 +964,22 @@ for idxOpt in range(varNumOpt):
             # Get model weights from training model:
             lstTmpWghts = objMdl.get_weights()
 
-            # Recurrent status vectors and memory state have different batch
-            # size between training and testing model. They are initialised as
-            # zero. Not needed in tensorflow 1.14.0.
-            #lstTmpWghts[19] = np.zeros(objTstMdl.get_weights()[19].shape,
-            #                           dtype=np.float32)
-            #lstTmpWghts[20] = np.zeros(objTstMdl.get_weights()[20].shape,
-            #                           dtype=np.float32)
-            #lstTmpWghts[21] = np.zeros(objTstMdl.get_weights()[21].shape,
-            #                           dtype=np.float32)
-            #lstTmpWghts[22] = np.zeros(objTstMdl.get_weights()[22].shape,
-            #                           dtype=np.float32)
-
             # Copy weights from training model to test model:
-            objTstMdl.set_weights(lstTmpWghts)
+
+            # Counter for weights:
+            varCntWght = 0
+            # Number of layers:
+            varNumLry = len(objTstMdl.layers)
+            # Loop through layers:
+            for idxLry in range(varNumLry):
+                # Number of weight arrays to set in current layer:
+                varNumWght = len(objTstMdl.layers[idxLry].get_weights())
+                # Pre-trained weights to be assigned to current layer:
+                lstTmpWghts = lstWghts[varCntWght:(varCntWght+varNumWght)]
+                # Assign weights to model:
+                objTstMdl.layers[idxLry].set_weights(lstTmpWghts)
+                # Increment counter:
+                varCntWght += varNumWght
 
             # Initialise state of the (statefull) prediction model with
             # context.
