@@ -678,6 +678,8 @@ aryT06 = tf.keras.layers.Dense(varSzeEmb,
 
 # Initialise the model:
 objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryT06)
+init = tf.global_variables_initializer()
+objSess.run(init)
 
 # Load pre-trained weights from disk?
 if strPthMdl is None:
@@ -690,23 +692,8 @@ else:
     objNpz.allow_pickle = True
     lstWghts = list(objNpz['lstWghts'])
 
-    # Counter for weights:
-    varCntWght = 0
-    # Number of layers:
-    varNumLry = len(objMdl.layers)
-    # Loop through layers:
-    for idxLry in range(varNumLry):
-        # Number of weight arrays to set in current layer:
-        varNumWght = len(objMdl.layers[idxLry].get_weights())
-        # Pre-trained weights to be assigned to current layer:
-        lstTmpWghts = lstWghts[varCntWght:(varCntWght+varNumWght)]
-        # Assign weights to model:
-        objMdl.layers[idxLry].set_weights(lstTmpWghts)
-        # Increment counter:
-        varCntWght += varNumWght
-
-init = tf.global_variables_initializer()
-objSess.run(init)
+    # Assign pre-trained weights to model:
+    objMdl.set_weights(lstWghts)
 
 # Print model summary:
 print('Training model:')
@@ -965,21 +952,7 @@ for idxOpt in range(varNumOpt):
             lstTmpWghts = objMdl.get_weights()
 
             # Copy weights from training model to test model:
-
-            # Counter for weights:
-            varCntWght = 0
-            # Number of layers:
-            varNumLry = len(objTstMdl.layers)
-            # Loop through layers:
-            for idxLry in range(varNumLry):
-                # Number of weight arrays to set in current layer:
-                varNumWght = len(objTstMdl.layers[idxLry].get_weights())
-                # Pre-trained weights to be assigned to current layer:
-                lstTmpWghts = lstWghts[varCntWght:(varCntWght+varNumWght)]
-                # Assign weights to model:
-                objTstMdl.layers[idxLry].set_weights(lstTmpWghts)
-                # Increment counter:
-                varCntWght += varNumWght
+            objTstMdl.set_weights(lstWghts)
 
             # Initialise state of the (statefull) prediction model with
             # context.
