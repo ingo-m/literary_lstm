@@ -23,7 +23,8 @@ import matplotlib.colors as colors
 
 
 def plot(aryWghts, strTtl, strXlabel, strYlabel, strPathOut, tpleLimX=None,
-         tpleLimY=None, varMin=None, varMax=None, varDpi=200.0):
+         tpleLimY=None, varMin=None, varMax=None, varDpi=200.0,
+         tplPrcntl=None):
     """Plot 2D weight matrix."""
     # Font type:
     strFont = 'Liberation Sans'
@@ -33,14 +34,14 @@ def plot(aryWghts, strTtl, strXlabel, strYlabel, strPathOut, tpleLimX=None,
 
     # Colour scale minimum:
     if varMin is None:
-        varMin = np.percentile(aryWghts, 1.0)
+        varMin = np.percentile(aryWghts, tplPrcntl[0])
         varMin = (np.floor(varMin * 10.0) / 10.0)
         # varMin = (np.floor(varMin * 0.1) / 0.1)
         # varMin = np.floor(varMin)
 
     # Colour scale maximum:
     if varMax is None:
-        varMax = np.percentile(aryWghts, 99.0)
+        varMax = np.percentile(aryWghts, tplPrcntl[1])
         varMax = (np.ceil(varMax * 10.0) / 10.0)
         # varMax = (np.ceil(varMax * 0.1) / 0.1)
         # varMax = np.ceil(varMax)

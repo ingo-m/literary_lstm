@@ -23,16 +23,16 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20191019_103037/lstm_data.npz'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20191020_165441/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
-varLrnRte = 0.0001
+varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 2
+varNumItr = 1
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
