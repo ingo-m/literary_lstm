@@ -285,13 +285,13 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = 'drive/My Drive/lstm_log/20191015_231336/lstm_data.npz'
+strPthMdl = 'drive/My Drive/lstm_log/20191020_165920/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.0001
+varLrnRte = 0.001
 
 # Number of training iterations over the input text:
 varNumItr = 0.25
@@ -313,10 +313,10 @@ varNumMem = 512
 varSzeMem = 512
 
 # Length of new text to generate:
-varLenNewTxt = 100
+varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 2056
+varSzeBtch = 2048
 
 # Input dropout:
 varInDrp = 0.3
@@ -326,6 +326,18 @@ varStDrp = 0.3
 
 # Memory dropout:
 varMemDrp = 0.2
+
+# Number of words from which to sample next word (n most likely words) when
+# generating new text. This parameter has no effect during training, but during
+# validation.
+varNumWrdSmp = 1000
+
+# Exponent to apply over likelihoods of predictions. Higher value biases the
+# selection towards words predicted with high likelihood, but leads to
+# repetitive sequences of frequent words. Lower value biases selection towards
+# less frequent words and breaks repetitive sequences, but leads to incoherent
+# sequences without gramatical structure or semantic meaning.
+varTemp = 2.5
 
 
 # -----------------------------------------------------------------------------
@@ -943,7 +955,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 1000
+        varLenCntx = 100
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
@@ -1057,10 +1069,50 @@ for idxOpt in range(varNumOpt):
                                  axis=1
                                  )
 
-                # Get code of closest word vector. (We have to add one because
-                # we skipped the first row of the embedding matrix in the
-                # previous step.)
-                varTmp = int(np.argmin(vecDiff)) + 1
+                # Percentile corresponding to number of words to sample:
+                varPrcntSmp = float(varNumWrdSmp) / float(varNumWrds) * 100.0
+
+                # Construct vector with probability distrubition of next word.
+                # The  difference between the prediction and all words in the
+                # vocabulary is the starting point.
+                vecProbDist = vecDiff.astype('float64')
+
+                # The next word will be selected from a subset of words (the n
+                # words that are clostest to the predicted word vector). Create
+                # a boolean vector for words to include in sampling.
+                varPrcnt = np.percentile(vecProbDist, varPrcntSmp)
+                # Words in vocabulary to exclude from sampling:
+                vecLgcExc = np.greater(vecProbDist, varPrcnt)
+                # Words in vocabulary to include in sampling:
+                vecLgcInc = np.logical_not(vecLgcExc)
+
+                # Invert the difference between prediction and word vectors, so
+                # high values correspond to words that are more likely, given
+                # the prediction.
+                vecProbDist = np.divide(1.0, vecProbDist)
+
+                # Normalise the range of the distribution:
+                varMin = np.min(vecProbDist[vecLgcInc])
+                vecProbDist = np.subtract(vecProbDist, varMin)
+                vecProbDist[vecLgcExc] = 0.0
+                vecProbDist = np.divide(vecProbDist, np.max(vecProbDist))
+
+                # Apply exponent, to bias selection towards more or less likely
+                # words.
+                vecProbDist = np.power(vecProbDist, varTemp)
+
+                # Turn the vector into a probability distribution (so that the
+                # sum of all elements is one).
+                vecProbDist = np.divide(vecProbDist, np.sum(vecProbDist))
+
+                # Sample next word from probability distribution - code of next
+                # word.
+                varTmp = int(np.argmax(np.random.multinomial(1, vecProbDist)))
+
+                # Add one, because we skipped the first row of the embedding
+                # matrix when calculating the minimum squared deviation between
+                # prediciton and embedding vectors (to avoid the unknown-token).
+                varTmp = varTmp + 1
 
                 # Save code of predicted word:
                 vecNew[idxNew] = varTmp
