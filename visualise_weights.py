@@ -86,9 +86,6 @@ for strSess in lstSess:
     # -------------------------------------------------------------------------
     # *** Plot distribution of weights
 
-    # ?
-    sns.set()
-
     # Flatten weight arrays:
     lstWghts = [x.flatten() for x in lstWghts]
 
@@ -123,9 +120,6 @@ for strSess in lstSess:
 
     # -------------------------------------------------------------------------
     # *** Plot distribution of biases
-
-    # ?
-    sns.set()
 
     # Number of layers with bias vector:
     varNumLryB = len(lstBias)
