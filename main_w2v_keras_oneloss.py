@@ -48,7 +48,7 @@ varNumMem = 512
 varSzeMem = 512
 
 # Length of new text to generate:
-varLenNewTxt = 100
+varLenNewTxt = 200
 
 # Batch size:
 varSzeBtch = 1028
@@ -606,7 +606,7 @@ for idxOpt in range(varNumOpt):
 
         # Length of context to use to initialise the state of the prediction
         # model:
-        varLenCntx = 1000
+        varLenCntx = 100
 
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
