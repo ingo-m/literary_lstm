@@ -29,13 +29,13 @@ strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20191022_004457/lstm_data.npz'
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
 varNumItr = 1
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 100000
 
 # Number of neurons:
 varNrn01 = 384
@@ -51,7 +51,7 @@ varSzeMem = 512
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 1028
+varSzeBtch = 2**11
 
 # Input dropout:
 varInDrp = 0.3
