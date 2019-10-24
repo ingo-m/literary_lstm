@@ -19,45 +19,45 @@ import numpy as np
 import tensorflow as tf
 import time
 
+from memory_module import MeLa
+
 
 # -----------------------------------------------------------------------------
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-# strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/ligemo/20190925_013238/ligemo_data.npz'
+strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-# strPthLog = 'drive/My Drive/ligemo_log'
 strPthLog = '/home/john/Dropbox/Harry_Potter/ligemo'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.001
 
 # Number of training iterations over the input text:
-varNumItr = 100
+varNumItr = 1
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 10000
 
 # Number of neurons:
 varNrn01 = 384
 
 # Number of memory locations:
-varNumMem = 600
+varNumMem = 1024
 
 # Size of memory locations:
-varSzeMem = 800
+varSzeMem = 256
 
 # Length of new text to generate:
-varLenNewTxt = 100
+varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 128
+varSzeBtch = 512  # 256
 
 # Input dropout:
 varInDrp = 0.3
@@ -68,17 +68,29 @@ varStDrp = 0.3
 # Memory dropout:
 varMemDrp = 0.1
 
+# Number of words from which to sample next word (n most likely words) when
+# generating new text. This parameter has no effect during training, but during
+# validation.
+varNumWrdSmp = 1000
+
+# Exponent to apply over likelihoods of predictions. Higher value biases the
+# selection towards words predicted with high likelihood, but leads to
+# repetitive sequences of frequent words. Lower value biases selection towards
+# less frequent words and breaks repetitive sequences, but leads to incoherent
+# sequences without gramatical structure or semantic meaning.
+varTemp = 2.5
+
 
 # -----------------------------------------------------------------------------
 # *** Use GPU if available:
 
 try:
-    from tensorflow.python.client import device_lib  # noqa
+    from tensorflow.python.client import device_lib
     gpus = tf.config.experimental.list_physical_devices('GPU')
     tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
     print(('--> Using device: ' + gpus[0].name))
     lgcGpu = True
-except (AttributeError, IndexError):
+except AttributeError:
     lgcGpu = False
 
 
@@ -104,7 +116,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-# vecC = vecC[15:2000]
+# vecC = vecC[15:15020]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -138,6 +150,9 @@ varNumWrds = aryEmb.shape[0]
 
 print(('Size of vocabulary (number of unique words): ' + str(varNumWrds)))
 
+# Embedding size (i.e. length of each word vector):
+varEmbSze = aryEmb.shape[1]
+
 # Number of words in text (corpus):
 varLenTxt = vecC.shape[0]
 
@@ -152,7 +167,7 @@ print(('Vocabulary / text ratio: ' + str(varNumRto)))
 varSzeEmb = aryEmb.shape[1]
 
 # Number of optimisation steps:
-varNumOpt = int(np.floor(float(varLenTxt * varNumItr) / float(varSzeBtch)))
+varNumOpt = int(np.floor(float(varLenTxt * varNumItr)))
 
 
 # -----------------------------------------------------------------------------
@@ -227,268 +242,38 @@ objWght = objQ03.dequeue()
 # -----------------------------------------------------------------------------
 # *** Build the network
 
-# Shortcut for activation functions:
-tanh = tf.keras.activations.tanh
-sigmoid = tf.keras.activations.sigmoid
-softmax = tf.keras.activations.softmax
+# Regularisation:
+objRegL2 = None
 
+aryMemMod = MeLa(batch_size=varSzeBtch,
+                 emb_size=varEmbSze,
+                 units_01=varNrn01,
+                 mem_locations=varNumMem,
+                 mem_size=varSzeMem,
+                 drop_in=varInDrp,
+                 drop_state=varStDrp,
+                 drop_mem=varMemDrp,
+                 name='MeLa')(objTrnCtxt)
 
-class LiGeMo(tf.keras.Model):
-    """
-    Literature generating model.
+# Initialise the model:
+objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryMemMod)
 
-    At the core of the model there is a memory matrix. A single weight vector
-    is used to control reading, erasing, and writing to/from the memory matrix.
-    Separate layers control the content of the erase and write vectors.
-    """
+# An almost idential version of the model used for testing, without dropout
+# and possibly different input size (fixed batch size of one).
+aryMemModT = MeLa(batch_size=1,
+                  emb_size=varEmbSze,
+                  units_01=varNrn01,
+                  mem_locations=varNumMem,
+                  mem_size=varSzeMem,
+                  drop_in=0.0,
+                  drop_state=0.0,
+                  drop_mem=0.0,
+                  name='TeMeLa')(objTstCtxt)
 
-    def __init__(self,  # noqa
-                 batch_size,
-                 emb_size,
-                 units_01,
-                 mem_locations,
-                 mem_size,
-                 drop_in,
-                 drop_state,
-                 drop_mem,
-                 name='LiGeMo',
-                 **kwargs):
-        super(LiGeMo, self).__init__(name=name, **kwargs)
-
-        # ** Model parameters **
-        self.lgm_batch_size = batch_size
-        self.lgm_mem_locations = mem_locations
-        self.lgm_mem_size = mem_size
-
-        # ** Layers **
-
-        # Input feedforward module:
-        self.drop1 = tf.keras.layers.Dropout(drop_in)
-        self.d1 = tf.keras.layers.Dense(units_01,
-                                        input_shape=(batch_size,
-                                                     1,
-                                                     emb_size),
-                                        activation=tanh,
-                                        name='dense_in')
-
-        # Layer controlling weight vector:
-        self.mem_weights = tf.keras.layers.Dense(mem_locations,
-                                                 activation=softmax,
-                                                 name='memory_weights')
-
-        # Layer controlling content of write vector:
-        self.write = tf.keras.layers.Dense(mem_size,
-                                           activation=tanh,
-                                           name='memory_write')
-
-        # Layer controlling content of erase vector:
-        self.erase = tf.keras.layers.Dense(mem_size,
-                                           activation=tanh,
-                                           name='memory_erase')
-
-        # Output feedforward module:
-        self.drop2 = tf.keras.layers.Dropout(drop_in)
-        self.d2 = tf.keras.layers.Dense(emb_size,
-                                        activation=tanh,
-                                        name='dense_out')
-
-        # ** Dropouts **
-
-        # Dropout layers for state arrays and memory:
-        self.drop_mem = tf.keras.layers.Dropout(drop_mem)
-        self.drop_state_weights = tf.keras.layers.Dropout(drop_state)
-        self.drop_state_erase = tf.keras.layers.Dropout(drop_state)
-        self.drop_state_write = tf.keras.layers.Dropout(drop_state)
-
-        # ** Recurrent states **
-
-        # The three layers (controlling the weights, erase, and write vectors)
-        # have a recurrent state vector.
-
-        # State of weights vector:
-        vec_rand_01 = tf.random.normal((batch_size, mem_locations),
-                                       mean=0.0,
-                                       stddev=0.1,
-                                       dtype=tf.float32)
-        self.state_weights = tf.Variable(initial_value=vec_rand_01,
-                                         trainable=False,
-                                         dtype=tf.float32,
-                                         name='state_weights')
-
-        # State of erase vector:
-        vec_rand_02 = tf.random.normal((batch_size, mem_size),
-                                       mean=0.0,
-                                       stddev=0.1,
-                                       dtype=tf.float32)
-        self.state_erase = tf.Variable(initial_value=vec_rand_02,
-                                       trainable=False,
-                                       dtype=tf.float32,
-                                       name='state_erase')
-
-        # State of write vector:
-        vec_rand_03 = tf.random.normal((batch_size, mem_size),
-                                       mean=0.0,
-                                       stddev=0.1,
-                                       dtype=tf.float32)
-        self.state_write = tf.Variable(initial_value=vec_rand_03,
-                                       trainable=False,
-                                       dtype=tf.float32,
-                                       name='state_write')
-
-        # ** Memory **
-
-        # Random values for initial state of memory vector:
-        vec_rand_04 = tf.random.normal((batch_size, mem_locations, mem_size),
-                                       mean=0.0,
-                                       stddev=0.1,
-                                       dtype=tf.float32)
-
-        # The actual memory matrix:
-        self.memory = tf.Variable(initial_value=vec_rand_04,
-                                  trainable=False,
-                                  dtype=tf.float32,
-                                  name='memory_matrix')
-
-        # Matrix of ones (needed for memory update):
-        self.ones = tf.ones((batch_size, mem_locations, mem_size),
-                            dtype=tf.float32,
-                            name='ones_matrix')
-
-        # Math ops:
-        # self.add = tf.keras.layers.Add()
-        # self.sub = tf.keras.layers.Subtract()
-        # self.mult = tf.keras.layers.Multiply()
-        self.conc = tf.keras.layers.Concatenate(axis=1)
-
-
-    def call(self, inputs):  # noqa
-
-        # Activate of first feedforward module:
-        f1 = self.drop1(inputs)
-        f1 = self.d1(f1)
-
-        # Activate recurrent layer that controls weights vector:
-        conc_01 = self.conc([f1[:, 0, :],
-                            self.state_weights,   # batch_size * mem_locations
-                            self.state_erase,     # batch_size * mem_size
-                            self.state_write])    # batch_size * mem_size
-        weight_vec = self.mem_weights(conc_01)
-
-        # Activate recurrent layer that controls write vector:
-        conc_02 = self.conc([f1[:, 0, :],
-                            self.state_weights,   # batch_size * mem_locations
-                            self.state_erase,     # batch_size * mem_size
-                            self.state_write])    # batch_size * mem_size
-        write_vec = self.write(conc_02)
-
-        # Activate recurrent layer that controls erase vector:
-        conc_03 = self.conc([f1[:, 0, :],
-                            self.state_weights,   # batch_size * mem_locations
-                            self.state_erase,     # batch_size * mem_size
-                            self.state_write])    # batch_size * mem_size
-        erase_vec = self.erase(conc_03)
-
-        # Calculate read vector:
-        read_vec = tf.linalg.matvec(self.memory,  # batch_size * mem_locations * mem_size
-                                    weight_vec,   # batch_size * mem_locations
-                                    transpose_a=True)
-
-        # ** Calculate new memory matrix **
-
-        # Multiply weight vector with erase vector:
-        erase_mat = tf.linalg.matmul(tf.reshape(weight_vec,
-                                                (self.lgm_batch_size,
-                                                 self.lgm_mem_locations,
-                                                 1)),
-                                     tf.reshape(erase_vec,
-                                                (self.lgm_batch_size,
-                                                 1,
-                                                 self.lgm_mem_size)),
-                                     transpose_a=False,
-                                     transpose_b=False)
-        # Subtract resulting erase matrix from ones:
-        erase_mat = tf.math.subtract(self.ones,
-                                     erase_mat)
-
-        # Multiply previous memory matrix with erase matrix (element-wise):
-        new_memory = tf.math.multiply(self.memory,
-                                      erase_mat)
-
-        # Multiply weight vector with write vector:
-        write_mat = tf.linalg.matmul(tf.reshape(weight_vec,
-                                                (self.lgm_batch_size,
-                                                 self.lgm_mem_locations,
-                                                 1)),
-                                     tf.reshape(write_vec,
-                                                (self.lgm_batch_size,
-                                                 1,
-                                                 self.lgm_mem_size)),
-                                     transpose_a=False,
-                                     transpose_b=False)
-
-        # Add write matrix to new memory matrix:
-        new_memory = tf.math.add(new_memory,
-                                 write_mat)
-
-        # Apply dropout:
-        new_memory = self.drop_mem(new_memory)
-        weight_vec = self.drop_state_weights(weight_vec)
-        erase_vec = self.drop_state_erase(erase_vec)
-        write_vec = self.drop_state_write(write_vec)
-
-        # Update memory and states:
-        self.memory = new_memory
-        self.state_weights = weight_vec
-        self.state_erase = erase_vec
-        self.state_write = write_vec
-
-        # Concatenate output of first feedforward module and memory readout:
-        # f1_mem = self.conc([f1[:, 0, :], read_vec])
-        mem_and_states = self.conc([read_vec,
-                                    weight_vec,
-                                    erase_vec,
-                                    write_vec])
-
-        # Activation of second feedforward module:
-        f2 = self.drop2(mem_and_states)
-        f2 = self.d2(f2)
-        return f2
-
-    def erase_memory(self, batch_size=None, mem_locations=None, mem_size=None):
-        """Re-initialise memory vector."""
-        # Random values for new state of memory vector:
-        vec_rand_05 = tf.random.normal((batch_size, mem_locations, mem_size),
-                                       mean=0.0,
-                                       stddev=0.1,
-                                       dtype=tf.float32)
-        self.memory = vec_rand_05
-
-
-# Training model (with dropout):
-objMdlInst = LiGeMo(varSzeBtch,
-                    varSzeEmb,
-                    varNrn01,
-                    varNumMem,
-                    varSzeMem,
-                    varInDrp,
-                    varStDrp,
-                    varMemDrp,
-                    name='Train_model')
-objOut = objMdlInst(objTrnCtxt)
-objMdl = tf.keras.Model(inputs=objTrnCtxt, outputs=objOut)
-
-# Testing model (without dropout):
-objTstMdlInst = LiGeMo(1,
-                       varSzeEmb,
-                       varNrn01,
-                       varNumMem,
-                       varSzeMem,
-                       0.0,
-                       0.0,
-                       0.0,
-                       name='Test_model')
-objTstOut = objTstMdlInst(objTstCtxt)
-objTstMdl = tf.keras.Model(inputs=objTstCtxt, outputs=objTstOut)
+# Initialise the model:
+objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryMemModT)
+init = tf.global_variables_initializer()
+objSess.run(init)
 
 # Load pre-trained weights from disk?
 if strPthMdl is None:
@@ -501,7 +286,7 @@ else:
     objNpz.allow_pickle = True
     lstWghts = list(objNpz['lstWghts'])
 
-    # Set model weights:
+    # Assign pre-trained weights to model:
     objMdl.set_weights(lstWghts)
 
 # Print model summary:
@@ -512,7 +297,7 @@ objTstMdl.summary()
 
 # Define the optimiser and loss function:
 objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
-               loss=tf.keras.losses.MeanSquaredError())
+               loss=tf.keras.losses.mean_squared_error)
 
 
 # -----------------------------------------------------------------------------
@@ -531,10 +316,9 @@ strPthLogSes = os.path.join(strPthLog, strDate)
 if not os.path.exists(strPthLogSes):
     os.makedirs(strPthLogSes)
 
-# Placeholder for histogram values:
+# Placeholder for histogram vector:
 # objPlcHist = tf.placeholder(tf.float32, shape=(300, 1536))
-# objHistVals = tf.Variable(initial_value=0.0, shape=varNrn01,
-#  dtype=tf.float32)
+# objHistVals = tf.Variable(initial_value=0.0, shape=varNrn01, dtype=tf.float32)
 
 # Create histrogram:
 # objHistPred = tf.summary.histogram("Weights_01", objPlcHist)
@@ -544,7 +328,7 @@ objLogWrt = tf.summary.FileWriter(strPthLogSes,
                                   graph=objSess.graph)
 #                                  session=objSess)
 
-# objMrgSmry = tf.summary.merge_all()
+objMrgSmry = tf.summary.merge_all()
 
 
 # -----------------------------------------------------------------------------
@@ -560,10 +344,10 @@ objIdxQ = queue.Queue(maxsize=varCapQ)
 
 def training_queue():
     """Place training data on queue."""
-    # We feed samples to the stateful LSTM by indexing the text at regular
-    # intervals. Each index is incremented after each optimisation step. In
-    # this way, samples in successive batches match in accordance with the
-    # cell states of a stateful LSTM.
+
+    # We feed samples indexing the text at regular intervals. Each index is
+    # incremented after each optimisation step. In this way, samples in
+    # successive batches match in accordance with the model states.
 
     # Initial index of last sample in batch:
     varLast = float(varLenTxt) - (float(varLenTxt) / float(varSzeBtch))
@@ -572,11 +356,11 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    # vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
-    vecIdxWrd = np.linspace(1,
-                            (varSzeBtch * 10),
-                            num=varSzeBtch,
-                            dtype=np.int64)
+    vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
+    # vecIdxWrd = np.linspace(1,
+    #                         (varSzeBtch * 10),
+    #                         num=varSzeBtch,
+    #                         dtype=np.int64)
 
     # Array for new batch of sample weights:
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
@@ -698,20 +482,16 @@ while varTmpSzeQ < varBuff:
 
 # -----------------------------------------------------------------------------
 # Additional thread for GPU status information:
-if lgcGpu:
-    objThrdGpuStt = threading.Thread(target=gpu_status)
-    objThrdGpuStt.setDaemon(True)
-    objThrdGpuStt.start()
+# if lgcGpu:
+#     objThrdGpuStt = threading.Thread(target=gpu_status)
+#     objThrdGpuStt.setDaemon(True)
+#     objThrdGpuStt.start()
 
 
 # -----------------------------------------------------------------------------
 # *** Training
 
 print('--> Beginning of training.')
-
-# init = tf.initialize_all_variables()
-init = tf.global_variables_initializer()
-objSess.run(init)
 
 # Loop through optimisation steps (one batch per optimisation step):
 for idxOpt in range(varNumOpt):
@@ -761,28 +541,17 @@ for idxOpt in range(varNumOpt):
         # Avoid beginning of text (not enough preceding context words):
         if varTmpWrd > varLenCntx:
 
-            # Copy weights from training model to test model:
-            lstTmpWghts = objMdl.get_weights()
+            # Get model weights from training model:
+            lstWghts = objMdl.get_weights()
 
-            # Recurrent status vectors and memory state have different batch
-            # size between training and testing model. They are initialised as
-            # zero. Not needed in tensorflow 1.14.0.
-            lstTmpWghts[10] = np.zeros(objTstMdl.get_weights()[10].shape,
-                                       dtype=np.float32)
-            lstTmpWghts[11] = np.zeros(objTstMdl.get_weights()[11].shape,
-                                       dtype=np.float32)
-            lstTmpWghts[12] = np.zeros(objTstMdl.get_weights()[12].shape,
-                                       dtype=np.float32)
-            lstTmpWghts[13] = np.zeros(objTstMdl.get_weights()[13].shape,
-                                       dtype=np.float32)
-            objTstMdl.set_weights(lstTmpWghts)
+            # Copy weights from training model to test model:
+            objTstMdl.set_weights(lstWghts)
 
             # Initialise state of the (statefull) prediction model with
             # context.
             objTstMdl.reset_states()
-            objTstMdl.get_layer(name='Test_model').erase_memory(batch_size=1,
-                                                                mem_locations=varNumMem,
-                                                                mem_size=varSzeMem)
+            objTstMdl.get_layer(name='TeMeLa').erase_memory(
+                batch_size=1, mem_locations=varNumMem, mem_size=varSzeMem)
 
             # Loop through context window:
             for idxCntx in range(1, varLenCntx):
@@ -881,10 +650,50 @@ for idxOpt in range(varNumOpt):
                                  axis=1
                                  )
 
-                # Get code of closest word vector. (We have to add one because
-                # we skipped the first row of the embedding matrix in the
-                # previous step.)
-                varTmp = int(np.argmin(vecDiff)) + 1
+                # Percentile corresponding to number of words to sample:
+                varPrcntSmp = float(varNumWrdSmp) / float(varNumWrds) * 100.0
+
+                # Construct vector with probability distrubition of next word.
+                # The  difference between the prediction and all words in the
+                # vocabulary is the starting point.
+                vecProbDist = vecDiff.astype('float64')
+
+                # The next word will be selected from a subset of words (the n
+                # words that are clostest to the predicted word vector). Create
+                # a boolean vector for words to include in sampling.
+                varPrcnt = np.percentile(vecProbDist, varPrcntSmp)
+                # Words in vocabulary to exclude from sampling:
+                vecLgcExc = np.greater(vecProbDist, varPrcnt)
+                # Words in vocabulary to include in sampling:
+                vecLgcInc = np.logical_not(vecLgcExc)
+
+                # Invert the difference between prediction and word vectors, so
+                # high values correspond to words that are more likely, given
+                # the prediction.
+                vecProbDist = np.divide(1.0, vecProbDist)
+
+                # Normalise the range of the distribution:
+                varMin = np.min(vecProbDist[vecLgcInc])
+                vecProbDist = np.subtract(vecProbDist, varMin)
+                vecProbDist[vecLgcExc] = 0.0
+                vecProbDist = np.divide(vecProbDist, np.max(vecProbDist))
+
+                # Apply exponent, to bias selection towards more or less likely
+                # words.
+                vecProbDist = np.power(vecProbDist, varTemp)
+
+                # Turn the vector into a probability distribution (so that the
+                # sum of all elements is one).
+                vecProbDist = np.divide(vecProbDist, np.sum(vecProbDist))
+
+                # Sample next word from probability distribution - code of next
+                # word.
+                varTmp = int(np.argmax(np.random.multinomial(1, vecProbDist)))
+
+                # Add one, because we skipped the first row of the embedding
+                # matrix when calculating the minimum squared deviation between
+                # prediciton and embedding vectors (to avoid the unknown-token).
+                varTmp = varTmp + 1
 
                 # Save code of predicted word:
                 vecNew[idxNew] = varTmp
@@ -908,12 +717,10 @@ for idxOpt in range(varNumOpt):
 
         # The memory vector of the custom memory layer needs to be reset
         # manually:
-        objMdl.get_layer(name='Train_model').erase_memory(batch_size=varSzeBtch,
-                                                          mem_locations=varNumMem,
-                                                          mem_size=varSzeMem)
-        objTstMdl.get_layer(name='Test_model').erase_memory(batch_size=1,
-                                                            mem_locations=varNumMem,
-                                                            mem_size=varSzeMem)
+        objMdl.get_layer(name='MeLa').erase_memory(
+            batch_size=varSzeBtch, mem_locations=varNumMem, mem_size=varSzeMem)
+        objTstMdl.get_layer(name='TeMeLa').erase_memory(
+            batch_size=1, mem_locations=varNumMem, mem_size=varSzeMem)
 
 print('--> End of training.')
 
@@ -922,10 +729,18 @@ lstWghts = objMdl.get_weights()
 
 # Save model weights and training parameters to disk:
 np.savez(os.path.join(strPthLogSes, 'ligemo_data.npz'),
+         strPthIn=strPthIn,
+         strPthMdl=strPthMdl,
+         strPthLog=strPthLog,
          varLrnRte=varLrnRte,
          varNumItr=varNumItr,
+         varDspStp=varDspStp,
+         varNrn01=varNrn01,
          varSzeEmb=varSzeEmb,
+         varNumMem=varNumMem,
+         varSzeMem=varSzeMem,
          varSzeBtch=varSzeBtch,
          varInDrp=varInDrp,
-         lstWghts=lstWghts,
-         )
+         varStDrp=varStDrp,
+         varMemDrp=varMemDrp,
+         lstWghts=lstWghts)
