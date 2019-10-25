@@ -29,7 +29,7 @@ strPthMdl = None
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
-varLrnRte = 0.0001
+varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
 varNumItr = 1
@@ -38,7 +38,7 @@ varNumItr = 1
 varDspStp = 10000
 
 # Number of neurons per layer:
-lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 128, 256, 384]
+lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384]
 
 # Length of new text to generate:
 varLenNewTxt = 200
@@ -113,7 +113,7 @@ aryEmb = objNpz['aryEmbFnl']
 
 # Scale embedding matrix:
 varAbsMax = np.max(np.absolute(aryEmb.flatten()))
-varAbsMax = varAbsMax / 0.9
+varAbsMax = varAbsMax / 0.5
 aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
@@ -247,7 +247,7 @@ lstRtrnSq[-1] = False
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
 for idxLry in range(varNumLry):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.tanh,
+                                    activation=tf.keras.activations.relu,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
@@ -265,17 +265,22 @@ for idxLry in range(varNumLry):
 aryDense01 = tf.keras.layers.Dense(varSzeEmb,
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
-                                   name='DenseFF'
+                                   name='DenseFf01'
                                    )(lstIn[-1])
+aryDense02 = tf.keras.layers.Dense(varSzeEmb,
+                                   activation=tf.keras.activations.tanh,
+                                   kernel_regularizer=objRegL2,
+                                   name='DenseFf02'
+                                   )(aryDense01)
 
 # Initialise the model:
-objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryDense01)
+objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryDense02)
 
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
 for idxLry in range(varNumLry):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.tanh,
+                                    activation=tf.keras.activations.relu,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=0.0,
                                     recurrent_dropout=0.0,
@@ -293,11 +298,16 @@ for idxLry in range(varNumLry):
 aryDenseT1 = tf.keras.layers.Dense(varSzeEmb,
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
-                                   name='TestingDenseFF'
+                                   name='TestingDenseFf01'
                                    )(lstInT[-1])
+aryDenseT2 = tf.keras.layers.Dense(varSzeEmb,
+                                   activation=tf.keras.activations.tanh,
+                                   kernel_regularizer=objRegL2,
+                                   name='TestingDenseFf01'
+                                   )(aryDenseT1)
 
 # Initialise the model:
-objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryDenseT1)
+objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryDenseT2)
 init = tf.global_variables_initializer()
 objSess.run(init)
 
