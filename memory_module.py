@@ -11,6 +11,7 @@ import tensorflow as tf
 tanh = tf.keras.activations.tanh
 sigmoid = tf.keras.activations.sigmoid
 softmax = tf.keras.activations.softmax
+relu = tf.keras.activations.relu
 
 
 class MeLa(tf.keras.layers.Layer):
@@ -50,7 +51,7 @@ class MeLa(tf.keras.layers.Layer):
                                         input_shape=(batch_size,
                                                      1,
                                                      emb_size),
-                                        activation=tanh,
+                                        activation=sigmoid,
                                         name='dense_in')
 
         # Layer controlling weight vector:
@@ -60,12 +61,12 @@ class MeLa(tf.keras.layers.Layer):
 
         # Layer controlling content of write vector:
         self.write = tf.keras.layers.Dense(mem_size,
-                                           activation=tanh,
+                                           activation=sigmoid,
                                            name='memory_write')
 
         # Layer controlling content of erase vector:
         self.erase = tf.keras.layers.Dense(mem_size,
-                                           activation=tanh,
+                                           activation=sigmoid,
                                            name='memory_erase')
 
         # Output feedforward module:
@@ -77,7 +78,7 @@ class MeLa(tf.keras.layers.Layer):
         # ** Dropouts **
 
         # Dropout layers for state arrays and memory:
-        self.drop_mem = tf.keras.layers.Dropout(drop_mem)
+        self.drop_memory = tf.keras.layers.Dropout(drop_mem)
         self.drop_state_weights = tf.keras.layers.Dropout(drop_state)
         self.drop_state_erase = tf.keras.layers.Dropout(drop_state)
         self.drop_state_write = tf.keras.layers.Dropout(drop_state)
@@ -217,7 +218,7 @@ class MeLa(tf.keras.layers.Layer):
                                  write_mat)
 
         # Apply dropout:
-        new_memory = self.drop_mem(new_memory)
+        new_memory = self.drop_memory(new_memory)
         weight_vec = self.drop_state_weights(weight_vec)
         erase_vec = self.drop_state_erase(erase_vec)
         write_vec = self.drop_state_write(write_vec)
@@ -229,7 +230,6 @@ class MeLa(tf.keras.layers.Layer):
         self.state_write = write_vec
 
         # Concatenate output of first feedforward module and memory readout:
-        # f1_mem = self.conc([f1[:, 0, :], read_vec])
         mem_and_states = self.conc([read_vec,
                                     weight_vec,
                                     erase_vec,
