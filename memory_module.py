@@ -51,7 +51,7 @@ class MeLa(tf.keras.layers.Layer):
                                         input_shape=(batch_size,
                                                      1,
                                                      emb_size),
-                                        activation=sigmoid,
+                                        activation=tanh,
                                         name='dense_in')
 
         # Layer controlling weight vector:
@@ -61,12 +61,12 @@ class MeLa(tf.keras.layers.Layer):
 
         # Layer controlling content of write vector:
         self.write = tf.keras.layers.Dense(mem_size,
-                                           activation=sigmoid,
+                                           activation=softmax,
                                            name='memory_write')
 
         # Layer controlling content of erase vector:
         self.erase = tf.keras.layers.Dense(mem_size,
-                                           activation=sigmoid,
+                                           activation=softmax,
                                            name='memory_erase')
 
         # Output feedforward module:

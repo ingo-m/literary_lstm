@@ -122,9 +122,9 @@ dictRvrs = objNpz['dictRvrs'][()]
 aryEmb = objNpz['aryEmbFnl']
 
 # Scale embedding matrix:
-# varAbsMax = np.max(np.absolute(aryEmb.flatten()))
-# varAbsMax = varAbsMax / 0.2
-# aryEmb = np.divide(aryEmb, varAbsMax)
+varAbsMax = np.max(np.absolute(aryEmb.flatten()))
+varAbsMax = varAbsMax / 0.9
+aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)

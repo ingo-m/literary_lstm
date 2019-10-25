@@ -36,7 +36,7 @@ strPthMdl = None
 strPthLog = '/home/john/Dropbox/Harry_Potter/ligemo'
 
 # Learning rate:
-varLrnRte = 0.001
+varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
 varNumItr = 1
@@ -66,7 +66,7 @@ varInDrp = 0.3
 varStDrp = 0.3
 
 # Memory dropout:
-varMemDrp = 0.1
+varMemDrp = 0.0
 
 # Number of words from which to sample next word (n most likely words) when
 # generating new text. This parameter has no effect during training, but during
@@ -128,9 +128,9 @@ dictRvrs = objNpz['dictRvrs'][()]
 aryEmb = objNpz['aryEmbFnl']
 
 # Scale embedding matrix:
-# varAbsMax = np.max(np.absolute(aryEmb.flatten()))
-# varAbsMax = varAbsMax / 0.2
-# aryEmb = np.divide(aryEmb, varAbsMax)
+varAbsMax = np.max(np.absolute(aryEmb.flatten()))
+varAbsMax = varAbsMax / 0.9
+aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
