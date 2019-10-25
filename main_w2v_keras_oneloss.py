@@ -303,7 +303,7 @@ aryDenseT1 = tf.keras.layers.Dense(varSzeEmb,
 aryDenseT2 = tf.keras.layers.Dense(varSzeEmb,
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
-                                   name='TestingDenseFf01'
+                                   name='TestingDenseFf02'
                                    )(aryDenseT1)
 
 # Initialise the model:
