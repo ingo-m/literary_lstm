@@ -29,7 +29,7 @@ strPthMdl = None
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.0001
 
 # Number of training iterations over the input text:
 varNumItr = 1
@@ -38,13 +38,13 @@ varNumItr = 1
 varDspStp = 10000
 
 # Number of neurons per layer:
-lstNumNrn = [384, 128, 64, 32, 32, 32, 64, 128, 384]
+lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 128, 256, 384]
 
 # Length of new text to generate:
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 2**9
+varSzeBtch = 2**12
 
 # Input dropout:
 varInDrp = 0.3
@@ -62,7 +62,7 @@ varNumWrdSmp = 1000
 # repetitive sequences of frequent words. Lower value biases selection towards
 # less frequent words and breaks repetitive sequences, but leads to incoherent
 # sequences without gramatical structure or semantic meaning.
-varTemp = 1.9
+varTemp = 2.5
 
 
 # -----------------------------------------------------------------------------
