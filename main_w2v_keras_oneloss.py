@@ -38,13 +38,14 @@ varNumItr = 1
 varDspStp = 10000
 
 # Number of neurons per layer:
-lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384]
+# lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384]
+lstNumNrn = [384]
 
 # Length of new text to generate:
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 2**12
+varSzeBtch = 2**13
 
 # Input dropout:
 varInDrp = 0.3
