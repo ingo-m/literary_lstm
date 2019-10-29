@@ -117,9 +117,14 @@ dictRvrs = objNpz['dictRvrs'][()]
 aryEmb = objNpz['aryEmbFnl']
 
 # Scale embedding matrix:
-varAbsMax = np.max(np.absolute(aryEmb.flatten()))
-varAbsMax = varAbsMax / 0.5
-aryEmb = np.divide(aryEmb, varAbsMax)
+varMin = np.min(aryEmb.flatten())
+aryEmb = np.subtract(aryEmb, varMin)
+varMax = np.max(aryEmb.flatten())
+varScl = varMax / 0.5
+aryEmb = np.divide(aryEmb, varScl)
+# varAbsMax = np.max(np.absolute(aryEmb.flatten()))
+# varAbsMax = varAbsMax / 0.5
+# aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
@@ -252,7 +257,7 @@ lstRtrnSq[-1] = False
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
 for idxLry in range(varNumLstm):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.tanh,
+                                    activation=tf.keras.activations.relu,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
