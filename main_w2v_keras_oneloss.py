@@ -12,8 +12,6 @@ import numpy as np
 import tensorflow as tf
 import time
 
-from memory_module import MeLa
-
 
 # -----------------------------------------------------------------------------
 # *** Define parameters
@@ -38,8 +36,14 @@ varNumItr = 1
 varDspStp = 10000
 
 # Number of neurons per layer:
-# lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384]
-lstNumNrn = [384]
+# lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
+lstNumNrn = [384, 300, 300]
+
+# Load weights for which layers:
+lstLoadW = [False, False, False]
+
+# Which layers are trainable?
+lstLyrTrn = [True, True, True]
 
 # Length of new text to generate:
 varLenNewTxt = 200
@@ -258,19 +262,22 @@ for idxLry in range(varNumLry):
                                     go_backwards=False,
                                     stateful=lgcState,
                                     unroll=False,
+                                    trainable=lstLyrTrn[idxLry],
                                     name=('LstmLayer' + str(idxLry))
                                     )(lstIn[idxLry])
     lstIn.append(objInTmp)
 
 # Dense feedforward layer:
-aryDense01 = tf.keras.layers.Dense(varSzeEmb,
+aryDense01 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
+                                   trainable=lstLyrTrn[-1],
                                    name='DenseFf01'
                                    )(lstIn[-1])
-aryDense02 = tf.keras.layers.Dense(varSzeEmb,
+aryDense02 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
+                                   trainable=lstLyrTrn[-2],
                                    name='DenseFf02'
                                    )(aryDense01)
 
@@ -291,19 +298,22 @@ for idxLry in range(varNumLry):
                                     go_backwards=False,
                                     stateful=lgcState,
                                     unroll=False,
+                                    trainable=False,
                                     name=('TestLstmLayer' + str(idxLry))
                                     )(lstInT[idxLry])
     lstInT.append(objInTmp)
 
 # Dense feedforward layer:
-aryDenseT1 = tf.keras.layers.Dense(varSzeEmb,
+aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
+                                   trainable=False,
                                    name='TestingDenseFf01'
                                    )(lstInT[-1])
-aryDenseT2 = tf.keras.layers.Dense(varSzeEmb,
+aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
+                                   trainable=False,
                                    name='TestingDenseFf02'
                                    )(aryDenseT1)
 
@@ -323,8 +333,24 @@ else:
     objNpz.allow_pickle = True
     lstWghts = list(objNpz['lstWghts'])
 
-    # Assign pre-trained weights to model:
-    objMdl.set_weights(lstWghts)
+    # Counter for weights:
+    varCntWght = 0
+    # Number of layers:
+    varNumLry = len(objMdl.layers)
+    # Loop through layers:
+    for idxLry in range(varNumLry):
+        # Load weights for this layer?
+        if lstLoadW[idxLry]:
+            print(('---Assigning pre-trained weights to layer: '
+                   + str(idxLry)))
+            # Number of weight arrays to set in current layer:
+            varNumWght = len(objMdl.layers[idxLry].get_weights())
+            # Pre-trained weights to be assigned to current layer:
+            lstTmpWghts = lstWghts[varCntWght:(varCntWght+varNumWght)]
+            # Assign weights to model:
+            objMdl.layers[idxLry].set_weights(lstTmpWghts)
+            # Increment counter:
+            varCntWght += varNumWght
 
 # Print model summary:
 print('Training model:')
