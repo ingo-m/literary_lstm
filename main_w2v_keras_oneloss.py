@@ -252,7 +252,7 @@ lstRtrnSq[-1] = False
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
 for idxLry in range(varNumLry):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.relu,
+                                    activation=tf.keras.activations.tanh,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
