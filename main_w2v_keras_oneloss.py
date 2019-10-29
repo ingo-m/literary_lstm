@@ -35,7 +35,7 @@ varNumItr = 1
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
 
-# Number of neurons per layer:
+# Number of neurons per layer (LSTM layers plus two dense layers):
 # lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
 lstNumNrn = [384, 300, 300]
 
@@ -234,8 +234,8 @@ objRegL2 = None
 # Stateful model:
 lgcState = True
 
-# Number of layers:
-varNumLry = len(lstNumNrn)
+# Number of LSTM layers (not including two final dense layers):
+varNumLstm = len(lstNumNrn) - 2
 
 # Lists used to assign output of one layer as input of next layer (for training
 # and validation model, respectively).
@@ -244,13 +244,13 @@ lstInT = [objTstCtxt]
 
 # List for `return_sequences` flag of LSTM (needs to be 'True' for all but last
 # layer).
-lstRtrnSq = [True] * varNumLry
+lstRtrnSq = [True] * varNumLstm
 lstRtrnSq[-1] = False
 
 # The actual LSTM layers.
 # Note that this cell is not optimized for performance on GPU.
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
-for idxLry in range(varNumLry):
+for idxLry in range(varNumLstm):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
                                     activation=tf.keras.activations.tanh,
                                     recurrent_activation='hard_sigmoid',
@@ -286,7 +286,7 @@ objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryDense02)
 
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
-for idxLry in range(varNumLry):
+for idxLry in range(varNumLstm):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
                                     activation=tf.keras.activations.relu,
                                     recurrent_activation='hard_sigmoid',
@@ -336,9 +336,9 @@ else:
     # Counter for weights:
     varCntWght = 0
     # Number of layers:
-    varNumLry = len(objMdl.layers)
+    varNumLyr = len(objMdl.layers)
     # Loop through layers:
-    for idxLry in range(varNumLry):
+    for idxLry in range(varNumLyr):
         # Load weights for this layer?
         if lstLoadW[idxLry]:
             print(('---Assigning pre-trained weights to layer: '
