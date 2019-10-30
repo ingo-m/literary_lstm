@@ -116,11 +116,9 @@ dictRvrs = objNpz['dictRvrs'][()]
 aryEmb = objNpz['aryEmbFnl']
 
 # Scale embedding matrix:
-varMin = np.min(aryEmb.flatten())
-aryEmb = np.subtract(aryEmb, varMin)
-varMax = np.max(aryEmb.flatten())
-varScl = varMax / 0.5
-aryEmb = np.divide(aryEmb, varScl)
+varAbsMax = np.max(np.absolute(aryEmb.flatten()))
+varAbsMax = varAbsMax / 0.5
+aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
@@ -253,7 +251,7 @@ lstRtrnSq[-1] = False
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
 for idxLry in range(varNumLstm):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.relu,
+                                    activation=tf.keras.activations.tanh,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
@@ -270,13 +268,13 @@ for idxLry in range(varNumLstm):
 
 # Dense feedforward layer:
 aryDense01 = tf.keras.layers.Dense(lstNumNrn[-1],
-                                   activation=tf.keras.activations.relu,
+                                   activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-1],
                                    name='DenseFf01'
                                    )(lstIn[-1])
 aryDense02 = tf.keras.layers.Dense(lstNumNrn[-2],
-                                   activation=tf.keras.activations.relu,
+                                   activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-2],
                                    name='DenseFf02'
@@ -289,7 +287,7 @@ objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryDense02)
 # and possibly different input size (fixed batch size of one).
 for idxLry in range(varNumLstm):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.relu,
+                                    activation=tf.keras.activations.tanh,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=0.0,
                                     recurrent_dropout=0.0,
@@ -306,13 +304,13 @@ for idxLry in range(varNumLstm):
 
 # Dense feedforward layer:
 aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-1],
-                                   activation=tf.keras.activations.relu,
+                                   activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'
                                    )(lstInT[-1])
 aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-2],
-                                   activation=tf.keras.activations.relu,
+                                   activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf02'
