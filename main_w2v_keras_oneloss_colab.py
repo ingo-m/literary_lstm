@@ -30,19 +30,25 @@ strPthLog = 'drive/My Drive/lstm_log'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 1
+varNumItr = 0.5
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
 
-# Number of neurons per layer:
-lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384]
+# Number of neurons per layer (LSTM layers plus two dense layers):
+lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
+
+# Load weights for which layers:
+lstLoadW = [False] * len(lstNumNrn)
+
+# Which layers are trainable?
+lstLyrTrn = [True] * len(lstNumNrn)
 
 # Length of new text to generate:
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 2**12
+varSzeBtch = 2**13
 
 # Input dropout:
 varInDrp = 0.3
@@ -110,9 +116,11 @@ dictRvrs = objNpz['dictRvrs'][()]
 aryEmb = objNpz['aryEmbFnl']
 
 # Scale embedding matrix:
-varAbsMax = np.max(np.absolute(aryEmb.flatten()))
-varAbsMax = varAbsMax / 0.5
-aryEmb = np.divide(aryEmb, varAbsMax)
+varMin = np.min(aryEmb.flatten())
+aryEmb = np.subtract(aryEmb, varMin)
+varMax = np.max(aryEmb.flatten())
+varScl = varMax / 0.5
+aryEmb = np.divide(aryEmb, varScl)
 
 # Tensorflow constant fo embedding matrix:
 aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
@@ -227,8 +235,8 @@ objRegL2 = None
 # Stateful model:
 lgcState = True
 
-# Number of layers:
-varNumLry = len(lstNumNrn)
+# Number of LSTM layers (not including two final dense layers):
+varNumLstm = len(lstNumNrn) - 2
 
 # Lists used to assign output of one layer as input of next layer (for training
 # and validation model, respectively).
@@ -237,15 +245,15 @@ lstInT = [objTstCtxt]
 
 # List for `return_sequences` flag of LSTM (needs to be 'True' for all but last
 # layer).
-lstRtrnSq = [True] * varNumLry
+lstRtrnSq = [True] * varNumLstm
 lstRtrnSq[-1] = False
 
 # The actual LSTM layers.
 # Note that this cell is not optimized for performance on GPU.
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
-for idxLry in range(varNumLry):
+for idxLry in range(varNumLstm):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.tanh,
+                                    activation=tf.keras.activations.relu,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
@@ -255,19 +263,22 @@ for idxLry in range(varNumLry):
                                     go_backwards=False,
                                     stateful=lgcState,
                                     unroll=False,
+                                    trainable=lstLyrTrn[idxLry],
                                     name=('LstmLayer' + str(idxLry))
                                     )(lstIn[idxLry])
     lstIn.append(objInTmp)
 
 # Dense feedforward layer:
-aryDense01 = tf.keras.layers.Dense(varSzeEmb,
+aryDense01 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
+                                   trainable=lstLyrTrn[-1],
                                    name='DenseFf01'
                                    )(lstIn[-1])
-aryDense02 = tf.keras.layers.Dense(varSzeEmb,
+aryDense02 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
+                                   trainable=lstLyrTrn[-2],
                                    name='DenseFf02'
                                    )(aryDense01)
 
@@ -276,9 +287,9 @@ objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryDense02)
 
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
-for idxLry in range(varNumLry):
+for idxLry in range(varNumLstm):
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.tanh,
+                                    activation=tf.keras.activations.relu,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=0.0,
                                     recurrent_dropout=0.0,
@@ -288,19 +299,22 @@ for idxLry in range(varNumLry):
                                     go_backwards=False,
                                     stateful=lgcState,
                                     unroll=False,
+                                    trainable=False,
                                     name=('TestLstmLayer' + str(idxLry))
                                     )(lstInT[idxLry])
     lstInT.append(objInTmp)
 
 # Dense feedforward layer:
-aryDenseT1 = tf.keras.layers.Dense(varSzeEmb,
+aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
+                                   trainable=False,
                                    name='TestingDenseFf01'
                                    )(lstInT[-1])
-aryDenseT2 = tf.keras.layers.Dense(varSzeEmb,
+aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
+                                   trainable=False,
                                    name='TestingDenseFf02'
                                    )(aryDenseT1)
 
@@ -320,8 +334,24 @@ else:
     objNpz.allow_pickle = True
     lstWghts = list(objNpz['lstWghts'])
 
-    # Assign pre-trained weights to model:
-    objMdl.set_weights(lstWghts)
+    # Counter for weights:
+    varCntWght = 0
+    # Number of layers:
+    varNumLyr = len(objMdl.layers)
+    # Loop through layers:
+    for idxLry in range(varNumLyr):
+        # Load weights for this layer?
+        if lstLoadW[idxLry]:
+            print(('---Assigning pre-trained weights to layer: '
+                   + str(idxLry)))
+            # Number of weight arrays to set in current layer:
+            varNumWght = len(objMdl.layers[idxLry].get_weights())
+            # Pre-trained weights to be assigned to current layer:
+            lstTmpWghts = lstWghts[varCntWght:(varCntWght+varNumWght)]
+            # Assign weights to model:
+            objMdl.layers[idxLry].set_weights(lstTmpWghts)
+            # Increment counter:
+            varCntWght += varNumWght
 
 # Print model summary:
 print('Training model:')
