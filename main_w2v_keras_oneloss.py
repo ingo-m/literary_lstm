@@ -30,18 +30,27 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.005
+varNumItr = 0.5
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
+
+# Use dictionary to define model? Problem: Dictionary cannot be saved to npz
+# file.
+# dictMdl = {'LstmLayer01':
+#             {'units': 384, 'load_weights': False, 'trainable': True}
+#             }
 
 # Number of neurons per layer (LSTM layers, plus one linear dummy layer and two
 # dense layers):
 # lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
 lstNumNrn = [384, 256, 300, 300]
 
-# Load weights for which layers:
-lstLoadW = [False, False, False, False]
+# When loading pre-trained weights from disk, index of weights to asssign to
+# layer (e.g. to assign first item in list of loaded weights to first layer,
+# set first item to `0`). If `None`, do not assign pre-trained weights.
+# lstLoadW = [0, None, None, None, -1]
+lstLoadW = [None, None, None, None]
 
 # Which layers are trainable?
 lstLyrTrn = [True, False, True, True]
@@ -358,16 +367,23 @@ else:
 
     # Number of layers:
     varNumLyr = len(objMdl.layers)
+    # Counter (necessary because layers without weights, such as input layer,
+    # are skipped):
+    varCntLyr = 0
     # Loop through layers:
     for idxLry in range(varNumLyr):
         # Skip layers without weights (e.g. input layer):
         if len(objMdl.layers[idxLry].get_weights()) != 0:
             # Load weights for this layer?
-            if lstLoadW[idxLry]:
+            if lstLoadW[varCntLyr] is not None:
                 print(('---Assigning pre-trained weights to layer: '
-                       + str(idxLry)))
+                       + str(varCntLyr)
+                       + ', from list item '
+                       + str(lstLoadW[varCntLyr])))
                 # Assign weights to model:
-                objMdl.layers[idxLry].set_weights(lstWghts[idxLry])
+                objMdl.layers[idxLry].set_weights(lstWghts[lstLoadW[varCntLyr]])
+            # Increment counter:
+            varCntLyr += 1
 
 # Print model summary:
 print('Training model:')
