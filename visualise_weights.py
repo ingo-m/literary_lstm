@@ -10,7 +10,7 @@ import seaborn as sns
 # *** Define parameters
 
 # List of session IDs:
-lstSess = ['20191030_110148']
+lstSess = ['20191031_141929']
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
@@ -34,7 +34,10 @@ for strSess in lstSess:
     # Get weights from npz file:
     objNpz = np.load(strPthMdl.format(strSess))
     objNpz.allow_pickle = True
-    lstNpz = list(objNpz['lstWghts'])
+    lstNpz = []
+    for lstTmp in objNpz['lstWghts']:
+        for aryTmp in lstTmp:
+            lstNpz.append(aryTmp)
 
     # The npz file contains 2D arrays (weights) and 1D arrays (biases). We put
     # them into separate lists:
