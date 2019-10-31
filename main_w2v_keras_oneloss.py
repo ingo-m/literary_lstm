@@ -30,7 +30,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.01
+varNumItr = 0.005
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -273,6 +273,7 @@ for idxLry in range(varNumLstm):
 # replaced by a trainable layer with the same number of units.
 aryDummy01 = tf.keras.layers.Dense(lstNumNrn[-3],
                                    activation=tf.keras.activations.linear,
+                                   kernel_initializer=tf.ones_initializer,
                                    use_bias=False,
                                    trainable=lstLyrTrn[-3],  # Should be False
                                    name='Dummy01'
@@ -327,6 +328,7 @@ aryDummyT1 = tf.keras.layers.Dense(lstNumNrn[-3],
 # Dense feedforward layer:
 aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
+                                   kernel_initializer=tf.ones_initializer,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'
@@ -804,7 +806,7 @@ for idxLry in range(varNumLyr):
     if len(objMdl.layers[idxLry].get_weights()) != 0:
         print(('---Saving weights from layer: '
                + str(idxLry)))
-        lstWghts.append([objMdl.layers[idxLry].get_weights()])
+        lstWghts.append(objMdl.layers[idxLry].get_weights())
 
 
 # Save model weights and training parameters to disk:
@@ -818,9 +820,3 @@ np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varStDrp=varStDrp,
          lstWghts=lstWghts,
          )
-
-# Save model to disk:
-tf.keras.models.save_model(objMdl,
-                           os.path.join(strPthLogSes, 'lstm_training_model'))
-tf.keras.models.save_model(objTstMdl,
-                           os.path.join(strPthLogSes, 'lstm_test_model'))
