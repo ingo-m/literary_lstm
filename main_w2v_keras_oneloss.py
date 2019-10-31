@@ -35,15 +35,16 @@ varNumItr = 0.5
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
 
-# Number of neurons per layer (LSTM layers plus two dense layers):
+# Number of neurons per layer (LSTM layers, plus one linear dummy layer and two
+# dense layers):
 # lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
-lstNumNrn = [384, 300, 300]
+lstNumNrn = [384, 256, 300, 300]
 
 # Load weights for which layers:
-lstLoadW = [False, False, False]
+lstLoadW = [False, False, False, False]
 
 # Which layers are trainable?
-lstLyrTrn = [True, True, True]
+lstLyrTrn = [True, False, True, True]
 
 # Length of new text to generate:
 varLenNewTxt = 200
@@ -267,17 +268,27 @@ for idxLry in range(varNumLstm):
                                     )(lstIn[idxLry])
     lstIn.append(objInTmp)
 
-# Dense feedforward layer:
-aryDense01 = tf.keras.layers.Dense(lstNumNrn[-1],
-                                   activation=tf.keras.activations.tanh,
-                                   kernel_regularizer=objRegL2,
-                                   trainable=lstLyrTrn[-1],
-                                   name='DenseFf01'
+# In order to train the model with successively more layers, there needs to be
+# a non-trainable, dense layer with linear activation that will later be
+# replaced by a trainable layer with the same number of units.
+aryDummy01 = tf.keras.layers.Dense(lstNumNrn[-3],
+                                   activation=tf.keras.activations.linear,
+                                   use_bias=False,
+                                   trainable=lstLyrTrn[-3],  # Should be False
+                                   name='Dummy01'
                                    )(lstIn[-1])
-aryDense02 = tf.keras.layers.Dense(lstNumNrn[-2],
+
+# Dense feedforward layer:
+aryDense01 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-2],
+                                   name='DenseFf01'
+                                   )(aryDummy01)
+aryDense02 = tf.keras.layers.Dense(lstNumNrn[-1],
+                                   activation=tf.keras.activations.tanh,
+                                   kernel_regularizer=objRegL2,
+                                   trainable=lstLyrTrn[-1],
                                    name='DenseFf02'
                                    )(aryDense01)
 
@@ -303,14 +314,24 @@ for idxLry in range(varNumLstm):
                                     )(lstInT[idxLry])
     lstInT.append(objInTmp)
 
+# In order to train the model with successively more layers, there needs to be
+# a non-trainable, dense layer with linear activation that will later be
+# replaced by a trainable layer with the same number of units.
+aryDummyT1 = tf.keras.layers.Dense(lstNumNrn[-3],
+                                   activation=tf.keras.activations.linear,
+                                   use_bias=False,
+                                   trainable=False,
+                                   name='TestingDummy01'
+                                   )(lstInT[-1])
+
 # Dense feedforward layer:
-aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-1],
+aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'
-                                   )(lstInT[-1])
-aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-2],
+                                   )(aryDummyT1)
+aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
@@ -333,24 +354,18 @@ else:
     objNpz.allow_pickle = True
     lstWghts = list(objNpz['lstWghts'])
 
-    # Counter for weights:
-    varCntWght = 0
     # Number of layers:
     varNumLyr = len(objMdl.layers)
     # Loop through layers:
     for idxLry in range(varNumLyr):
-        # Load weights for this layer?
-        if lstLoadW[idxLry]:
-            print(('---Assigning pre-trained weights to layer: '
-                   + str(idxLry)))
-            # Number of weight arrays to set in current layer:
-            varNumWght = len(objMdl.layers[idxLry].get_weights())
-            # Pre-trained weights to be assigned to current layer:
-            lstTmpWghts = lstWghts[varCntWght:(varCntWght+varNumWght)]
-            # Assign weights to model:
-            objMdl.layers[idxLry].set_weights(lstTmpWghts)
-            # Increment counter:
-            varCntWght += varNumWght
+        # Skip layers without weights (e.g. input layer):
+        if len(objMdl.layers[idxLry].get_weights()) != 0:
+            # Load weights for this layer?
+            if lstLoadW[idxLry]:
+                print(('---Assigning pre-trained weights to layer: '
+                       + str(idxLry)))
+                # Assign weights to model:
+                objMdl.layers[idxLry].set_weights(lstWghts[idxLry])
 
 # Print model summary:
 print('Training model:')
@@ -778,8 +793,19 @@ for idxOpt in range(varNumOpt):
 
 print('--> End of training.')
 
-# Get model weights:
-lstWghts = objMdl.get_weights()
+# Save model weights.
+print('-Saving model weights.')
+lstWghts = []
+# Number of layers:
+varNumLyr = len(objMdl.layers)
+# Loop through layers:
+for idxLry in range(varNumLyr):
+    # Skip layers without weights (e.g. input layer):
+    if len(objMdl.layers[idxLry].get_weights()) != 0:
+        print(('---Saving weights from layer: '
+               + str(idxLry)))
+        lstWghts.append([objMdl.layers[idxLry].get_weights()])
+
 
 # Save model weights and training parameters to disk:
 np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
@@ -794,7 +820,7 @@ np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          )
 
 # Save model to disk:
-# tf.keras.models.save_model(objMdl,
-#                            os.path.join(strPthLogSes, 'lstm_training_model'))
-# tf.keras.models.save_model(objTstMdl,
-#                            os.path.join(strPthLogSes, 'lstm_test_model'))
+tf.keras.models.save_model(objMdl,
+                           os.path.join(strPthLogSes, 'lstm_training_model'))
+tf.keras.models.save_model(objTstMdl,
+                           os.path.join(strPthLogSes, 'lstm_test_model'))
