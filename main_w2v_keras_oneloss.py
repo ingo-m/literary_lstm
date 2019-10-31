@@ -30,7 +30,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.5
+varNumItr = 0.01
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -235,8 +235,8 @@ objRegL2 = None
 # Stateful model:
 lgcState = True
 
-# Number of LSTM layers (not including two final dense layers):
-varNumLstm = len(lstNumNrn) - 2
+# Number of LSTM layers (not including dummy layer and two final dense layers):
+varNumLstm = len(lstNumNrn) - 3
 
 # Lists used to assign output of one layer as input of next layer (for training
 # and validation model, respectively).
