@@ -53,7 +53,7 @@ lstNumNrn = [384, 256, 300, 300]
 lstLoadW = [None, None, None, None]
 
 # Which layers are trainable?
-lstLyrTrn = [True, False, True, True]
+lstLyrTrn = [True, True, True, True]
 
 # Length of new text to generate:
 varLenNewTxt = 200
@@ -278,13 +278,11 @@ for idxLry in range(varNumLstm):
     lstIn.append(objInTmp)
 
 # In order to train the model with successively more layers, there needs to be
-# a non-trainable, dense layer with linear activation that will later be
-# replaced by a trainable layer with the same number of units.
+# a dummy dense layer with that will later be replaced by a LSTM layer with the
+# same number of units.
 aryDummy01 = tf.keras.layers.Dense(lstNumNrn[-3],
                                    activation=tf.keras.activations.linear,
-                                   kernel_initializer=tf.ones_initializer,
-                                   use_bias=False,
-                                   trainable=lstLyrTrn[-3],  # Should be False
+                                   trainable=lstLyrTrn[-3],
                                    name='Dummy01'
                                    )(lstIn[-1])
 
@@ -324,12 +322,8 @@ for idxLry in range(varNumLstm):
                                     )(lstInT[idxLry])
     lstInT.append(objInTmp)
 
-# In order to train the model with successively more layers, there needs to be
-# a non-trainable, dense layer with linear activation that will later be
-# replaced by a trainable layer with the same number of units.
 aryDummyT1 = tf.keras.layers.Dense(lstNumNrn[-3],
                                    activation=tf.keras.activations.linear,
-                                   use_bias=False,
                                    trainable=False,
                                    name='TestingDummy01'
                                    )(lstInT[-1])
