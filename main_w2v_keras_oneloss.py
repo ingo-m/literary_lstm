@@ -21,7 +21,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = None
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20191031_141929/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
@@ -30,13 +30,12 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.5
+varNumItr = 1.0
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
 
-# Use dictionary to define model? Problem: Dictionary cannot be saved to npz
-# file.
+# Use dictionary to define model?
 # dictMdl = {'LstmLayer01':
 #             {'units': 384, 'load_weights': False, 'trainable': True}
 #             }
@@ -49,8 +48,7 @@ lstNumNrn = [384, 256, 300, 300]
 # When loading pre-trained weights from disk, index of weights to asssign to
 # layer (e.g. to assign first item in list of loaded weights to first layer,
 # set first item to `0`). If `None`, do not assign pre-trained weights.
-# lstLoadW = [0, None, None, None, -1]
-lstLoadW = [None, None, None, None]
+lstLoadW = [0, -3, -2, -1]
 
 # Which layers are trainable?
 lstLyrTrn = [True, True, True, True]
@@ -824,6 +822,8 @@ np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varLrnRte=varLrnRte,
          varNumItr=varNumItr,
          lstNumNrn=lstNumNrn,
+         lstLoadW=lstLoadW,
+         lstLyrTrn=lstLyrTrn,
          varSzeEmb=varSzeEmb,
          varSzeBtch=varSzeBtch,
          varInDrp=varInDrp,
