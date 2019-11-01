@@ -30,16 +30,23 @@ strPthLog = 'drive/My Drive/lstm_log'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.5
+varNumItr = 0.2
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
 
-# Number of neurons per layer (LSTM layers plus two dense layers):
+# Use dictionary to define model?
+# dictMdl = {'LstmLayer01':
+#             {'units': 384, 'load_weights': False, 'trainable': True}
+#             }
+
+# Number of neurons per layer (LSTM layers, plus two dense layers):
 lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
 
-# Load weights for which layers:
-lstLoadW = [False] * len(lstNumNrn)
+# When loading pre-trained weights from disk, index of weights to asssign to
+# layer (e.g. to assign first item in list of loaded weights to first layer,
+# set first item to `0`). If `None`, do not assign pre-trained weights.
+lstLoadW = [None] * len(lstNumNrn)
 
 # Which layers are trainable?
 lstLyrTrn = [True] * len(lstNumNrn)
@@ -267,16 +274,16 @@ for idxLry in range(varNumLstm):
     lstIn.append(objInTmp)
 
 # Dense feedforward layer:
-aryDense01 = tf.keras.layers.Dense(lstNumNrn[-1],
-                                   activation=tf.keras.activations.tanh,
-                                   kernel_regularizer=objRegL2,
-                                   trainable=lstLyrTrn[-1],
-                                   name='DenseFf01'
-                                   )(lstIn[-1])
-aryDense02 = tf.keras.layers.Dense(lstNumNrn[-2],
+aryDense01 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-2],
+                                   name='DenseFf01'
+                                   )(lstIn[-1])
+aryDense02 = tf.keras.layers.Dense(lstNumNrn[-1],
+                                   activation=tf.keras.activations.tanh,
+                                   kernel_regularizer=objRegL2,
+                                   trainable=lstLyrTrn[-1],
                                    name='DenseFf02'
                                    )(aryDense01)
 
@@ -303,13 +310,14 @@ for idxLry in range(varNumLstm):
     lstInT.append(objInTmp)
 
 # Dense feedforward layer:
-aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-1],
+aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
+                                   kernel_initializer=tf.ones_initializer,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'
                                    )(lstInT[-1])
-aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-2],
+aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tf.keras.activations.tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
@@ -332,24 +340,25 @@ else:
     objNpz.allow_pickle = True
     lstWghts = list(objNpz['lstWghts'])
 
-    # Counter for weights:
-    varCntWght = 0
     # Number of layers:
     varNumLyr = len(objMdl.layers)
+    # Counter (necessary because layers without weights, such as input layer,
+    # are skipped):
+    varCntLyr = 0
     # Loop through layers:
     for idxLry in range(varNumLyr):
-        # Load weights for this layer?
-        if lstLoadW[idxLry]:
-            print(('---Assigning pre-trained weights to layer: '
-                   + str(idxLry)))
-            # Number of weight arrays to set in current layer:
-            varNumWght = len(objMdl.layers[idxLry].get_weights())
-            # Pre-trained weights to be assigned to current layer:
-            lstTmpWghts = lstWghts[varCntWght:(varCntWght+varNumWght)]
-            # Assign weights to model:
-            objMdl.layers[idxLry].set_weights(lstTmpWghts)
+        # Skip layers without weights (e.g. input layer):
+        if len(objMdl.layers[idxLry].get_weights()) != 0:
+            # Load weights for this layer?
+            if lstLoadW[varCntLyr] is not None:
+                print(('---Assigning pre-trained weights to layer: '
+                       + str(varCntLyr)
+                       + ', from list item '
+                       + str(lstLoadW[varCntLyr])))
+                # Assign weights to model:
+                objMdl.layers[idxLry].set_weights(lstWghts[lstLoadW[varCntLyr]])
             # Increment counter:
-            varCntWght += varNumWght
+            varCntLyr += 1
 
 # Print model summary:
 print('Training model:')
@@ -777,23 +786,30 @@ for idxOpt in range(varNumOpt):
 
 print('--> End of training.')
 
-# Get model weights:
-lstWghts = objMdl.get_weights()
+# Save model weights.
+print('-Saving model weights.')
+lstWghts = []
+# Number of layers:
+varNumLyr = len(objMdl.layers)
+# Loop through layers:
+for idxLry in range(varNumLyr):
+    # Skip layers without weights (e.g. input layer):
+    if len(objMdl.layers[idxLry].get_weights()) != 0:
+        print(('---Saving weights from layer: '
+               + str(idxLry)))
+        lstWghts.append(objMdl.layers[idxLry].get_weights())
+
 
 # Save model weights and training parameters to disk:
 np.savez(os.path.join(strPthLogSes, 'lstm_data.npz'),
          varLrnRte=varLrnRte,
          varNumItr=varNumItr,
          lstNumNrn=lstNumNrn,
+         lstLoadW=lstLoadW,
+         lstLyrTrn=lstLyrTrn,
          varSzeEmb=varSzeEmb,
          varSzeBtch=varSzeBtch,
          varInDrp=varInDrp,
          varStDrp=varStDrp,
          lstWghts=lstWghts,
          )
-
-# Save model to disk:
-# tf.keras.models.save_model(objMdl,
-#                            os.path.join(strPthLogSes, 'lstm_training_model'))
-# tf.keras.models.save_model(objTstMdl,
-#                            os.path.join(strPthLogSes, 'lstm_test_model'))
