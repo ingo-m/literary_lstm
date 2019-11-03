@@ -10,7 +10,8 @@ import seaborn as sns
 # *** Define parameters
 
 # List of session IDs:
-lstSess = ['20191031_141929']
+lstSess = ['20191031_141929',
+           '20191101_093216']
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
