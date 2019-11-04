@@ -30,10 +30,10 @@ strPthLog = 'drive/My Drive/lstm_log'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.2
+varNumItr = 0.12
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 2000
 
 # Use dictionary to define model?
 # dictMdl = {'LstmLayer01':
@@ -253,35 +253,56 @@ lstInT = [objTstCtxt]
 lstRtrnSq = [True] * varNumLstm
 lstRtrnSq[-1] = False
 
+sigmoid = tf.keras.activations.sigmoid
+relu = tf.keras.activations.relu
+tanh = tf.keras.activations.tanh
+
 # The actual LSTM layers.
 # Note that this cell is not optimized for performance on GPU.
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
 for idxLry in range(varNumLstm):
-    objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.tanh,
-                                    recurrent_activation='hard_sigmoid',
-                                    dropout=varInDrp,
-                                    recurrent_dropout=varStDrp,
-                                    kernel_regularizer=objRegL2,
-                                    return_sequences=lstRtrnSq[idxLry],
-                                    return_state=False,
-                                    go_backwards=False,
-                                    stateful=lgcState,
-                                    unroll=False,
-                                    trainable=lstLyrTrn[idxLry],
-                                    name=('LstmLayer' + str(idxLry))
-                                    )(lstIn[idxLry])
+
+    if idxLry == 0:
+        objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
+                                        activation=sigmoid,
+                                        recurrent_activation='hard_sigmoid',
+                                        dropout=varInDrp,
+                                        recurrent_dropout=varStDrp,
+                                        kernel_regularizer=objRegL2,
+                                        return_sequences=lstRtrnSq[idxLry],
+                                        return_state=False,
+                                        go_backwards=False,
+                                        stateful=lgcState,
+                                        unroll=False,
+                                        trainable=lstLyrTrn[idxLry],
+                                        name=('LstmLayer' + str(idxLry))
+                                        )(lstIn[idxLry])
+    else:
+        objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
+                                        activation=relu,
+                                        recurrent_activation='hard_sigmoid',
+                                        dropout=varInDrp,
+                                        recurrent_dropout=varStDrp,
+                                        kernel_regularizer=objRegL2,
+                                        return_sequences=lstRtrnSq[idxLry],
+                                        return_state=False,
+                                        go_backwards=False,
+                                        stateful=lgcState,
+                                        unroll=False,
+                                        trainable=lstLyrTrn[idxLry],
+                                        name=('LstmLayer' + str(idxLry))
+                                        )(lstIn[idxLry])
     lstIn.append(objInTmp)
 
 # Dense feedforward layer:
 aryDense01 = tf.keras.layers.Dense(lstNumNrn[-2],
-                                   activation=tf.keras.activations.tanh,
+                                   activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-2],
                                    name='DenseFf01'
                                    )(lstIn[-1])
 aryDense02 = tf.keras.layers.Dense(lstNumNrn[-1],
-                                   activation=tf.keras.activations.tanh,
+                                   activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-1],
                                    name='DenseFf02'
@@ -293,32 +314,49 @@ objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryDense02)
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
 for idxLry in range(varNumLstm):
-    objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.tanh,
-                                    recurrent_activation='hard_sigmoid',
-                                    dropout=0.0,
-                                    recurrent_dropout=0.0,
-                                    kernel_regularizer=objRegL2,
-                                    return_sequences=lstRtrnSq[idxLry],
-                                    return_state=False,
-                                    go_backwards=False,
-                                    stateful=lgcState,
-                                    unroll=False,
-                                    trainable=False,
-                                    name=('TestLstmLayer' + str(idxLry))
-                                    )(lstInT[idxLry])
+
+    if idxLry == 0:
+        objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
+                                        activation=sigmoid,
+                                        recurrent_activation='hard_sigmoid',
+                                        dropout=0.0,
+                                        recurrent_dropout=0.0,
+                                        kernel_regularizer=objRegL2,
+                                        return_sequences=lstRtrnSq[idxLry],
+                                        return_state=False,
+                                        go_backwards=False,
+                                        stateful=lgcState,
+                                        unroll=False,
+                                        trainable=False,
+                                        name=('TestLstmLayer' + str(idxLry))
+                                        )(lstInT[idxLry])
+    else:
+        objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
+                                        activation=relu,
+                                        recurrent_activation='hard_sigmoid',
+                                        dropout=0.0,
+                                        recurrent_dropout=0.0,
+                                        kernel_regularizer=objRegL2,
+                                        return_sequences=lstRtrnSq[idxLry],
+                                        return_state=False,
+                                        go_backwards=False,
+                                        stateful=lgcState,
+                                        unroll=False,
+                                        trainable=False,
+                                        name=('TestLstmLayer' + str(idxLry))
+                                        )(lstInT[idxLry])
     lstInT.append(objInTmp)
 
 # Dense feedforward layer:
 aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
-                                   activation=tf.keras.activations.tanh,
+                                   activation=tanh,
                                    kernel_initializer=tf.ones_initializer,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'
                                    )(lstInT[-1])
 aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-1],
-                                   activation=tf.keras.activations.tanh,
+                                   activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf02'
