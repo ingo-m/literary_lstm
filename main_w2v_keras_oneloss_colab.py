@@ -30,7 +30,7 @@ strPthLog = 'drive/My Drive/lstm_log'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.12
+varNumItr = 0.9
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 2000
@@ -55,7 +55,7 @@ lstLyrTrn = [True] * len(lstNumNrn)
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 2**13
+varSzeBtch = 10000
 
 # Input dropout:
 varInDrp = 0.3
@@ -235,7 +235,7 @@ objWght = objQ03.dequeue()
 # *** Build the network
 
 # Regularisation:
-objRegL2 = None
+objRegL1 = tf.keras.regularizers.l1(l=0.01)
 
 # Stateful model:
 lgcState = True
@@ -268,7 +268,7 @@ for idxLry in range(varNumLstm):
                                         recurrent_activation='hard_sigmoid',
                                         dropout=varInDrp,
                                         recurrent_dropout=varStDrp,
-                                        kernel_regularizer=objRegL2,
+                                        kernel_regularizer=None,
                                         return_sequences=lstRtrnSq[idxLry],
                                         return_state=False,
                                         go_backwards=False,
@@ -283,7 +283,7 @@ for idxLry in range(varNumLstm):
                                         recurrent_activation='hard_sigmoid',
                                         dropout=varInDrp,
                                         recurrent_dropout=varStDrp,
-                                        kernel_regularizer=objRegL2,
+                                        kernel_regularizer=objRegL1,
                                         return_sequences=lstRtrnSq[idxLry],
                                         return_state=False,
                                         go_backwards=False,
@@ -297,13 +297,13 @@ for idxLry in range(varNumLstm):
 # Dense feedforward layer:
 aryDense01 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tanh,
-                                   kernel_regularizer=objRegL2,
+                                   kernel_regularizer=None,
                                    trainable=lstLyrTrn[-2],
                                    name='DenseFf01'
                                    )(lstIn[-1])
 aryDense02 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tanh,
-                                   kernel_regularizer=objRegL2,
+                                   kernel_regularizer=None,
                                    trainable=lstLyrTrn[-1],
                                    name='DenseFf02'
                                    )(aryDense01)
@@ -321,7 +321,7 @@ for idxLry in range(varNumLstm):
                                         recurrent_activation='hard_sigmoid',
                                         dropout=0.0,
                                         recurrent_dropout=0.0,
-                                        kernel_regularizer=objRegL2,
+                                        kernel_regularizer=None,
                                         return_sequences=lstRtrnSq[idxLry],
                                         return_state=False,
                                         go_backwards=False,
@@ -336,7 +336,7 @@ for idxLry in range(varNumLstm):
                                         recurrent_activation='hard_sigmoid',
                                         dropout=0.0,
                                         recurrent_dropout=0.0,
-                                        kernel_regularizer=objRegL2,
+                                        kernel_regularizer=objRegL1,
                                         return_sequences=lstRtrnSq[idxLry],
                                         return_state=False,
                                         go_backwards=False,
@@ -351,13 +351,13 @@ for idxLry in range(varNumLstm):
 aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tanh,
                                    kernel_initializer=tf.ones_initializer,
-                                   kernel_regularizer=objRegL2,
+                                   kernel_regularizer=None,
                                    trainable=False,
                                    name='TestingDenseFf01'
                                    )(lstInT[-1])
 aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tanh,
-                                   kernel_regularizer=objRegL2,
+                                   kernel_regularizer=None,
                                    trainable=False,
                                    name='TestingDenseFf02'
                                    )(aryDenseT1)
