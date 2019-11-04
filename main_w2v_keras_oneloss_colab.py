@@ -30,7 +30,7 @@ strPthLog = 'drive/My Drive/lstm_log'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.9
+varNumItr = 0.09
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 2000
