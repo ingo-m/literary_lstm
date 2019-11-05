@@ -30,7 +30,7 @@ strPthLog = 'drive/My Drive/lstm_log'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.09
+varNumItr = 0.08
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 2000
@@ -41,7 +41,9 @@ varDspStp = 2000
 #             }
 
 # Number of neurons per layer (LSTM layers, plus two dense layers):
-lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
+lstNumNrn = [384,
+             384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 384,
+             300, 300]
 
 # When loading pre-trained weights from disk, index of weights to asssign to
 # layer (e.g. to assign first item in list of loaded weights to first layer,
@@ -55,7 +57,7 @@ lstLyrTrn = [True] * len(lstNumNrn)
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 10000
+varSzeBtch = 2**13
 
 # Input dropout:
 varInDrp = 0.3
