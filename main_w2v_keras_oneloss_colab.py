@@ -48,7 +48,7 @@ lstNumNrn = [384,
 # When loading pre-trained weights from disk, index of weights to asssign to
 # layer (e.g. to assign first item in list of loaded weights to first layer,
 # set first item to `0`). If `None`, do not assign pre-trained weights.
-lstLoadW = [None] * len(lstNumNrn)
+lstLoadW = list(range(len(lstNumNrn)))
 
 # Which layers are trainable?
 lstLyrTrn = [True] * len(lstNumNrn)
