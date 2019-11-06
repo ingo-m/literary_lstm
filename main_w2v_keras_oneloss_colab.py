@@ -68,14 +68,14 @@ varStDrp = 0.3
 # Number of words from which to sample next word (n most likely words) when
 # generating new text. This parameter has no effect during training, but during
 # validation.
-varNumWrdSmp = 1000
+varNumWrdSmp = 100
 
 # Exponent to apply over likelihoods of predictions. Higher value biases the
 # selection towards words predicted with high likelihood, but leads to
 # repetitive sequences of frequent words. Lower value biases selection towards
 # less frequent words and breaks repetitive sequences, but leads to incoherent
 # sequences without gramatical structure or semantic meaning.
-varTemp = 2.5
+varTemp = 1.0
 
 
 # -----------------------------------------------------------------------------
