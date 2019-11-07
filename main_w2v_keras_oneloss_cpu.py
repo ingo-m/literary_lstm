@@ -30,7 +30,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.05
+varNumItr = 1.0
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
@@ -116,7 +116,7 @@ aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
 # *** Preparations
 
 # Create tf session:
-objSess = tf.Session()
+objSess = tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=5))
 
 # Tell keras about tf session:
 tf.keras.backend.set_session(objSess)
@@ -397,7 +397,8 @@ objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
 strDate = str(datetime.datetime.now())
 lstD = strDate[0:10].split('-')
 lstT = strDate[11:19].split(':')
-strDate = (lstD[0] + lstD[1] + lstD[2] + '_' + lstT[0] + lstT[1] + lstT[2])
+strDate = (lstD[0] + lstD[1] + lstD[2] + '_' + lstT[0] + lstT[1] + lstT[2]
+           + '_cpu')
 
 # Log directory:
 strPthLogSes = os.path.join(strPthLog, strDate)
@@ -543,15 +544,6 @@ def training_queue():
     print('--> End of feeding thread.')
 
 
-def gpu_status():
-    """Print GPU status information."""
-    while True:
-        # Print nvidia GPU status information:
-        !nvidia-smi
-        # Sleep some time before next status message:
-        time.sleep(600)
-
-
 # -----------------------------------------------------------------------------
 # *** Fill queue
 
@@ -569,14 +561,6 @@ objThrd.start()
 varTmpSzeQ = 0
 while varTmpSzeQ < varBuff:
     varTmpSzeQ = objSess.run(objSzeQ)
-
-
-# -----------------------------------------------------------------------------
-# Additional thread for GPU status information:
-if lgcGpu:
-    objThrdGpuStt = threading.Thread(target=gpu_status)
-    objThrdGpuStt.setDaemon(True)
-    objThrdGpuStt.start()
 
 
 # -----------------------------------------------------------------------------
