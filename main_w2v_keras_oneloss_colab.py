@@ -21,7 +21,7 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = 'drive/My Drive/lstm_log/20191105_003339/lstm_data.npz'
+strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = 'drive/My Drive/lstm_log'
@@ -30,10 +30,10 @@ strPthLog = 'drive/My Drive/lstm_log'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.08
+varNumItr = 0.04
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 2000
+varDspStp = 1000
 
 # Use dictionary to define model?
 # dictMdl = {'LstmLayer01':
@@ -41,8 +41,8 @@ varDspStp = 2000
 #             }
 
 # Number of neurons per layer (LSTM layers, plus two dense layers):
-lstNumNrn = [384,
-             384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 384,
+lstNumNrn = [512,
+             512, 512, 256, 256, 128, 128, 256, 256, 512, 512, 384,
              300, 300]
 
 # When loading pre-trained weights from disk, index of weights to asssign to
@@ -238,6 +238,7 @@ objWght = objQ03.dequeue()
 
 # Regularisation:
 objRegL1 = tf.keras.regularizers.l1(l=0.01)
+objRegL2 = tf.keras.regularizers.l2(l=0.001)
 
 # Stateful model:
 lgcState = True
@@ -270,7 +271,7 @@ for idxLry in range(varNumLstm):
                                         recurrent_activation='hard_sigmoid',
                                         dropout=varInDrp,
                                         recurrent_dropout=varStDrp,
-                                        kernel_regularizer=None,
+                                        activity_regularizer=objRegL2,
                                         return_sequences=lstRtrnSq[idxLry],
                                         return_state=False,
                                         go_backwards=False,
@@ -285,7 +286,7 @@ for idxLry in range(varNumLstm):
                                         recurrent_activation='hard_sigmoid',
                                         dropout=varInDrp,
                                         recurrent_dropout=varStDrp,
-                                        kernel_regularizer=objRegL1,
+                                        activity_regularizer=objRegL1,
                                         return_sequences=lstRtrnSq[idxLry],
                                         return_state=False,
                                         go_backwards=False,
@@ -299,13 +300,13 @@ for idxLry in range(varNumLstm):
 # Dense feedforward layer:
 aryDense01 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tanh,
-                                   kernel_regularizer=None,
+                                   activity_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-2],
                                    name='DenseFf01'
                                    )(lstIn[-1])
 aryDense02 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tanh,
-                                   kernel_regularizer=None,
+                                   activity_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-1],
                                    name='DenseFf02'
                                    )(aryDense01)
@@ -323,7 +324,7 @@ for idxLry in range(varNumLstm):
                                         recurrent_activation='hard_sigmoid',
                                         dropout=0.0,
                                         recurrent_dropout=0.0,
-                                        kernel_regularizer=None,
+                                        activity_regularizer=objRegL2,
                                         return_sequences=lstRtrnSq[idxLry],
                                         return_state=False,
                                         go_backwards=False,
@@ -338,7 +339,7 @@ for idxLry in range(varNumLstm):
                                         recurrent_activation='hard_sigmoid',
                                         dropout=0.0,
                                         recurrent_dropout=0.0,
-                                        kernel_regularizer=objRegL1,
+                                        activity_regularizer=objRegL1,
                                         return_sequences=lstRtrnSq[idxLry],
                                         return_state=False,
                                         go_backwards=False,
@@ -353,13 +354,13 @@ for idxLry in range(varNumLstm):
 aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tanh,
                                    kernel_initializer=tf.ones_initializer,
-                                   kernel_regularizer=None,
+                                   activity_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'
                                    )(lstInT[-1])
 aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tanh,
-                                   kernel_regularizer=None,
+                                   activity_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf02'
                                    )(aryDenseT1)
