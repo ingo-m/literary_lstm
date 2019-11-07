@@ -14,7 +14,8 @@ lstSess = ['20191031_141929',
            '20191101_093216',
            '20191103_120907',
            '20191104_235528',
-           '20191105_165454']
+           '20191105_165454',
+           '20191106_122220']
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
