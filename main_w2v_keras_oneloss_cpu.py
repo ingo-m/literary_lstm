@@ -30,7 +30,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
 varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 1.0
+varNumItr = 0.5
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
