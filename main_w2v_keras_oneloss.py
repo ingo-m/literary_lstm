@@ -329,7 +329,6 @@ aryDummyT1 = tf.keras.layers.Dense(lstNumNrn[-3],
 # Dense feedforward layer:
 aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tf.keras.activations.tanh,
-                                   kernel_initializer=tf.ones_initializer,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'

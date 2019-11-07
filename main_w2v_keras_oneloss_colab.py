@@ -353,7 +353,6 @@ for idxLry in range(varNumLstm):
 # Dense feedforward layer:
 aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tanh,
-                                   kernel_initializer=tf.ones_initializer,
                                    activity_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'
