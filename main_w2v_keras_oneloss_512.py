@@ -21,10 +21,10 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = None
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/512/20191107_144435_cpu/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = '/home/john/Dropbox/Harry_Potter/lstm/512'
 
 # Learning rate:
 varLrnRte = 0.00001
@@ -57,7 +57,7 @@ lstLyrTrn = [True] * len(lstNumNrn)
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 32
+varSzeBtch = 2**12  # 32
 
 # Input dropout:
 varInDrp = 0.3
