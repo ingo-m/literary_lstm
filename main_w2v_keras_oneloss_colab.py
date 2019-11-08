@@ -21,16 +21,16 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = None
+strPthMdl = 'drive/My Drive/lstm_log/20191107_004245/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.0001  # 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.04
+varNumItr = 0.05
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 1000
