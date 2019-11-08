@@ -79,7 +79,28 @@ varTemp = 1.0
 
 
 # -----------------------------------------------------------------------------
+# *** Use GPU if available:
+
+try:
+    from tensorflow.python.client import device_lib
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+    print(('--> Using device: ' + gpus[0].name))
+    lgcGpu = True
+except AttributeError:
+    lgcGpu = False
+
+
+# -----------------------------------------------------------------------------
 # *** Load data
+
+# try:
+#     # Prepare import from google drive, if on colab:
+#     from google.colab import drive
+#     # Mount google drive:
+#     drive.mount('drive')
+# except ModuleNotFoundError:
+#     pass
 
 # Load npz file:
 objNpz = np.load(strPthIn)
@@ -116,7 +137,7 @@ aryTfEmb = tf.constant(aryEmb, dtype=tf.float32)
 # *** Preparations
 
 # Create tf session:
-objSess = tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=5))
+objSess = tf.Session()
 
 # Tell keras about tf session:
 tf.keras.backend.set_session(objSess)
@@ -397,8 +418,7 @@ objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
 strDate = str(datetime.datetime.now())
 lstD = strDate[0:10].split('-')
 lstT = strDate[11:19].split(':')
-strDate = (lstD[0] + lstD[1] + lstD[2] + '_' + lstT[0] + lstT[1] + lstT[2]
-           + '_cpu')
+strDate = (lstD[0] + lstD[1] + lstD[2] + '_' + lstT[0] + lstT[1] + lstT[2])
 
 # Log directory:
 strPthLogSes = os.path.join(strPthLog, strDate)
@@ -544,6 +564,15 @@ def training_queue():
     print('--> End of feeding thread.')
 
 
+# def gpu_status():
+#     """Print GPU status information."""
+#     while True:
+#         # Print nvidia GPU status information:
+#         !nvidia-smi
+#         # Sleep some time before next status message:
+#         time.sleep(600)
+
+
 # -----------------------------------------------------------------------------
 # *** Fill queue
 
@@ -561,6 +590,14 @@ objThrd.start()
 varTmpSzeQ = 0
 while varTmpSzeQ < varBuff:
     varTmpSzeQ = objSess.run(objSzeQ)
+
+
+# -----------------------------------------------------------------------------
+# Additional thread for GPU status information:
+# if lgcGpu:
+#     objThrdGpuStt = threading.Thread(target=gpu_status)
+#     objThrdGpuStt.setDaemon(True)
+#     objThrdGpuStt.start()
 
 
 # -----------------------------------------------------------------------------
