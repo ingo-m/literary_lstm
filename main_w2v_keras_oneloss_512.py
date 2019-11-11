@@ -21,13 +21,13 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/512/20191107_144435_cpu/lstm_data.npz'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/512/20191108_170035/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm/512'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.000001
 
 # Number of training iterations over the input text:
 varNumItr = 0.5
@@ -75,7 +75,7 @@ varNumWrdSmp = 100
 # repetitive sequences of frequent words. Lower value biases selection towards
 # less frequent words and breaks repetitive sequences, but leads to incoherent
 # sequences without gramatical structure or semantic meaning.
-varTemp = 1.0
+varTemp = 1.5
 
 
 # -----------------------------------------------------------------------------
