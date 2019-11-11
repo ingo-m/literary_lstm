@@ -276,10 +276,10 @@ for idxLry in range(varNumLstm):
     lstIn.append(objInTmp)
 
 # Dense feedforward layer:
-aryDense01 = tf.keras.layers.Dense(lstNumNrn[-2],
+aryDense01 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tanh,
                                    kernel_regularizer=objRegL2,
-                                   trainable=lstLyrTrn[-2],
+                                   trainable=lstLyrTrn[-1],
                                    name='DenseFf01'
                                    )(lstIn[-1])
 
@@ -307,7 +307,7 @@ for idxLry in range(varNumLstm):
     lstInT.append(objInTmp)
 
 # Dense feedforward layer:
-aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
+aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
