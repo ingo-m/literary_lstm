@@ -21,13 +21,13 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = 'drive/My Drive/lstm_log/20191112_115643/lstm_data.npz'
+strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.0000001
+varLrnRte = 0.000001
 
 # Number of training iterations over the input text:
 varNumItr = 1
@@ -35,17 +35,17 @@ varNumItr = 1
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
 
-# Number of neurons per layer (LSTM layers, plus one dense layer):
+# Number of neurons per layer (LSTM layers, plus two dense layers):
 lstNumNrn = [512,
-             300]
+             512, 300]
 
 # When loading pre-trained weights from disk, index of weights to asssign to
 # layer (e.g. to assign first item in list of loaded weights to first layer,
 # set first item to `0`). If `None`, do not assign pre-trained weights.
-lstLoadW = [0, 1]
+lstLoadW = [None, None, None]
 
 # Which layers are trainable?
-lstLyrTrn = [True, True]
+lstLyrTrn = [True, True, True]
 
 # Length of new text to generate:
 varLenNewTxt = 200
@@ -237,8 +237,8 @@ objRegL2 = None  # tf.keras.regularizers.l2(l=0.0001)
 # Stateful model:
 lgcState = True
 
-# Number of LSTM layers (not including the final dense layer):
-varNumLstm = len(lstNumNrn) - 1
+# Number of LSTM layers (not including the two final dense layers):
+varNumLstm = len(lstNumNrn) - 2
 
 # Lists used to assign output of one layer as input of next layer (for training
 # and validation model, respectively).
@@ -276,15 +276,21 @@ for idxLry in range(varNumLstm):
     lstIn.append(objInTmp)
 
 # Dense feedforward layer:
-aryDense01 = tf.keras.layers.Dense(lstNumNrn[-1],
+aryDense01 = tf.keras.layers.Dense(lstNumNrn[-2],
+                                   activation=tanh,
+                                   kernel_regularizer=objRegL2,
+                                   trainable=lstLyrTrn[-2],
+                                   name='DenseFf01'
+                                   )(lstIn[-1])
+aryDense02 = tf.keras.layers.Dense(lstNumNrn[-1],
                                    activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-1],
-                                   name='DenseFf01'
-                                   )(lstIn[-1])
+                                   name='DenseFf02'
+                                   )(aryDense01)
 
 # Initialise the model:
-objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryDense01)
+objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryDense02)
 
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
@@ -307,15 +313,21 @@ for idxLry in range(varNumLstm):
     lstInT.append(objInTmp)
 
 # Dense feedforward layer:
-aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-1],
+aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
                                    activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'
                                    )(lstInT[-1])
+aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-1],
+                                   activation=tanh,
+                                   kernel_regularizer=objRegL2,
+                                   trainable=False,
+                                   name='TestingDenseFf02'
+                                   )(aryDenseT1)
 
 # Initialise the model:
-objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryDenseT1)
+objTstMdl = tf.keras.models.Model(inputs=objTstCtxt, outputs=aryDenseT2)
 init = tf.global_variables_initializer()
 objSess.run(init)
 
@@ -418,11 +430,11 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
-    # vecIdxWrd = np.linspace(1,
-    #                         (varSzeBtch * 10),
-    #                         num=varSzeBtch,
-    #                         dtype=np.int64)
+    # vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
+    vecIdxWrd = np.linspace(1,
+                            (varSzeBtch * 1),
+                            num=varSzeBtch,
+                            dtype=np.int64)
 
     # Array for new batch of sample weights:
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
