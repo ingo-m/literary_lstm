@@ -30,10 +30,10 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm/512'
 varLrnRte = 0.000001
 
 # Number of training iterations over the input text:
-varNumItr = 1  # 0.25
+varNumItr = 1
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 10000
 
 # Number of neurons per layer (LSTM layers, plus one dense layer):
 lstNumNrn = [512,
@@ -51,7 +51,7 @@ lstLyrTrn = [True, True]
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 2**12
+varSzeBtch = 32
 
 # Input dropout:
 varInDrp = 0.3
