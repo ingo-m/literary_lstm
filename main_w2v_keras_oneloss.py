@@ -21,7 +21,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/ae_stepwise/20191110_123533/lstm_data.npz'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/ae_stepwise/20191113_005006/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm/ae_stepwise'
@@ -43,15 +43,19 @@ varDspStp = 10000
 # Number of neurons per layer (LSTM layers, plus one linear dummy layer and two
 # dense layers):
 # lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
-lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 300, 300]
+lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
+
+# Include dummy layer as third-last layer?
+lgcDummy = False
 
 # When loading pre-trained weights from disk, index of weights to asssign to
 # layer (e.g. to assign first item in list of loaded weights to first layer,
 # set first item to `0`). If `None`, do not assign pre-trained weights.
-lstLoadW = [0, 1, 2, 3, 4, 5, 6, 7, 8, None, None, None, -1]
+lstLoadW = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, None, None, None, -1]
 
 # Which layers are trainable?
 lstLyrTrn = [False, False, False, False, False, False, False, False, False,
+             False,
              True, True, True, True]
 
 # Length of new text to generate:
@@ -244,7 +248,10 @@ objRegL2 = None
 lgcState = True
 
 # Number of LSTM layers (not including dummy layer and two final dense layers):
-varNumLstm = len(lstNumNrn) - 3
+if lgcDummy:
+    varNumLstm = len(lstNumNrn) - 3
+else:
+    varNumLstm = len(lstNumNrn) - 2
 
 # Lists used to assign output of one layer as input of next layer (for training
 # and validation model, respectively).
@@ -279,11 +286,14 @@ for idxLry in range(varNumLstm):
 # In order to train the model with successively more layers, there needs to be
 # a dummy dense layer with that will later be replaced by a LSTM layer with the
 # same number of units.
-aryDummy01 = tf.keras.layers.Dense(lstNumNrn[-3],
-                                   activation=tf.keras.activations.linear,
-                                   trainable=lstLyrTrn[-3],
-                                   name='Dummy01'
-                                   )(lstIn[-1])
+if lgcDummy:
+    aryDummy01 = tf.keras.layers.Dense(lstNumNrn[-3],
+                                       activation=tf.keras.activations.linear,
+                                       trainable=lstLyrTrn[-3],
+                                       name='Dummy01'
+                                       )(lstIn[-1])
+else:
+    aryDummy01 = lstIn[-1]
 
 # Dense feedforward layer:
 aryDense01 = tf.keras.layers.Dense(lstNumNrn[-2],
@@ -321,11 +331,14 @@ for idxLry in range(varNumLstm):
                                     )(lstInT[idxLry])
     lstInT.append(objInTmp)
 
-aryDummyT1 = tf.keras.layers.Dense(lstNumNrn[-3],
-                                   activation=tf.keras.activations.linear,
-                                   trainable=False,
-                                   name='TestingDummy01'
-                                   )(lstInT[-1])
+if lgcDummy:
+    aryDummyT1 = tf.keras.layers.Dense(lstNumNrn[-3],
+                                       activation=tf.keras.activations.linear,
+                                       trainable=False,
+                                       name='TestingDummy01'
+                                       )(lstInT[-1])
+else:
+    aryDummyT1 = lstInT[-1]
 
 # Dense feedforward layer:
 aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
