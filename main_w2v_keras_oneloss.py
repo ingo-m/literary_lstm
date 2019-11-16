@@ -21,16 +21,16 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/ae_stepwise/20191113_005006/lstm_data.npz'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/ae_stepwise/20191114_024240/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm/ae_stepwise'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.0000001
 
 # Number of training iterations over the input text:
-varNumItr = 1.0
+varNumItr = 0.5
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
@@ -51,12 +51,10 @@ lgcDummy = False
 # When loading pre-trained weights from disk, index of weights to asssign to
 # layer (e.g. to assign first item in list of loaded weights to first layer,
 # set first item to `0`). If `None`, do not assign pre-trained weights.
-lstLoadW = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, None, None, None, -1]
+lstLoadW = list(range(len(lstNumNrn)))
 
 # Which layers are trainable?
-lstLyrTrn = [False, False, False, False, False, False, False, False, False,
-             False,
-             True, True, True, True]
+lstLyrTrn = [True] * len(lstNumNrn)
 
 # Length of new text to generate:
 varLenNewTxt = 200
@@ -80,7 +78,7 @@ varNumWrdSmp = 100
 # repetitive sequences of frequent words. Lower value biases selection towards
 # less frequent words and breaks repetitive sequences, but leads to incoherent
 # sequences without gramatical structure or semantic meaning.
-varTemp = 1.0
+varTemp = 1.5
 
 
 # -----------------------------------------------------------------------------
