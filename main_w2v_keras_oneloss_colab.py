@@ -21,55 +21,55 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = None
+strPthMdl = 'drive/My Drive/lstm_log/20191119_000511/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.0000001
+varLrnRte = 0.00001
 
 # Number of training iterations over the input text:
-varNumItr = 0.1
+varNumItr = 5.0
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 1000
 
 # Number of neurons per layer (LSTM layers, plus two dense layers):
-lstNumNrn = [512,
+lstNumNrn = [512, 512, 512,
              512, 300]
 
 # When loading pre-trained weights from disk, index of weights to asssign to
 # layer (e.g. to assign first item in list of loaded weights to first layer,
 # set first item to `0`). If `None`, do not assign pre-trained weights.
-lstLoadW = [None, None, None]
+lstLoadW = [0, 1, 2, -2, -1]
 
 # Which layers are trainable?
-lstLyrTrn = [True, True, True]
+lstLyrTrn = [True, True, True, True, True]
 
 # Length of new text to generate:
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 2**10
+varSzeBtch = 64
 
 # Input dropout:
-varInDrp = 0.3
+varInDrp = 0.5
 
 # Recurrent state dropout:
-varStDrp = 0.3
+varStDrp = 0.5
 
 # Number of words from which to sample next word (n most likely words) when
 # generating new text. This parameter has no effect during training, but during
 # validation.
-varNumWrdSmp = 100
+varNumWrdSmp = 20
 
 # Exponent to apply over likelihoods of predictions. Higher value biases the
 # selection towards words predicted with high likelihood, but leads to
 # repetitive sequences of frequent words. Lower value biases selection towards
 # less frequent words and breaks repetitive sequences, but leads to incoherent
 # sequences without gramatical structure or semantic meaning.
-varTemp = 1.5
+varTemp = 1.2
 
 
 # -----------------------------------------------------------------------------
