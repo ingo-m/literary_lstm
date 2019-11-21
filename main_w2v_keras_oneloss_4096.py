@@ -21,13 +21,13 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/4096/20191119_153858/lstm_data.npz'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/4096/20191120_185115/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm/4096'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.000001
 
 # Number of training iterations over the input text:
 varNumItr = 1
@@ -70,7 +70,7 @@ varStDrp = 0.5
 # Number of words from which to sample next word (n most likely words) when
 # generating new text. This parameter has no effect during training, but during
 # validation.
-varNumWrdSmp = 20
+varNumWrdSmp = 30
 
 # Exponent to apply over likelihoods of predictions. Higher value biases the
 # selection towards words predicted with high likelihood, but leads to
