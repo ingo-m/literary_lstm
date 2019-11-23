@@ -784,18 +784,8 @@ for idxOpt in range(varNumOpt):
             print('New text:')
             print(strNew)
 
-    # Give status feedback:
+    # Reset internal model states:
     if (idxOpt % varResStp == 0):
-
-        print('---')
-
-        # Reset model states:
-        print(('Resetting model states.'
-               + ' Optimisation step '
-               + str(idxOpt)
-               + ' out of '
-               + str(varNumOpt)
-               + '.'))
 
         objMdl.reset_states()
 
