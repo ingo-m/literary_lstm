@@ -21,19 +21,22 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = 'drive/My Drive/lstm_log/20191119_000511/lstm_data.npz'
+strPthMdl = 'drive/My Drive/lstm_log/20191122_022924/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.000001
 
 # Number of training iterations over the input text:
-varNumItr = 5.0
+varNumItr = 4.0
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 1000
+varDspStp = 100000
+
+# Reset internal model states after x number of optimisation steps:
+varResStp = 1000
 
 # Number of neurons per layer (LSTM layers, plus two dense layers):
 lstNumNrn = [512, 512, 512,
@@ -781,10 +784,20 @@ for idxOpt in range(varNumOpt):
             print('New text:')
             print(strNew)
 
+    # Give status feedback:
+    if (idxOpt % varResStp == 0):
+
+        print('---')
+
         # Reset model states:
-        print('Resetting model states.')
+        print(('Resetting model states.'
+               + ' Optimisation step '
+               + str(idxOpt)
+               + ' out of '
+               + str(varNumOpt)
+               + '.'))
+
         objMdl.reset_states()
-        objTstMdl.reset_states()
 
 print('--> End of training.')
 
