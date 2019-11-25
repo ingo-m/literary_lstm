@@ -8,5 +8,5 @@ docker run --gpus all -it --rm \
     -v ${data_path}:${data_path} \
     -u $(id -u):$(id -g) \
     tensorflow/tensorflow:1.14.0-gpu-py3 python ${analy_path}main_w2v_keras_oneloss_512.py
-#    tensorflow/tensorflow:1.14.0-gpu-py3 python ${analy_path}main_w2v_keras_oneloss.py
+#    tensorflow/tensorflow:1.14.0-gpu-py3 python ${analy_path}main_w2v_keras_oneloss_4096.py
 #    tensorflow/tensorflow:1.14.0-gpu-py3 python ${analy_path}main_w2v_ligemo.py

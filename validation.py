@@ -21,54 +21,51 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/20191104_235528/lstm_data.npz'
+strPthMdl = '/home/john/Downloads/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/lstm'
+strPthLog = '/home/john/Downloads'
 
 # Learning rate:
-varLrnRte = 0.00001
+varLrnRte = 0.000001
 
 # Number of training iterations over the input text:
-varNumItr = 1.0
+varNumItr = 4.0
 
 # Display steps (after x number of optimisation steps):
-varDspStp = 10000
+varDspStp = 100000
 
-# Use dictionary to define model?
-# dictMdl = {'LstmLayer01':
-#             {'units': 384, 'load_weights': False, 'trainable': True}
-#             }
+# Reset internal model states after x number of optimisation steps:
+varResStp = 1000
 
-# Number of neurons per layer (LSTM layers, plus one linear dummy layer and two
-# dense layers):
-# lstNumNrn = [384, 256, 128, 64, 64, 64, 64, 64, 64, 128, 256, 384, 300, 300]
-lstNumNrn = [384, 256, 128, 64, 300, 300]
+# Number of neurons per layer (LSTM layers, plus two dense layers):
+lstNumNrn = [512, 512, 512,
+             512, 300]
 
 # When loading pre-trained weights from disk, index of weights to asssign to
 # layer (e.g. to assign first item in list of loaded weights to first layer,
 # set first item to `0`). If `None`, do not assign pre-trained weights.
-lstLoadW = [0, 1, 2, -3, -2, -1]
+lstLoadW = [0, 1, 2, -2, -1]
 
 # Which layers are trainable?
-lstLyrTrn = [False] * len(lstNumNrn)
+lstLyrTrn = [True, True, True, True, True]
 
 # Length of new text to generate:
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 2**13
+varSzeBtch = 64
 
 # Input dropout:
-varInDrp = 0.3
+varInDrp = 0.5
 
 # Recurrent state dropout:
-varStDrp = 0.3
+varStDrp = 0.5
 
 # Number of words from which to sample next word (n most likely words) when
 # generating new text. This parameter has no effect during training, but during
 # validation.
-varNumWrdSmp = 100
+varNumWrdSmp = 20
 
 # Exponent to apply over likelihoods of predictions. Higher value biases the
 # selection towards words predicted with high likelihood, but leads to
@@ -77,9 +74,6 @@ varNumWrdSmp = 100
 # sequences without gramatical structure or semantic meaning.
 varTemp = 1.0
 
-
-# -----------------------------------------------------------------------------
-# *** Load data
 
 try:
     # Prepare import from google drive, if on colab:
@@ -224,13 +218,14 @@ objWght = objQ03.dequeue()
 # *** Build the network
 
 # Regularisation:
-objRegL2 = None
+# objRegL1 = tf.keras.regularizers.l1(l=0.001)
+objRegL2 = None  # tf.keras.regularizers.l2(l=0.0001)
 
 # Stateful model:
 lgcState = True
 
-# Number of LSTM layers (not including dummy layer and two final dense layers):
-varNumLstm = len(lstNumNrn) - 3
+# Number of LSTM layers (not including the two final dense layers):
+varNumLstm = len(lstNumNrn) - 2
 
 # Lists used to assign output of one layer as input of next layer (for training
 # and validation model, respectively).
@@ -242,12 +237,17 @@ lstInT = [objTstCtxt]
 lstRtrnSq = [True] * varNumLstm
 lstRtrnSq[-1] = False
 
+sigmoid = tf.keras.activations.sigmoid
+relu = tf.keras.activations.relu
+tanh = tf.keras.activations.tanh
+
 # The actual LSTM layers.
 # Note that this cell is not optimized for performance on GPU.
 # Please use tf.keras.layers.CuDNNLSTM for better performance on GPU.
 for idxLry in range(varNumLstm):
+
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.tanh,
+                                    activation=tanh,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=varInDrp,
                                     recurrent_dropout=varStDrp,
@@ -262,24 +262,15 @@ for idxLry in range(varNumLstm):
                                     )(lstIn[idxLry])
     lstIn.append(objInTmp)
 
-# In order to train the model with successively more layers, there needs to be
-# a dummy dense layer with that will later be replaced by a LSTM layer with the
-# same number of units.
-aryDummy01 = tf.keras.layers.Dense(lstNumNrn[-3],
-                                   activation=tf.keras.activations.linear,
-                                   trainable=lstLyrTrn[-3],
-                                   name='Dummy01'
-                                   )(lstIn[-1])
-
 # Dense feedforward layer:
 aryDense01 = tf.keras.layers.Dense(lstNumNrn[-2],
-                                   activation=tf.keras.activations.tanh,
+                                   activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-2],
                                    name='DenseFf01'
-                                   )(aryDummy01)
+                                   )(lstIn[-1])
 aryDense02 = tf.keras.layers.Dense(lstNumNrn[-1],
-                                   activation=tf.keras.activations.tanh,
+                                   activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=lstLyrTrn[-1],
                                    name='DenseFf02'
@@ -291,8 +282,9 @@ objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryDense02)
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
 for idxLry in range(varNumLstm):
+
     objInTmp = tf.keras.layers.LSTM(lstNumNrn[idxLry],
-                                    activation=tf.keras.activations.tanh,
+                                    activation=tanh,
                                     recurrent_activation='hard_sigmoid',
                                     dropout=0.0,
                                     recurrent_dropout=0.0,
@@ -307,22 +299,15 @@ for idxLry in range(varNumLstm):
                                     )(lstInT[idxLry])
     lstInT.append(objInTmp)
 
-aryDummyT1 = tf.keras.layers.Dense(lstNumNrn[-3],
-                                   activation=tf.keras.activations.linear,
-                                   trainable=False,
-                                   name='TestingDummy01'
-                                   )(lstInT[-1])
-
 # Dense feedforward layer:
 aryDenseT1 = tf.keras.layers.Dense(lstNumNrn[-2],
-                                   activation=tf.keras.activations.tanh,
-                                   kernel_initializer=tf.ones_initializer,
+                                   activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf01'
-                                   )(aryDummyT1)
+                                   )(lstInT[-1])
 aryDenseT2 = tf.keras.layers.Dense(lstNumNrn[-1],
-                                   activation=tf.keras.activations.tanh,
+                                   activation=tanh,
                                    kernel_regularizer=objRegL2,
                                    trainable=False,
                                    name='TestingDenseFf02'
