@@ -21,7 +21,7 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = 'drive/My Drive/lstm_log/20191122_022924/lstm_data.npz'
+strPthMdl = 'drive/My Drive/lstm_log/20191124_142131/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = 'drive/My Drive/lstm_log'
@@ -48,7 +48,7 @@ lstNumNrn = [512, 512, 512,
 lstLoadW = [0, 1, 2, -2, -1]
 
 # Which layers are trainable?
-lstLyrTrn = [True, True, True, True, True]
+lstLyrTrn = [False, True, True, True, True]
 
 # Length of new text to generate:
 varLenNewTxt = 200
