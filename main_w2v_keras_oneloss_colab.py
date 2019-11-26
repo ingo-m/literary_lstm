@@ -453,7 +453,7 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    vecIdxWrd = np.array(random.sample(range(varNumWrds), varSzeBtch),
+    vecIdxWrd = np.array(random.sample(range(varLenTxt), varSzeBtch),
                          dtype=np.int64)
 
     # Array for new batch of sample weights:
