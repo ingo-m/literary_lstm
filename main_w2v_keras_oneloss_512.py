@@ -21,7 +21,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/512/20191124_142131/lstm_data.npz'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/512/20191126_002925/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm/512'
@@ -48,7 +48,7 @@ lstNumNrn = [512, 512, 512,
 lstLoadW = [0, 1, 2, -2, -1]
 
 # Which layers are trainable?
-lstLyrTrn = [False, True, True, True, True]
+lstLyrTrn = [False, False, True, True, True]
 
 # Length of new text to generate:
 varLenNewTxt = 200
@@ -433,7 +433,7 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    vecIdxWrd = np.array(random.sample(range(varNumWrds), varSzeBtch),
+    vecIdxWrd = np.array(random.sample(range(varLenTxt), varSzeBtch),
                          dtype=np.int64)
 
     # Array for new batch of sample weights:
