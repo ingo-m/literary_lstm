@@ -17,8 +17,6 @@ import threading
 import queue
 import numpy as np
 import tensorflow as tf
-import time
-
 from memory_module import MeLa
 
 
@@ -26,23 +24,14 @@ from memory_module import MeLa
 # *** Define parameters
 
 # Path of input data file (containing text and word2vec embedding):
-strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e300_w5000.npz'
+strPthIn = '/home/john/Dropbox/Ice_and_Fire/embedding/word2vec_data.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
 strPthMdl = None
 
 # Log directory (parent directory, new session directory will be created):
-strPthLog = '/home/john/Dropbox/Harry_Potter/ligemo'
-
-# Learning rate:
-varLrnRte = 0.00001
-
-# Number of training iterations over the input text:
-varNumItr = 1
-
-# Display steps (after x number of optimisation steps):
-varDspStp = 10000
+strPthLog = '/home/john/Dropbox/Ice_and_Fire/ligemo'
 
 # Number of neurons:
 varNrn01 = 384
@@ -53,32 +42,44 @@ varNumMem = 1024
 # Size of memory locations:
 varSzeMem = 256
 
+# Learning rate:
+varLrnRte = 0.000001
+
+# Number of training iterations over the input text:
+varNumItr = 10.0
+
+# Display steps (after x number of optimisation steps):
+varDspStp = 10000
+
+# Reset internal model states after x number of optimisation steps:
+varResStp = 1000
+
 # Length of new text to generate:
 varLenNewTxt = 200
 
 # Batch size:
-varSzeBtch = 512  # 256
+varSzeBtch = 64
 
 # Input dropout:
-varInDrp = 0.3
+varInDrp = 0.5
 
 # Recurrent state dropout:
-varStDrp = 0.3
+varStDrp = 0.5
 
-# Memory dropout:
-varMemDrp = 0.0
+# Memory dropbout:
+varMemDrp = 0.4
 
 # Number of words from which to sample next word (n most likely words) when
 # generating new text. This parameter has no effect during training, but during
 # validation.
-varNumWrdSmp = 1000
+varNumWrdSmp = 100
 
 # Exponent to apply over likelihoods of predictions. Higher value biases the
 # selection towards words predicted with high likelihood, but leads to
 # repetitive sequences of frequent words. Lower value biases selection towards
 # less frequent words and breaks repetitive sequences, but leads to incoherent
 # sequences without gramatical structure or semantic meaning.
-varTemp = 2.5
+varTemp = 1.5
 
 
 # -----------------------------------------------------------------------------
@@ -97,13 +98,13 @@ except AttributeError:
 # -----------------------------------------------------------------------------
 # *** Load data
 
-try:
-    # Prepare import from google drive, if on colab:
-    from google.colab import drive
-    # Mount google drive:
-    drive.mount('drive')
-except ModuleNotFoundError:
-    pass
+# try:
+#     # Prepare import from google drive, if on colab:
+#     from google.colab import drive
+#     # Mount google drive:
+#     drive.mount('drive')
+# except ModuleNotFoundError:
+#     pass
 
 # Load npz file:
 objNpz = np.load(strPthIn)
@@ -116,7 +117,7 @@ vecC = objNpz['vecC']
 
 # Only train on part of text (retain copy of full text for weights):
 vecFullC = np.copy(vecC)
-# vecC = vecC[15:15020]
+vecC = vecC[15:15020]
 
 # Dictionary, with words as keys:
 dicWdCnOdr = objNpz['dicWdCnOdr'][()]
@@ -129,7 +130,7 @@ aryEmb = objNpz['aryEmbFnl']
 
 # Scale embedding matrix:
 varAbsMax = np.max(np.absolute(aryEmb.flatten()))
-varAbsMax = varAbsMax / 0.9
+varAbsMax = varAbsMax / 0.5
 aryEmb = np.divide(aryEmb, varAbsMax)
 
 # Tensorflow constant fo embedding matrix:
@@ -149,9 +150,6 @@ tf.keras.backend.set_session(objSess)
 varNumWrds = aryEmb.shape[0]
 
 print(('Size of vocabulary (number of unique words): ' + str(varNumWrds)))
-
-# Embedding size (i.e. length of each word vector):
-varEmbSze = aryEmb.shape[1]
 
 # Number of words in text (corpus):
 varLenTxt = vecC.shape[0]
@@ -242,11 +240,9 @@ objWght = objQ03.dequeue()
 # -----------------------------------------------------------------------------
 # *** Build the network
 
-# Regularisation:
-objRegL2 = None
-
+# The actual network:
 aryMemMod = MeLa(batch_size=varSzeBtch,
-                 emb_size=varEmbSze,
+                 emb_size=varSzeEmb,
                  units_01=varNrn01,
                  mem_locations=varNumMem,
                  mem_size=varSzeMem,
@@ -261,7 +257,7 @@ objMdl = tf.keras.models.Model(inputs=[objTrnCtxt], outputs=aryMemMod)
 # An almost idential version of the model used for testing, without dropout
 # and possibly different input size (fixed batch size of one).
 aryMemModT = MeLa(batch_size=1,
-                  emb_size=varEmbSze,
+                  emb_size=varSzeEmb,
                   units_01=varNrn01,
                   mem_locations=varNumMem,
                   mem_size=varSzeMem,
@@ -316,18 +312,9 @@ strPthLogSes = os.path.join(strPthLog, strDate)
 if not os.path.exists(strPthLogSes):
     os.makedirs(strPthLogSes)
 
-# Placeholder for histogram vector:
-# objPlcHist = tf.placeholder(tf.float32, shape=(300, 1536))
-# objHistVals = tf.Variable(initial_value=0.0, shape=varNrn01, dtype=tf.float32)
-
-# Create histrogram:
-# objHistPred = tf.summary.histogram("Weights_01", objPlcHist)
-
 # Old (tf 1.13) summary implementation for tensorboard:
 objLogWrt = tf.summary.FileWriter(strPthLogSes,
                                   graph=objSess.graph)
-#                                  session=objSess)
-
 objMrgSmry = tf.summary.merge_all()
 
 
@@ -344,11 +331,6 @@ objIdxQ = queue.Queue(maxsize=varCapQ)
 
 def training_queue():
     """Place training data on queue."""
-
-    # We feed samples indexing the text at regular intervals. Each index is
-    # incremented after each optimisation step. In this way, samples in
-    # successive batches match in accordance with the model states.
-
     # Initial index of last sample in batch:
     varLast = float(varLenTxt) - (float(varLenTxt) / float(varSzeBtch))
     varLast = int(np.floor(varLast))
@@ -356,11 +338,8 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
-    # vecIdxWrd = np.linspace(1,
-    #                         (varSzeBtch * 10),
-    #                         num=varSzeBtch,
-    #                         dtype=np.int64)
+    vecIdxWrd = np.array(random.sample(range(varNumWrds), varSzeBtch),
+                         dtype=np.int64)
 
     # Array for new batch of sample weights:
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
@@ -452,13 +431,13 @@ def training_queue():
     print('--> End of feeding thread.')
 
 
-def gpu_status():
-    """Print GPU status information."""
-    while True:
-        # Print nvidia GPU status information:
-        # !nvidia-smi
-        # Sleep some time before next status message:
-        time.sleep(600)
+# def gpu_status():
+#     """Print GPU status information."""
+#     while True:
+#         # Print nvidia GPU status information:
+#         !nvidia-smi
+#         # Sleep some time before next status message:
+#         time.sleep(600)
 
 
 # -----------------------------------------------------------------------------
@@ -513,12 +492,6 @@ for idxOpt in range(varNumOpt):
                                     ])
         objLogWrt.add_summary(objSmry, global_step=idxOpt)
 
-        # Write model weights to histogram:
-        # lstWghts = objMdl.get_weights()
-        # objHistVals = objSess.run(objMrgSmry,
-        #                           feed_dict={objPlcHist: lstWghts[0]})
-        # objLogWrt.add_summary(objHistVals, global_step=idxOpt)
-
     # Give status feedback:
     if (idxOpt % varDspStp == 0):
 
@@ -547,9 +520,11 @@ for idxOpt in range(varNumOpt):
             # Copy weights from training model to test model:
             objTstMdl.set_weights(lstWghts)
 
-            # Initialise state of the (statefull) prediction model with
-            # context.
+            # Reset model states:
             objTstMdl.reset_states()
+
+            # The memory vector of the custom memory layer needs to be reset
+            # manually:
             objTstMdl.get_layer(name='TeMeLa').erase_memory(
                 batch_size=1, mem_locations=varNumMem, mem_size=varSzeMem)
 
@@ -710,17 +685,15 @@ for idxOpt in range(varNumOpt):
             print('New text:')
             print(strNew)
 
-        # Reset model states:
-        print('Resetting model states.')
+    # Reset internal model states:
+    if (idxOpt % varResStp == 0):
+
         objMdl.reset_states()
-        objTstMdl.reset_states()
 
         # The memory vector of the custom memory layer needs to be reset
         # manually:
         objMdl.get_layer(name='MeLa').erase_memory(
             batch_size=varSzeBtch, mem_locations=varNumMem, mem_size=varSzeMem)
-        objTstMdl.get_layer(name='TeMeLa').erase_memory(
-            batch_size=1, mem_locations=varNumMem, mem_size=varSzeMem)
 
 print('--> End of training.')
 
@@ -734,7 +707,7 @@ np.savez(os.path.join(strPthLogSes, 'ligemo_data.npz'),
          strPthLog=strPthLog,
          varLrnRte=varLrnRte,
          varNumItr=varNumItr,
-         varDspStp=varDspStp,
+         varResStp=varResStp,
          varNrn01=varNrn01,
          varSzeEmb=varSzeEmb,
          varNumMem=varNumMem,
