@@ -21,16 +21,16 @@ strPthIn = 'drive/My Drive/word2vec_data_all_books_e300_w5000.npz'
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = 'drive/My Drive/lstm_log/20191124_141832/lstm_data.npz'
+strPthMdl = 'drive/My Drive/lstm_log/20191126_003535/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = 'drive/My Drive/lstm_log'
 
 # Learning rate:
-varLrnRte = 0.000001
+varLrnRte = 0.0000001
 
 # Number of training iterations over the input text:
-varNumItr = 1
+varNumItr = 0.6  # 1.5
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 100000
@@ -453,11 +453,8 @@ def training_queue():
     # Word index; refers to position of target word (i.e. word to be predicted)
     # in the corpus.
     # varIdxWrd = 1
-    vecIdxWrd = np.linspace(1, varLast, num=varSzeBtch, dtype=np.int64)
-    # vecIdxWrd = np.linspace(1,
-    #                         (varSzeBtch * 1),
-    #                         num=varSzeBtch,
-    #                         dtype=np.int64)
+    vecIdxWrd = np.array(random.sample(range(varNumWrds), varSzeBtch),
+                         dtype=np.int64)
 
     # Array for new batch of sample weights:
     aryWght = np.zeros((varSzeBtch), dtype=np.float32)
