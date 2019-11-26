@@ -10,16 +10,15 @@ import seaborn as sns
 # *** Define parameters
 
 # List of session IDs:
-lstSess = ['20191119_153858',
-           '20191120_185115',
-           '20191121_165057']
+lstSess = ['20191124_142131',
+           '20191126_002925']
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/4096/{}/lstm_data.npz'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/512/{}/lstm_data.npz'
 
 # Output path for plots:
-strPthOut = '/home/john/Dropbox/Harry_Potter/plots/4096/'
+strPthOut = '/home/john/Dropbox/Harry_Potter/plots/512/'
 
 # Only plot data within following percentile range (i.e. exclude outliers):
 tplPrcntl = (0.5, 99.5)
