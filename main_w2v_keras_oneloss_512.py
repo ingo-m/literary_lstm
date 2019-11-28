@@ -21,7 +21,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/512/20191126_002925/lstm_data.npz'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/512/20191127_090840/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Dropbox/Harry_Potter/lstm/512'
@@ -30,7 +30,7 @@ strPthLog = '/home/john/Dropbox/Harry_Potter/lstm/512'
 varLrnRte = 0.000001
 
 # Number of training iterations over the input text:
-varNumItr = 4.0
+varNumItr = 3.0
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 100000
@@ -39,16 +39,16 @@ varDspStp = 100000
 varResStp = 1000
 
 # Number of neurons per layer (LSTM layers, plus two dense layers):
-lstNumNrn = [512, 512, 512,
+lstNumNrn = [512, 512, 512, 512,
              512, 300]
 
 # When loading pre-trained weights from disk, index of weights to asssign to
 # layer (e.g. to assign first item in list of loaded weights to first layer,
 # set first item to `0`). If `None`, do not assign pre-trained weights.
-lstLoadW = [0, 1, 2, -2, -1]
+lstLoadW = [0, 1, 2, None, -2, -1]
 
 # Which layers are trainable?
-lstLyrTrn = [False, False, True, True, True]
+lstLyrTrn = [False, False, False, True, True, True]
 
 # Length of new text to generate:
 varLenNewTxt = 200
