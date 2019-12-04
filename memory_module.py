@@ -91,7 +91,7 @@ class MeLa(tf.keras.layers.Layer):
         # State of weights vector:
         vec_rand_01 = tf.random.normal((batch_size, mem_locations),
                                        mean=0.0,
-                                       stddev=0.01,
+                                       stddev=0.001,
                                        dtype=tf.float32)
         self.state_weights = tf.Variable(initial_value=vec_rand_01,
                                          trainable=False,
@@ -101,7 +101,7 @@ class MeLa(tf.keras.layers.Layer):
         # State of erase vector:
         vec_rand_02 = tf.random.normal((batch_size, mem_size),
                                        mean=0.0,
-                                       stddev=0.01,
+                                       stddev=0.001,
                                        dtype=tf.float32)
         self.state_erase = tf.Variable(initial_value=vec_rand_02,
                                        trainable=False,
@@ -111,7 +111,7 @@ class MeLa(tf.keras.layers.Layer):
         # State of write vector:
         vec_rand_03 = tf.random.normal((batch_size, mem_size),
                                        mean=0.0,
-                                       stddev=0.01,
+                                       stddev=0.001,
                                        dtype=tf.float32)
         self.state_write = tf.Variable(initial_value=vec_rand_03,
                                        trainable=False,
@@ -123,7 +123,7 @@ class MeLa(tf.keras.layers.Layer):
         # Random values for initial state of memory vector:
         vec_rand_04 = tf.random.normal((batch_size, mem_locations, mem_size),
                                        mean=0.0,
-                                       stddev=0.01,
+                                       stddev=0.001,
                                        dtype=tf.float32)
 
         # The actual memory matrix:
@@ -246,27 +246,27 @@ class MeLa(tf.keras.layers.Layer):
         # Reset state of weights vector:
         vec_rand_01 = tf.random.normal((batch_size, mem_locations),
                                        mean=0.0,
-                                       stddev=0.01,
+                                       stddev=0.001,
                                        dtype=tf.float32)
         self.state_weights = vec_rand_01
 
         # Reset state of erase vector:
         vec_rand_02 = tf.random.normal((batch_size, mem_size),
                                        mean=0.0,
-                                       stddev=0.01,
+                                       stddev=0.001,
                                        dtype=tf.float32)
         self.state_erase = vec_rand_02
 
         # Reset state of write vector:
         vec_rand_03 = tf.random.normal((batch_size, mem_size),
                                        mean=0.0,
-                                       stddev=0.01,
+                                       stddev=0.001,
                                        dtype=tf.float32)
         self.state_write = vec_rand_03
 
         # Reset state of memory matrix:
         vec_rand_04 = tf.random.normal((batch_size, mem_locations, mem_size),
                                        mean=0.0,
-                                       stddev=0.01,
+                                       stddev=0.001,
                                        dtype=tf.float32)
         self.memory = vec_rand_04
