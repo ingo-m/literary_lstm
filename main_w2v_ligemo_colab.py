@@ -54,7 +54,7 @@ varSzeMem = 512
 varLrnRte = 0.0000001
 
 # Number of training iterations over the input text:
-varNumItr = 1.5  # K80: 1.5, P100: 2.3
+varNumItr = 1.3  # K80: 1.3, P100: 2.3
 
 # Display steps (after x number of optimisation steps):
 varDspStp = 10000
