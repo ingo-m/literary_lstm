@@ -21,7 +21,7 @@ strPthIn = '/home/john/Dropbox/Harry_Potter/embedding/word2vec_data_all_books_e3
 
 # Path of npz file containing previously trained model's weights to load (if
 # None, new model is created):
-strPthMdl = '/home/john/Downloads/lstm_data.npz'
+strPthMdl = '/home/john/Dropbox/Harry_Potter/lstm/512/20191202_191428/lstm_data.npz'
 
 # Log directory (parent directory, new session directory will be created):
 strPthLog = '/home/john/Downloads'
@@ -38,20 +38,8 @@ varDspStp = 100000
 # Reset internal model states after x number of optimisation steps:
 varResStp = 1000
 
-# Number of neurons per layer (LSTM layers, plus two dense layers):
-lstNumNrn = [512, 512, 512,
-             512, 300]
-
-# When loading pre-trained weights from disk, index of weights to asssign to
-# layer (e.g. to assign first item in list of loaded weights to first layer,
-# set first item to `0`). If `None`, do not assign pre-trained weights.
-lstLoadW = [0, 1, 2, -2, -1]
-
-# Which layers are trainable?
-lstLyrTrn = [True, True, True, True, True]
-
 # Length of new text to generate:
-varLenNewTxt = 200
+varLenNewTxt = 1000
 
 # Batch size:
 varSzeBtch = 64
@@ -65,14 +53,14 @@ varStDrp = 0.5
 # Number of words from which to sample next word (n most likely words) when
 # generating new text. This parameter has no effect during training, but during
 # validation.
-varNumWrdSmp = 20
+varNumWrdSmp = 40  # 128k
 
 # Exponent to apply over likelihoods of predictions. Higher value biases the
 # selection towards words predicted with high likelihood, but leads to
 # repetitive sequences of frequent words. Lower value biases selection towards
 # less frequent words and breaks repetitive sequences, but leads to incoherent
 # sequences without gramatical structure or semantic meaning.
-varTemp = 1.0
+varTemp = 1.0  # 1.4
 
 
 try:
@@ -143,6 +131,19 @@ varSzeEmb = aryEmb.shape[1]
 
 # Number of optimisation steps:
 varNumOpt = int(np.floor(float(varLenTxt * varNumItr)))
+
+# Get information on model architecture from npz file:
+objNpz = np.load(strPthMdl)
+objNpz.allow_pickle = True
+
+# Number of neurons per layer (LSTM layers, plus two dense layers):
+lstNumNrn = objNpz['lstNumNrn']
+
+# Indices of weights to asssign to layer:
+lstLoadW = list(range(len(lstNumNrn)))
+
+# Which layers are trainable?
+lstLyrTrn = [False] * len(lstNumNrn)
 
 
 # -----------------------------------------------------------------------------
@@ -367,7 +368,7 @@ objMdl.compile(optimizer=tf.keras.optimizers.Adam(lr=varLrnRte),
 # model:
 varLenCntx = 100
 
-varTmpWrd = 550487
+varTmpWrd = 350487
 
 # Avoid beginning of text (not enough preceding context words):
 if varTmpWrd > varLenCntx:
